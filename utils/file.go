@@ -8,7 +8,7 @@ import (
 
 func ReadInputLines(filename string) []string {
 
-	fileBytes, err := ioutil.ReadFile("input.txt")
+	fileBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Print(err)
 		return []string{}
