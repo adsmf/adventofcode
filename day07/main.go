@@ -9,10 +9,12 @@ import (
 )
 
 func main() {
-	lines := utils.ReadInputLines("example.txt")
+	lines := utils.ReadInputLines("input.txt")
 	re := regexp.MustCompile("Step (.) must be finished before step (.) can begin.")
 	requirements := []requirement{}
 	allSteps := make(map[string]*step)
+
+	stepSequence := ""
 
 	for _, line := range lines {
 		matches := re.FindStringSubmatch(line)
@@ -34,10 +36,6 @@ func main() {
 		}
 		requirements = append(requirements, req)
 	}
-	fmt.Printf("Requirements: %+v\n", requirements)
-	fmt.Printf("Known steps: %+v\n", allSteps)
-	fmt.Println()
-	curChainLength := 0
 	unreadySteps := make(map[string]bool)
 	for id := range allSteps {
 		unreadySteps[id] = true
@@ -53,30 +51,18 @@ func main() {
 				}
 			}
 			if !!!hasDeps {
-				// fmt.Printf("Step ready: %s\n", stepID)
 				newSteps = append(newSteps, stepID)
 			}
 		}
-		fmt.Printf("New steps: %v\n", newSteps)
-		for _, stepID := range newSteps {
-			allSteps[stepID].chainLength = curChainLength
-			allSteps[stepID].ready = true
-			delete(unreadySteps, stepID)
+		if len(newSteps) > 0 {
+			sort.Strings(newSteps)
+			nextStepID := newSteps[0]
+			allSteps[nextStepID].ready = true
+			stepSequence = fmt.Sprintf("%s%s", stepSequence, nextStepID)
+			delete(unreadySteps, nextStepID)
 		}
-		curChainLength++
 	}
-
-	fmt.Printf("Chain length: %d\nSteps: %+v\n", curChainLength, allSteps)
-	for chainOf := curChainLength - 1; chainOf >= 0; chainOf-- {
-		availSteps := []string{}
-		for id, step := range allSteps {
-			if step.chainLength == chainOf {
-				availSteps = append(availSteps, id)
-			}
-		}
-		sort.Strings(availSteps)
-		fmt.Printf("availSteps: %+v\n", availSteps)
-	}
+	fmt.Printf("Sequence: %s\n", stepSequence)
 }
 
 type requirement struct {
@@ -85,7 +71,6 @@ type requirement struct {
 }
 
 type step struct {
-	id          string
-	ready       bool
-	chainLength int
+	id    string
+	ready bool
 }
