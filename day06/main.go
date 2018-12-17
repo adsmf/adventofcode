@@ -30,7 +30,10 @@ func main() {
 	maxX++
 	maxY++
 
+	fmt.Printf("Part 1\n======\n")
 	part1(points, maxX, maxY)
+	fmt.Printf("\nPart 2\n======\n")
+	part2(points, maxX, maxY, 10000)
 }
 
 type point struct {
@@ -38,7 +41,7 @@ type point struct {
 }
 
 func part1(points []point, maxX, maxY int) {
-	_, numClosest := closestPointGraph(points, maxX, maxY)
+	numClosest := closestPointGraph(points, maxX, maxY)
 	bestCount := 0
 	for _, count := range numClosest {
 		if count > bestCount {
@@ -48,17 +51,26 @@ func part1(points []point, maxX, maxY int) {
 	fmt.Printf("Best count: %d\n", bestCount)
 }
 
-func closestPointGraph(points []point, maxX, maxY int) ([][]point, map[point]int) {
-	graph := make([][]point, maxX+1)
+func part2(points []point, maxX, maxY, maxDistance int) {
+	numValid := 0
+	for x := 0; x <= maxX; x++ {
+		for y := 0; y <= maxY; y++ {
+			if totalDistance(point{x, y}, points) < maxDistance {
+				numValid++
+			}
+		}
+	}
+	fmt.Printf("Region size: %d\n", numValid)
+}
+
+func closestPointGraph(points []point, maxX, maxY int) map[point]int {
 	numClose := make(map[point]int)
 	invalidPoints := make(map[point]bool)
 	invalidPoints[point{0, 0}] = true
 	for x := 0; x <= maxX; x++ {
-		graph[x] = make([]point, maxY+1)
 		for y := 0; y <= maxY; y++ {
 			closest := closestPoint(point{x, y}, points)
 			numClose[closest]++
-			graph[x][y] = closest
 			if x == 0 || y == 0 || x == maxX || y == maxY {
 				invalidPoints[closest] = true
 			}
@@ -70,7 +82,7 @@ func closestPointGraph(points []point, maxX, maxY int) ([][]point, map[point]int
 			validClose[point] = count
 		}
 	}
-	return graph, validClose
+	return validClose
 }
 
 func closestPoint(target point, points []point) point {
@@ -86,6 +98,14 @@ func closestPoint(target point, points []point) point {
 		}
 	}
 	return closest
+}
+
+func totalDistance(target point, points []point) int {
+	totalDist := 0
+	for _, curPoint := range points {
+		totalDist += distance(target, curPoint)
+	}
+	return totalDist
 }
 
 func distance(a, b point) int {
