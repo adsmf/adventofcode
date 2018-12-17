@@ -18,6 +18,25 @@ func main() {
 	root, _ := processEntries(dataEntries)
 	total := sumMeta(root)
 	fmt.Printf("Total: %d\n", total)
+	value := calcValue(root)
+
+	fmt.Printf("Value: %d\n", value)
+}
+
+func calcValue(node Node) int {
+	if len(node.Children) == 0 {
+		return sumMeta(node)
+	}
+	value := 0
+	for _, meta := range node.Metadata {
+		if meta == 0 {
+			continue
+		}
+		if meta <= len(node.Children) {
+			value += calcValue(node.Children[meta-1])
+		}
+	}
+	return value
 }
 
 func sumMeta(node Node) int {
