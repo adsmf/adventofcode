@@ -11,11 +11,14 @@ import (
 func main() {
 	lines := utils.ReadInputLines("input.txt")
 	logbook := genLogbook(lines)
+	fmt.Print("PART 1\n======\n")
 	part1(logbook)
+	fmt.Print("\nPART 2\n======\n")
+	part2(logbook)
 }
 
 func part1(logbook logbook) {
-	fmt.Printf("Logbook: %+v\n", logbook.entries[0])
+	// fmt.Printf("Logbook: %+v\n", logbook.entries[0])
 	guardsSleepTime := make(map[int]int)
 	for id, entry := range logbook.entries {
 		if entry.awake {
@@ -24,7 +27,7 @@ func part1(logbook logbook) {
 			guardsSleepTime[entry.guard] += timediff
 		}
 	}
-	fmt.Printf("Sleep times: %+v\n", guardsSleepTime)
+	// fmt.Printf("Sleep times: %+v\n", guardsSleepTime)
 	sleepyGuard := 0
 	sleepyGuardTime := 0
 	for id, time := range guardsSleepTime {
@@ -56,6 +59,35 @@ func part1(logbook logbook) {
 	fmt.Printf("Guard is most sleepy at %d (%d days)\n", sleepyMinute, sleepyMinuteDays)
 
 	fmt.Printf("Part 1 answer: %d\n", sleepyGuard*sleepyMinute)
+}
+
+func part2(logbook logbook) {
+	guardsSleepMinutes := make(map[int]map[int]int)
+	for id, entry := range logbook.entries {
+		if entry.awake {
+			startentry := logbook.entries[id-1]
+			for min := startentry.minute; min < entry.minute; min++ {
+				if guardsSleepMinutes[min] == nil {
+					guardsSleepMinutes[min] = make(map[int]int)
+				}
+				guardsSleepMinutes[min][entry.guard]++
+			}
+		}
+	}
+	sleepyDays := -1
+	sleepyGuard := -1
+	sleepyMinute := -1
+	for min, guardDays := range guardsSleepMinutes {
+		for guard, days := range guardDays {
+			if days > sleepyDays {
+				sleepyDays = days
+				sleepyGuard = guard
+				sleepyMinute = min
+			}
+		}
+	}
+	fmt.Printf("Most sleepy minute is %d by %d (%d asleep)\n", sleepyMinute, sleepyGuard, sleepyDays)
+	fmt.Printf("Part 2 answer is %d * %d = %d", sleepyGuard, sleepyMinute, sleepyGuard*sleepyMinute)
 }
 
 func genLogbook(lines []string) logbook {
