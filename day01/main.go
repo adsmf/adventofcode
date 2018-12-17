@@ -14,13 +14,18 @@ func main() {
 		return
 	}
 	fileString := string(fileBytes)
-	fmt.Println(fileString)
 	parts := strings.Split(fileString, "\n")
-	fmt.Printf("%+v\n", parts)
 	freq := 0
-	for _, mod := range parts {
-		modInt, _ := strconv.Atoi(mod)
-		freq = freq + modInt
-		fmt.Printf("%s, %d => %d\n", mod, modInt, freq)
+	seenFreqs := make(map[int]bool)
+	for {
+		for _, mod := range parts {
+			modInt, _ := strconv.Atoi(mod)
+			freq = freq + modInt
+			if seenFreqs[freq] {
+				fmt.Printf("Been here before!: %d\n", freq)
+				return
+			}
+			seenFreqs[freq] = true
+		}
 	}
 }
