@@ -32,19 +32,45 @@ func TestBestGrid(t *testing.T) {
 	type exampleGrid struct {
 		serial int
 		x, y   int
+		size   int
 		level  int
 	}
 	examples := []exampleGrid{
-		exampleGrid{18, 33, 45, 29},
-		exampleGrid{42, 21, 61, 30},
+		exampleGrid{18, 33, 45, 3, 29},
+		exampleGrid{42, 21, 61, 3, 30},
+		exampleGrid{18, 90, 269, 16, 113},
+		exampleGrid{42, 232, 251, 12, 119},
 	}
 	for exampleID, example := range examples {
 		t.Run(fmt.Sprintf("Example %d", exampleID), func(t *testing.T) {
 			t.Logf("Running example %+v", example)
-			level, x, y := bestInGrid(example.serial)
+			level, x, y := bestForSerial(example.serial, example.size)
 			assert.Equal(t, example.level, level)
 			assert.Equal(t, example.x, x)
 			assert.Equal(t, example.y, y)
+		})
+	}
+}
+
+func TestBestGridSize(t *testing.T) {
+	type exampleGrid struct {
+		serial int
+		x, y   int
+		size   int
+		level  int
+	}
+	examples := []exampleGrid{
+		exampleGrid{18, 90, 269, 16, 113},
+		exampleGrid{42, 232, 251, 12, 119},
+	}
+	for exampleID, example := range examples {
+		t.Run(fmt.Sprintf("Example %d", exampleID), func(t *testing.T) {
+			t.Logf("Running example %+v", example)
+			level, x, y, size := bestGrid(example.serial)
+			assert.Equal(t, example.level, level)
+			assert.Equal(t, example.x, x)
+			assert.Equal(t, example.y, y)
+			assert.Equal(t, example.size, size)
 		})
 	}
 }

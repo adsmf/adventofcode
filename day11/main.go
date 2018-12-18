@@ -3,8 +3,13 @@ package main
 import "fmt"
 
 func main() {
-	level, x, y := bestInGrid(3613)
+	serial := 3613
+	level, x, y := bestForSerial(serial, 3)
 	fmt.Printf("Best pos (%d,%d) with level %d\n", x, y, level)
+
+	level, x, y, size := bestGrid(serial)
+	fmt.Printf("Best pos (%d,%d,%d) with level %d\n", x, y, size, level)
+
 }
 
 func calcLevel(serial, x, y int) int {
@@ -18,11 +23,12 @@ func calcLevel(serial, x, y int) int {
 	return level
 }
 
-func bestInGrid(serial int) (int, int, int) {
-	bestLevel := 0
-	bestX := 0
-	bestY := 0
+func bestForSerial(serial, size int) (int, int, int) {
+	levels := calcLevels(serial)
+	return bestInGrid(levels, size)
+}
 
+func calcLevels(serial int) [][]int {
 	levels := make([][]int, 300)
 	for row := 0; row < 300; row++ {
 		levels[row] = make([]int, 300)
@@ -30,20 +36,22 @@ func bestInGrid(serial int) (int, int, int) {
 			levels[row][col] = calcLevel(serial, col, row)
 		}
 	}
+	return levels
+}
 
-	for y := 0; y < 298; y++ {
-		for x := 0; x < 298; x++ {
-			level := levels[y][x]
-			level += levels[y][x+1]
-			level += levels[y][x+2]
+func bestInGrid(levels [][]int, size int) (int, int, int) {
+	bestLevel := 0
+	bestX := 0
+	bestY := 0
 
-			level += levels[y+1][x]
-			level += levels[y+1][x+1]
-			level += levels[y+1][x+2]
-
-			level += levels[y+2][x]
-			level += levels[y+2][x+1]
-			level += levels[y+2][x+2]
+	for y := 0; y <= 300-size; y++ {
+		for x := 0; x <= 300-size; x++ {
+			level := 0
+			for dy := 0; dy < size; dy++ {
+				for dx := 0; dx < size; dx++ {
+					level += levels[y+dy][x+dx]
+				}
+			}
 
 			if level > bestLevel {
 				bestLevel = level
@@ -54,4 +62,39 @@ func bestInGrid(serial int) (int, int, int) {
 	}
 
 	return bestLevel, bestX, bestY
+}
+
+func bestGrid(serial int) (int, int, int, int) {
+	bestLevel := 0
+	bestX := 0
+	bestY := 0
+	bestSize := 0
+
+	levels := calcLevels(serial)
+
+	for y := 0; y < 300; y++ {
+		for x := 0; x < 300; x++ {
+			level := 0
+			for size := 1; size <= 300; size++ {
+				if (x+size >= 300) || (y+size >= 300) {
+					break
+				}
+				for dx := 0; dx < size-1; dx++ {
+					level += levels[y+size-1][x+dx]
+				}
+				for dy := 0; dy < size-1; dy++ {
+					level += levels[y+dy][x+size-1]
+				}
+				level += levels[y+size-1][x+size-1]
+
+				if level > bestLevel {
+					bestLevel = level
+					bestX = x
+					bestY = y
+					bestSize = size
+				}
+			}
+		}
+	}
+	return bestLevel, bestX, bestY, bestSize
 }
