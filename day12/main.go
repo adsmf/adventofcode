@@ -1,48 +1,158 @@
 package main
 
 import (
+	"container/list"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/adsmf/adventofcode2018/utils"
 )
 
 func main() {
 	initial, mapping := loadData("input.txt")
-	_, sum := runSim(initial, mapping, 20)
+	sum := runSim(initial, mapping, 50000000000)
 	fmt.Printf("Sum: %d\n", sum)
 }
 
-func runSim(pots string, mapping []bool, ticks int) (string, int) {
-	padding := "00"
-	padLen := len(padding)
+type potState struct {
+	value    int
+	occupied uint
+}
 
-	initialLen := len(pots)
+func runSim(potString string, mapping []bool, ticks int) int {
+	var value int
+	potsA := list.New()
+	potsB := list.New()
+	for idx, pot := range potString {
+		potVal, err := strconv.Atoi(string(pot))
+		if err != nil {
+			panic(err)
+		}
+		newPot := potState{
+			value:    idx,
+			occupied: uint(potVal),
+		}
+		potsA.PushBack(newPot)
+		potsB.PushBack(newPot)
+	}
+
+	potsCurrent := potsA
+	potsNext := potsB
+
+	start := time.Now()
+
+	values := []int{}
 	for tick := 0; tick < ticks; tick++ {
-		pots = fmt.Sprintf("%s%s%s", padding, pots, padding)
-		paddedPots := fmt.Sprintf("%s%s%s", padding, pots, padding)
-		next := ""
-		for curPos := 0; curPos < len(pots); curPos++ {
+		// Swap buffers
+		potsTemp := potsCurrent
+		potsCurrent = potsNext
+		potsNext = potsTemp
 
-			part := paddedPots[curPos : curPos+5]
-			partInt, _ := strconv.ParseUint(part, 2, 5)
-			if mapping[partInt] {
-				next = fmt.Sprintf("%s1", next)
+		// Pad stuff
+		firstValue := potsCurrent.Front().Value.(potState).value
+		lastValue := potsCurrent.Back().Value.(potState).value
+		for padIdx := 0; padIdx < 2; padIdx++ {
+			newFront := potState{
+				value:    firstValue - padIdx - 1,
+				occupied: 0,
+			}
+			newBack := potState{
+				value:    lastValue + padIdx + 1,
+				occupied: 0,
+			}
+			potsCurrent.PushBack(newBack)
+			potsCurrent.PushFront(newFront)
+			potsNext.PushBack(newBack)
+			potsNext.PushFront(newFront)
+		}
+
+		var inPosM1, inPosM2 *list.Element
+		var inPosP1, inPosP2 *list.Element
+		value = 0
+		for inPos, outPos := potsCurrent.Front(), potsNext.Front(); inPos != nil; inPos, outPos = inPos.Next(), outPos.Next() {
+
+			var ctx uint
+			ctx = inPos.Value.(potState).occupied << 2
+
+			inPosM1 = inPos.Prev()
+			if inPosM1 != nil {
+				ctx += inPosM1.Value.(potState).occupied << 3
+				inPosM2 = inPosM1.Prev()
+				if inPosM2 != nil {
+					ctx += inPosM2.Value.(potState).occupied << 4
+				}
+			}
+
+			inPosP1 = inPos.Next()
+			if inPosP1 != nil {
+				ctx += inPosP1.Value.(potState).occupied << 1
+				inPosP2 = inPosP1.Next()
+				if inPosP2 != nil {
+					ctx += inPosP2.Value.(potState).occupied
+				}
+			}
+
+			potValue := inPos.Value.(potState).value
+			if mapping[ctx] {
+				outPos.Value = potState{
+					value:    potValue,
+					occupied: 1,
+				}
+				value += potValue
 			} else {
-				next = fmt.Sprintf("%s0", next)
+				outPos.Value = potState{
+					value:    potValue,
+					occupied: 0,
+				}
 			}
 		}
-		next = fmt.Sprintf("%s%s", next, padding)
-		pots = next
-	}
-	value := 0
-	for curPot := 0; curPot < len(pots); curPot++ {
-		if pots[curPot] == byte("1"[0]) {
-			value += curPot - ticks*padLen
+		values = append(values, value)
+
+		if tick > 0 && tick%1000 == 0 {
+			percentComplete := float64(tick) / float64(ticks)
+			elapsed := time.Since(start)
+			fmt.Printf("%f%% -- current %d @ tick %d -- elapsed %v \n", percentComplete, value, tick, elapsed)
+		}
+
+		for cycleSize := 2; cycleSize <= int(len(values)/2); cycleSize++ {
+			isCycle := true
+			checkVal := values[tick] - values[tick-cycleSize]
+			for dt := 0; dt < cycleSize*2; dt++ {
+				if values[tick-dt]-values[tick-cycleSize-dt] != checkVal {
+					isCycle = false
+					break
+				}
+			}
+			if isCycle {
+				fmt.Printf("Cycle detected at tick %d, delta %d every %d!\n", tick, checkVal, cycleSize)
+				for dt := 0; dt < cycleSize; dt++ {
+					baseTick := (tick - dt)
+					remainingTicks := ticks - baseTick
+					if remainingTicks%cycleSize == 0 {
+						baseValue := values[baseTick-1]
+						remainingCycles := remainingTicks / cycleSize
+						predictedValue := remainingCycles*checkVal + baseValue
+						fmt.Printf("\tBase: %d from tick %d\n", baseValue, baseTick)
+						fmt.Printf("\tRemaining cycles: (%d - %d)/%d => %d\n", ticks, baseTick, cycleSize, remainingCycles)
+						fmt.Printf("\tPredicted end: %d + %d*%d => %d\n", baseValue, remainingCycles, checkVal, predictedValue)
+						return predictedValue
+					}
+				}
+			}
 		}
 	}
-	return pots[ticks*padLen : ticks*padLen+initialLen], value
+	if ticks == 0 {
+		value = 0
+		for pot := potsNext.Front(); pot != nil; pot = pot.Next() {
+			state := pot.Value.(potState)
+			if state.occupied > 0 {
+				value += state.value
+			}
+		}
+	}
+	return value
 }
 
 func loadData(filename string) (string, []bool) {
