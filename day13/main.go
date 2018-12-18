@@ -8,22 +8,47 @@ import (
 )
 
 func main() {
-	grid, carts := loadData("input.txt")
+	part1("input.txt")
+	part2("input.txt")
+}
+
+func part1(filename string) (int, int, int) {
+	grid, carts := loadData(filename)
 	curTick := 0
 	var crashes [][]int
 	for {
 		curTick++
-		crashes = tick(nil, grid, carts)
+		crashes, _ = tick(grid, carts)
 		if len(crashes) > 0 {
 			break
 		}
 	}
-	fmt.Printf("Crashed %d,%d during tick %d\n", crashes[0][0], crashes[0][1], curTick)
+	fmt.Printf("First crash: %d,%d during tick %d\n", crashes[0][0], crashes[0][1], curTick)
+	return crashes[0][0], crashes[0][1], curTick
+}
+func part2(filename string) (int, int, [][]int) {
+	grid, carts := loadData(filename)
+	curTick := 0
+	var crashes [][]int
+	for {
+		curTick++
+		var newCrashes [][]int
+		newCrashes, carts = tick(grid, carts)
+		if curTick == 114 {
+			for _, cart := range carts {
+				fmt.Printf("%d,%d\n", cart.x, cart.y)
+			}
+		}
+		crashes = append(crashes, newCrashes...)
+		if len(carts) == 1 {
+			break
+		}
+	}
+	fmt.Printf("Last cart: %d,%d after tick %d\n", carts[0].x, carts[0].y, curTick)
+	return carts[0].x, carts[0].y, crashes
 }
 
-func tick(logFunction func(string, ...interface{}), grid gridType, carts []*cart) [][]int {
-	// TODO: sort based on position rather than cart index!
-
+func tick(grid gridType, carts []*cart) ([][]int, []*cart) {
 	sortedCarts := []*cart{}
 	for _, cart := range carts {
 		sortedCarts = append(sortedCarts, cart)
@@ -33,6 +58,9 @@ func tick(logFunction func(string, ...interface{}), grid gridType, carts []*cart
 
 	crashes := [][]int{}
 	for _, cart := range sortedCarts {
+		if cart.crashed {
+			continue
+		}
 		switch cart.facing {
 		case facingEast:
 			cart.x++
@@ -57,28 +85,35 @@ func tick(logFunction func(string, ...interface{}), grid gridType, carts []*cart
 				cart.facing = facingWest
 			}
 		case trackTypeIntersection:
-			// oldFacing := cart.facing
 			cart.facing = facing((int(cart.facing) + int(cart.nextTurn)) % int(facingEND))
+			if cart.facing < facingNorth {
+				cart.facing = facingWest
+			}
 
-			// oldNextTurn := cart.nextTurn
 			cart.nextTurn++
 			if cart.nextTurn > turnRight {
 				cart.nextTurn = turnLeft
 			}
-			// if logFunction != nil {
-			// 	logFunction("Cart has reached intersection.  facing %d->%d; nextTurn %d->%d", oldFacing, cart.facing, oldNextTurn, cart.nextTurn)
-			// }
 		}
 		if checkCrashed(cart, carts) {
 			crashes = append(crashes, []int{cart.x, cart.y})
 		}
 	}
-	return crashes
+	newCarts := []*cart{}
+	for _, filterCart := range carts {
+		if !!!filterCart.crashed {
+			newCarts = append(newCarts, filterCart)
+		}
+	}
+	return crashes, newCarts
 }
 
 func checkCrashed(curCart *cart, carts []*cart) bool {
 	for _, checkCart := range carts {
 		if checkCart == curCart {
+			continue
+		}
+		if checkCart.crashed {
 			continue
 		}
 		if curCart.x == checkCart.x && curCart.y == checkCart.y {
@@ -274,19 +309,14 @@ type cartSorter struct {
 	carts []*cart
 }
 
-// func (cs *cartSorter)
-
-// Len is part of sort.Interface.
 func (cs cartSorter) Len() int {
 	return len(cs.carts)
 }
 
-// Swap is part of sort.Interface.
 func (cs cartSorter) Swap(i, j int) {
 	cs.carts[i], cs.carts[j] = cs.carts[j], cs.carts[i]
 }
 
-// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
 func (cs cartSorter) Less(i, j int) bool {
-	return cs.carts[i].y <= cs.carts[j].y && cs.carts[i].x <= cs.carts[j].x
+	return cs.carts[i].y < cs.carts[j].y || (cs.carts[i].y == cs.carts[j].y && cs.carts[i].x < cs.carts[j].x)
 }
