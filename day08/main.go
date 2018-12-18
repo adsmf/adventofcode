@@ -73,11 +73,14 @@ func processEntries(entries []int) (Node, []int) {
 	return node, remainder
 }
 
+// Node represents the defined node structure
 type Node struct {
 	Header   Header
 	Children []Node
 	Metadata []int
 }
+
+// Header is the fixed length portion of a node
 type Header struct {
 	NumChildren int
 	NumMetadata int
