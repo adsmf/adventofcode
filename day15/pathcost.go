@@ -9,8 +9,9 @@ import (
 	"github.com/adsmf/adventofcode2018/utils"
 )
 
-func moveToBestTarget(cavern grid, start *gridSquare) grid {
+func moveTowardBestTarget(cavern grid, start *gridSquare) grid {
 	verticies := []*vertex{}
+	targets := []*vertex{}
 
 	for y, row := range cavern {
 		for x := range row {
@@ -30,6 +31,9 @@ func moveToBestTarget(cavern grid, start *gridSquare) grid {
 				gridSquare: &cavern[y][x],
 			}
 			verticies = append(verticies, newVertex)
+			if newVertex.gridSquare.isTarget {
+				targets = append(targets, newVertex)
+			}
 
 		}
 	}
@@ -37,10 +41,7 @@ func moveToBestTarget(cavern grid, start *gridSquare) grid {
 
 	for len(verticies) > 0 {
 		sort.Slice(verticies, func(i, j int) bool {
-			lowerCost := verticies[i].gridSquare.cost < verticies[j].gridSquare.cost
-			equalCost := verticies[i].gridSquare.cost == verticies[j].gridSquare.cost
-			lowerReadingOrder := verticies[i].y < verticies[j].y || (verticies[i].y == verticies[j].y && verticies[i].x < verticies[j].x)
-			return lowerCost || (equalCost && lowerReadingOrder)
+			return vertexLess(verticies[i], verticies[j])
 		})
 		minNode := verticies[0]
 		verticies = verticies[1:]
@@ -53,8 +54,44 @@ func moveToBestTarget(cavern grid, start *gridSquare) grid {
 				}
 			}
 		}
+		haveAllTargets := true
+		for _, target := range targets {
+			if target.gridSquare.cost == utils.MaxInt {
+				haveAllTargets = false
+				break
+			}
+		}
+		if haveAllTargets {
+			break
+		}
 	}
+
+	sort.Slice(targets, func(i, j int) bool {
+		return vertexLess(targets[i], targets[j])
+	})
+	closestTarget := targets[0]
+
+	fmt.Println("Closest target: ", closestTarget)
+	if closestTarget.gridSquare.cost == utils.MaxInt {
+		return cavern
+	}
+	chain := closestTarget
+	for chain.prev.gridSquare != start {
+		fmt.Printf("Path %d,%d\n", chain.x, chain.y)
+		chain = chain.prev
+	}
+	occupant := start.occupiedBy
+	start.occupiedBy = nil
+	chain.gridSquare.occupiedBy = occupant
+
 	return cavern
+}
+
+func vertexLess(i, j *vertex) bool {
+	lowerCost := i.gridSquare.cost < j.gridSquare.cost
+	equalCost := i.gridSquare.cost == j.gridSquare.cost
+	lowerReadingOrder := i.y < j.y || (i.y == j.y && i.x < j.x)
+	return lowerCost || (equalCost && lowerReadingOrder)
 }
 
 type vertex struct {
