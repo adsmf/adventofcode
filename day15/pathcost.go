@@ -105,9 +105,24 @@ func moveTowardBestTarget(cavern *grid, start *gridSquare) {
 		return
 	}
 	chain := closestTarget
-	for chain.prev.gridSquare != start {
-		chain = chain.prev
+
+	debug("Starting to loop through chain:\n\t%+v\n\t%+v\n\t%+v\n\t%+v\n", chain, chain.prev, chain.prev.gridSquare, start)
+	for {
+		previous := chain.prev
+		if previous == nil {
+			return
+			// panic("Nil previous")
+		}
+		previousGrid := previous.gridSquare
+		if previousGrid == nil {
+			panic("Nil grid")
+		}
+		if previousGrid == start {
+			break
+		}
+		chain = previous
 	}
+	debug("Found start: %+v\n", start.occupiedBy)
 	occupant := start.occupiedBy
 	start.occupiedBy = nil
 	chain.gridSquare.occupiedBy = occupant

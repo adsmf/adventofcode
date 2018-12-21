@@ -102,9 +102,7 @@ func (g *gridSquare) costString() string {
 }
 
 func gridSquareFromChar(char rune) *gridSquare {
-	square := &gridSquare{
-		point: point{},
-	}
+	square := new(gridSquare)
 	switch char {
 	case '#':
 	case '.':
