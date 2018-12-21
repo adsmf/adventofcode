@@ -9,18 +9,44 @@ import (
 	"github.com/adsmf/adventofcode2018/utils"
 )
 
-func moveTowardBestTarget(cavern grid, start *gridSquare) grid {
+func setTargets(cavern *grid, targets []*creature) {
+	for y, row := range *cavern {
+		for x := range row {
+			(*cavern)[y][x].isTarget = false
+		}
+	}
+	for _, target := range targets {
+		if target.location.occupiedBy != target {
+			panic("Back reference broken")
+		}
+		target.location.isTarget = true
+	}
+	numTargets := 0
+	for y, row := range *cavern {
+		for x := range row {
+			if (*cavern)[y][x].isTarget {
+				numTargets++
+			}
+		}
+	}
+	if numTargets != len(targets) {
+		panic("Failed to set targets")
+	}
+}
+
+func moveTowardBestTarget(cavern *grid, start *gridSquare) {
 	verticies := []*vertex{}
 	targets := []*vertex{}
 
-	for y, row := range cavern {
+	for y, row := range *cavern {
 		for x := range row {
-			cavern[y][x].cost = utils.MaxInt
-			if !!!cavern[y][x].isCavern {
+			(*cavern)[y][x].cost = utils.MaxInt
+			if !!!(*cavern)[y][x].isCavern {
 				continue
 			}
-			isStart := &cavern[y][x] == start
-			if cavern[y][x].occupiedBy != nil && !!!isStart {
+			isStart := (*cavern)[y][x] == start
+			isTarget := (*cavern)[y][x].isTarget == true
+			if (*cavern)[y][x].occupiedBy != nil && !!!(isStart || isTarget) {
 				continue
 			}
 			newVertex := &vertex{
@@ -28,7 +54,7 @@ func moveTowardBestTarget(cavern grid, start *gridSquare) grid {
 					x: x,
 					y: y,
 				},
-				gridSquare: &cavern[y][x],
+				gridSquare: (*cavern)[y][x],
 			}
 			verticies = append(verticies, newVertex)
 			if newVertex.gridSquare.isTarget {
@@ -39,9 +65,13 @@ func moveTowardBestTarget(cavern grid, start *gridSquare) grid {
 	}
 	start.cost = 0
 
+	if len(targets) == 0 {
+		panic("Don't have any targets!")
+	}
+
 	for len(verticies) > 0 {
 		sort.Slice(verticies, func(i, j int) bool {
-			return vertexLess(verticies[i], verticies[j])
+			return compareVertices(verticies[i], verticies[j])
 		})
 		minNode := verticies[0]
 		verticies = verticies[1:]
@@ -67,27 +97,24 @@ func moveTowardBestTarget(cavern grid, start *gridSquare) grid {
 	}
 
 	sort.Slice(targets, func(i, j int) bool {
-		return vertexLess(targets[i], targets[j])
+		return compareVertices(targets[i], targets[j])
 	})
 	closestTarget := targets[0]
 
-	fmt.Println("Closest target: ", closestTarget)
 	if closestTarget.gridSquare.cost == utils.MaxInt {
-		return cavern
+		return
 	}
 	chain := closestTarget
 	for chain.prev.gridSquare != start {
-		fmt.Printf("Path %d,%d\n", chain.x, chain.y)
 		chain = chain.prev
 	}
 	occupant := start.occupiedBy
 	start.occupiedBy = nil
 	chain.gridSquare.occupiedBy = occupant
-
-	return cavern
+	occupant.location = chain.gridSquare
 }
 
-func vertexLess(i, j *vertex) bool {
+func compareVertices(i, j *vertex) bool {
 	lowerCost := i.gridSquare.cost < j.gridSquare.cost
 	equalCost := i.gridSquare.cost == j.gridSquare.cost
 	lowerReadingOrder := i.y < j.y || (i.y == j.y && i.x < j.x)

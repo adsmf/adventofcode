@@ -9,12 +9,26 @@ import (
 )
 
 type grid []gridRow
-type gridRow []gridSquare
+type gridRow []*gridSquare
 type gridSquare struct {
+	point
 	isCavern   bool
 	occupiedBy *creature
 	isTarget   bool
 	cost       int
+}
+
+func (g *grid) creatures() []*creature {
+	creatures := []*creature{}
+	for y, row := range *g {
+		for x := range row {
+			candidate := (*g)[y][x].occupiedBy
+			if candidate != nil {
+				creatures = append(creatures, candidate)
+			}
+		}
+	}
+	return creatures
 }
 
 func (g *grid) toString(withHealth bool) string {
@@ -47,9 +61,6 @@ func (g *gridRow) toString(withHealth bool) string {
 
 func (g *gridSquare) toString() string {
 	if g.isCavern {
-		if g.isTarget {
-			return "?"
-		}
 		if g.occupiedBy == nil {
 			return "."
 		}
@@ -90,8 +101,10 @@ func (g *gridSquare) costString() string {
 	return "#"
 }
 
-func gridSquareFromChar(char rune) gridSquare {
-	square := gridSquare{}
+func gridSquareFromChar(char rune) *gridSquare {
+	square := &gridSquare{
+		point: point{},
+	}
 	switch char {
 	case '#':
 	case '.':
@@ -99,14 +112,16 @@ func gridSquareFromChar(char rune) gridSquare {
 	case 'G':
 		square.isCavern = true
 		square.occupiedBy = &creature{
-			race: creatureTypeGoblin,
-			hp:   200,
+			race:     creatureTypeGoblin,
+			hp:       200,
+			location: square,
 		}
 	case 'E':
 		square.isCavern = true
 		square.occupiedBy = &creature{
-			race: creatureTypeElf,
-			hp:   200,
+			race:     creatureTypeElf,
+			hp:       200,
+			location: square,
 		}
 	default:
 		panic(fmt.Errorf("Unsupported char: %c", char))
