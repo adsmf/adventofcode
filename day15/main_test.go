@@ -12,7 +12,7 @@ import (
 func TestLoad(t *testing.T) {
 	testFile := "testData/examplemovement1.txt"
 	expected, _ := ioutil.ReadFile(testFile)
-	grid := loadFile(testFile)
+	grid := loadFile(testFile, 3)
 	assert.Equal(t, string(expected), grid.toString(false))
 }
 
@@ -25,14 +25,14 @@ func TestHealthDisplay(t *testing.T) {
 #.G.E.#   G(200), E(200)
 #######`
 
-	cavern := loadFile(testFile)
+	cavern := loadFile(testFile, 3)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(cavern.toString(true)))
 }
 
 func TestLoadInput(t *testing.T) {
 	testFile := "input.txt"
 	expected, _ := ioutil.ReadFile(testFile)
-	grid := loadFile(testFile)
+	grid := loadFile(testFile, 3)
 	assert.Equal(t, string(expected), grid.toString(false))
 }
 
@@ -65,12 +65,8 @@ func TestBattles(t *testing.T) {
 	for idx, battle := range battles {
 		t.Run(fmt.Sprint("Battle", idx+1), func(t *testing.T) {
 			debugLogger = t.Logf
-			logger = func(format string, args ...interface{}) (int, error) {
-				t.Logf(format, args...)
-				return 0, nil
-			}
-			cavern := load(strings.Split(battle.input, "\n"))
-			outcome := runBattle(cavern, 100, 2, false)
+			cavern := load(strings.Split(battle.input, "\n"), 3)
+			outcome := runBattle(cavern, 100, false)
 			assert.Equal(t, battle.expected, cavern.toString(true))
 			assert.Equal(t, battle.outcome, outcome)
 		})

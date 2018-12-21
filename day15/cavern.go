@@ -101,7 +101,7 @@ func (g *gridSquare) costString() string {
 	return "#"
 }
 
-func gridSquareFromChar(char rune) *gridSquare {
+func gridSquareFromChar(char rune, elfPower int) *gridSquare {
 	square := new(gridSquare)
 	switch char {
 	case '#':
@@ -111,6 +111,7 @@ func gridSquareFromChar(char rune) *gridSquare {
 		square.isCavern = true
 		square.occupiedBy = &creature{
 			race:     creatureTypeGoblin,
+			power:    3,
 			hp:       200,
 			location: square,
 		}
@@ -118,6 +119,7 @@ func gridSquareFromChar(char rune) *gridSquare {
 		square.isCavern = true
 		square.occupiedBy = &creature{
 			race:     creatureTypeElf,
+			power:    elfPower,
 			hp:       200,
 			location: square,
 		}

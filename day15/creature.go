@@ -7,6 +7,7 @@ import (
 
 type creature struct {
 	hp       int
+	power    int
 	race     creatureType
 	location *gridSquare
 }
@@ -40,9 +41,9 @@ func (c *creature) attack(cavern *grid) {
 		return compareCreaturesForAttack(adjacentEnemies[i], adjacentEnemies[j])
 	})
 	target := adjacentEnemies[0]
-	target.hp -= 3
+	target.hp -= c.power
 	if target.hp <= 0 {
-		fmt.Printf("%s killed by %s\n", target.toString(), c.toString())
+		debug("%s killed by %s\n", target.toString(), c.toString())
 		target.location.occupiedBy = nil
 		target.location = nil
 	}

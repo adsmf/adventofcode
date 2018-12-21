@@ -22,7 +22,7 @@ func TestSimpleDistance(t *testing.T) {
 	targets := []point{
 		point{4, 3},
 	}
-	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"))
+	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"), 3)
 	for _, target := range targets {
 		(*cavern)[target.y][target.x].isTarget = true
 	}
@@ -50,7 +50,7 @@ func TestWallDistance(t *testing.T) {
 	targets := []point{
 		point{2, 3},
 	}
-	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"))
+	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"), 3)
 	for _, target := range targets {
 		(*cavern)[target.y][target.x].isTarget = true
 	}
@@ -82,7 +82,7 @@ func TestLazyDistance(t *testing.T) {
 		point{2, 2},
 		point{3, 3},
 	}
-	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"))
+	cavern := load(strings.Split(strings.TrimSpace(startingGrid), "\n"), 3)
 	for _, target := range targets {
 		(*cavern)[target.y][target.x].isTarget = true
 	}
@@ -103,14 +103,14 @@ func TestLazyDistance(t *testing.T) {
 }
 
 func TestExampleMovement2(t *testing.T) {
-	cavern := loadFile("testData/examplemovement2.0.txt")
+	cavern := loadFile("testData/examplemovement2.0.txt", 3)
 	var exampleRounds []*grid
 	for i := 1; i <= 3; i++ {
-		exampleRounds = append(exampleRounds, loadFile(fmt.Sprintf("testData/examplemovement2.%d.txt", i)))
+		exampleRounds = append(exampleRounds, loadFile(fmt.Sprintf("testData/examplemovement2.%d.txt", i), 3))
 	}
 	for roundNum, exampleRound := range exampleRounds {
 		t.Run(fmt.Sprint("Round", roundNum+1), func(t *testing.T) {
-			runRound(cavern, 2)
+			runRound(cavern, false)
 			t.Logf("Cavern after round %d:\n%s", roundNum+1, cavern.toString(false))
 			assert.Equal(t, exampleRound.toString(false), cavern.toString(false))
 		})
@@ -118,7 +118,7 @@ func TestExampleMovement2(t *testing.T) {
 }
 
 func TestExampleCombat1(t *testing.T) {
-	cavern := loadFile("testData/examplecombat1.txt")
+	cavern := loadFile("testData/examplecombat1.txt", 3)
 	var exampleRounds []string
 
 	roundIDs := []int{1, 2, 23, 24, 25, 26, 27, 28, 47}
@@ -134,7 +134,7 @@ func TestExampleCombat1(t *testing.T) {
 		t.Run(fmt.Sprintf("Test %d - round %d", idx+1, roundID), func(t *testing.T) {
 			for curRound < roundID {
 				curRound++
-				runRound(cavern, 2)
+				runRound(cavern, false)
 			}
 			t.Logf("Cavern after round %d:\n%s", curRound, cavern.toString(true))
 			assert.Equal(t, exampleRound, cavern.toString(true))
