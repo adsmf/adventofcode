@@ -110,7 +110,7 @@ func TestExampleMovement2(t *testing.T) {
 	}
 	for roundNum, exampleRound := range exampleRounds {
 		t.Run(fmt.Sprint("Round", roundNum+1), func(t *testing.T) {
-			runRound(cavern)
+			runRound(cavern, 2)
 			t.Logf("Cavern after round %d:\n%s", roundNum+1, cavern.toString(false))
 			assert.Equal(t, exampleRound.toString(false), cavern.toString(false))
 		})
@@ -134,7 +134,7 @@ func TestExampleCombat1(t *testing.T) {
 		t.Run(fmt.Sprintf("Test %d - round %d", idx+1, roundID), func(t *testing.T) {
 			for curRound < roundID {
 				curRound++
-				runRound(cavern)
+				runRound(cavern, 2)
 			}
 			t.Logf("Cavern after round %d:\n%s", curRound, cavern.toString(true))
 			assert.Equal(t, exampleRound, cavern.toString(true))

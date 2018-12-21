@@ -70,7 +70,7 @@ func TestBattles(t *testing.T) {
 				return 0, nil
 			}
 			cavern := load(strings.Split(battle.input, "\n"))
-			outcome := runBattle(cavern, 100)
+			outcome := runBattle(cavern, 100, 2, false)
 			assert.Equal(t, battle.expected, cavern.toString(true))
 			assert.Equal(t, battle.outcome, outcome)
 		})

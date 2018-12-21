@@ -19,7 +19,7 @@ func debug(format string, args ...interface{}) {
 func main() {
 	cavern := loadFile("input.txt")
 	logger = fmt.Printf
-	runBattle(cavern, 1000)
+	runBattle(cavern, 1000, 2, false)
 }
 
 func loadFile(filename string) *grid {
@@ -27,12 +27,19 @@ func loadFile(filename string) *grid {
 	return load(lines)
 }
 
-func runBattle(cavern *grid, maxRounds int) int {
+func runBattle(cavern *grid, maxRounds int, elfPower int, requireNoLoss bool) int {
 	completedRound := 0
-	for !!!runRound(cavern) {
+	for {
+		battleComplete, elvesDied := runRound(cavern, elfPower)
+		if battleComplete {
+			break
+		}
+		if requireNoLoss && elvesDied {
+			return -1
+		}
 		completedRound++
 		if completedRound > maxRounds {
-			return 0
+			return -1
 		}
 	}
 
@@ -48,7 +55,7 @@ func runBattle(cavern *grid, maxRounds int) int {
 	return result
 }
 
-func runRound(cavern *grid) bool {
+func runRound(cavern *grid, elfPower int) (bool, bool) {
 	creatures := cavern.creatures()
 	sort.Slice(creatures, func(i, j int) bool {
 		return compareCreatures(creatures[i], creatures[j])
@@ -59,7 +66,7 @@ func runRound(cavern *grid) bool {
 		}
 		enemies := curCreature.enemies(cavern)
 		if len(enemies) == 0 {
-			return true
+			return true, false
 		}
 
 		// See if we're close to an enemy
@@ -80,7 +87,7 @@ func runRound(cavern *grid) bool {
 
 		curCreature.attack(cavern)
 	}
-	return false
+	return false, false
 }
 
 func load(lines []string) *grid {
