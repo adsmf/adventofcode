@@ -13,6 +13,7 @@ func main() {
 	mainLogger = fmt.Printf
 	examples := loadInput("input.txt")
 	part1(examples)
+	part2(examples)
 }
 
 var mainLogger func(string, ...interface{}) (int, error)
@@ -45,6 +46,83 @@ func part1(examples []exampleInput) int {
 	return threeOrMore
 }
 
+func part2(examples []exampleInput) codemap {
+
+	remainingOps := []operation{}
+	for tryOp := operation(0); tryOp < operationEND; tryOp++ {
+		remainingOps = append(remainingOps, tryOp)
+	}
+
+	unknownExamples := make(map[opcode][]exampleInput)
+	for i := opcode(0); i < opcodeEND; i++ {
+		unknownExamples[i] = []exampleInput{}
+	}
+	for _, example := range examples {
+		opcode := example.instruction.op
+		unknownExamples[opcode] = append(unknownExamples[opcode], example)
+	}
+
+	knownOpcodes := make(codemap)
+	for {
+
+		foundNew := false
+		if len(knownOpcodes) == 16 {
+			break
+		}
+
+		for curOpcode, opExamples := range unknownExamples {
+			opBehavesAs := []operation{}
+			checkedAny := false
+			for _, example := range opExamples {
+				behaviours := findBehavesLikeFromList(example, remainingOps)
+				if !!!checkedAny {
+					checkedAny = true
+					opBehavesAs = behaviours
+				} else {
+					opBehavesAs = intersectOps(opBehavesAs, behaviours)
+				}
+			}
+			if len(opBehavesAs) == 0 {
+				panic("Couldn't find a behaviour that matches")
+			} else if len(opBehavesAs) == 1 {
+				foundNew = true
+				knownOpcodes[curOpcode] = opBehavesAs[0]
+				delete(unknownExamples, curOpcode)
+				newRemaining := []operation{}
+				for _, op := range remainingOps {
+					if op != opBehavesAs[0] {
+						newRemaining = append(newRemaining, op)
+					}
+				}
+				remainingOps = newRemaining
+			}
+		}
+		if !!!foundNew {
+			logger("Found no new mappings; abort!\n")
+			break
+		}
+	}
+	fmt.Printf("Codemap (%d): %+v\n", len(knownOpcodes), knownOpcodes)
+	return knownOpcodes
+}
+
+func intersectOps(prev, next []operation) []operation {
+	set := make(map[operation]bool)
+	for _, op := range prev {
+		set[op] = true
+	}
+	for _, op := range next {
+		set[op] = true
+	}
+	intersect := []operation{}
+	for op := range set {
+		intersect = append(intersect, op)
+	}
+	return intersect
+}
+
+type behaviours map[opcode][]operation
+
 func findBehavesLike(example exampleInput) []operation {
 	behavesLike := []operation{}
 	debug(
@@ -52,7 +130,23 @@ func findBehavesLike(example exampleInput) []operation {
 		example.input,
 		example.instruction,
 		example.output)
-	for tryOp := opcodeSTART + 1; tryOp < opcodeEND; tryOp++ {
+	for tryOp := operation(0); tryOp < operationEND; tryOp++ {
+		correct := checkBehavesLikeOp(example, tryOp)
+		if correct {
+			debug("Behaves like %s", tryOp.toString())
+			behavesLike = append(behavesLike, tryOp)
+		}
+	}
+	return behavesLike
+}
+func findBehavesLikeFromList(example exampleInput, operations []operation) []operation {
+	behavesLike := []operation{}
+	debug(
+		"Testing example:\nBefore: %v\nInstruction: %+v\nAfter: %v",
+		example.input,
+		example.instruction,
+		example.output)
+	for _, tryOp := range operations {
 		correct := checkBehavesLikeOp(example, tryOp)
 		if correct {
 			debug("Behaves like %s", tryOp.toString())

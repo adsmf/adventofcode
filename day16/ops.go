@@ -7,10 +7,12 @@ import (
 
 type opcode int
 
+const opcodeEND = opcode(16)
+
 type operation int
 type argument int
 
-type opmap map[opcode]operation
+type codemap map[opcode]operation
 
 type instruction struct {
 	op     opcode
@@ -44,8 +46,7 @@ const (
 	eqri
 	eqrr
 
-	opcodeEND
-	opcodeSTART = addr
+	operationEND
 )
 
 type registers []int
