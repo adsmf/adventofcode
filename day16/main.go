@@ -11,9 +11,9 @@ import (
 
 func main() {
 	mainLogger = fmt.Printf
-	examples := loadInput("input.txt")
+	examples, instructions := loadInput("input.txt")
 	part1(examples)
-	part2(examples)
+	part2(examples, instructions)
 }
 
 var mainLogger func(string, ...interface{}) (int, error)
@@ -46,7 +46,7 @@ func part1(examples []exampleInput) int {
 	return threeOrMore
 }
 
-func part2(examples []exampleInput) codemap {
+func part2(examples []exampleInput, instructions []instruction) codemap {
 
 	remainingOps := []operation{}
 	for tryOp := operation(0); tryOp < operationEND; tryOp++ {
@@ -103,6 +103,13 @@ func part2(examples []exampleInput) codemap {
 		}
 	}
 	fmt.Printf("Codemap (%d): %+v\n", len(knownOpcodes), knownOpcodes)
+	reg := registers{0, 0, 0, 0}
+	for _, inst := range instructions {
+		opcode := inst.op
+		op := knownOpcodes[opcode]
+		reg = processOp(op, inst, reg)
+	}
+	fmt.Printf("Registers at end of prog: %+v\n", reg)
 	return knownOpcodes
 }
 
@@ -170,17 +177,42 @@ type exampleInput struct {
 	instruction instruction
 }
 
-func loadInput(filename string) []exampleInput {
+func loadInput(filename string) ([]exampleInput, []instruction) {
 	contentBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 	parts := strings.SplitN(string(contentBytes), "\n\n\n", 2)
 	exampleInputs := parts[0]
-	// testProg := parts[1]
+	testProg := parts[1]
 
 	examples := loadExamples(exampleInputs)
-	return examples
+	instructions := loadProgram(testProg)
+	return examples, instructions
+}
+
+func loadProgram(program string) []instruction {
+	lines := strings.Split(program, "\n")
+
+	instructions := []instruction{}
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		instructionParts := strings.Split(line, " ")
+		op, _ := strconv.Atoi(instructionParts[0])
+		input1, _ := strconv.Atoi(instructionParts[1])
+		input2, _ := strconv.Atoi(instructionParts[2])
+		output, _ := strconv.Atoi(instructionParts[3])
+		newIns := instruction{
+			op:     opcode(op),
+			input1: argument(input1),
+			input2: argument(input2),
+			output: argument(output),
+		}
+		instructions = append(instructions, newIns)
+	}
+	return instructions
 }
 
 func loadExamples(exampleInputs string) []exampleInput {

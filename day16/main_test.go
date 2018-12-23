@@ -40,7 +40,7 @@ func TestCountBehaveExamples(t *testing.T) {
 }
 
 func TestPart1(t *testing.T) {
-	examples := loadInput("input.txt")
+	examples, _ := loadInput("input.txt")
 	answer := part1(examples)
 	assert.Equal(t, 509, answer)
 }
