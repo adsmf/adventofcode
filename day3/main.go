@@ -20,7 +20,9 @@ func day1() int {
 }
 
 func day2() int {
-	return 0
+
+	g := loadInput()
+	return g.findNearestSignalDistance()
 }
 
 func loadInput() *grid {
@@ -66,6 +68,23 @@ func (g *grid) findNearestIntersection() (int, int) {
 	return 0, 0
 }
 
+func (g *grid) findNearestSignalDistance() int {
+	bestDistance := utils.MaxInt
+	for _, w1point := range g.wire1.points {
+		x := w1point.x
+		y := w1point.y
+
+		w1d := g.wire1.distance(x, y)
+		w2d := g.wire2.distance(x, y)
+		if w1d >= bestDistance || w2d >= bestDistance || w1d+w2d >= bestDistance {
+			continue
+		}
+
+		bestDistance = w1d + w2d
+	}
+	return bestDistance
+}
+
 func (g *grid) bothOccupied(x, y int) bool {
 	if g.wire1.occupied(x, y) && g.wire2.occupied(x, y) {
 		return true
@@ -74,7 +93,7 @@ func (g *grid) bothOccupied(x, y int) bool {
 }
 
 type wire struct {
-	area   map[int]map[int]bool
+	area   map[int]map[int]int
 	points []point
 }
 type point struct {
@@ -83,31 +102,43 @@ type point struct {
 
 func NewWire() *wire {
 	nw := &wire{}
-	nw.area = map[int]map[int]bool{}
+	nw.area = map[int]map[int]int{}
 	nw.points = []point{}
 	return nw
 }
 
-func (w *wire) set(x, y int) {
+func (w *wire) set(x, y int, dist int) {
 	if w.area[x] == nil {
-		w.area[x] = map[int]bool{}
+		w.area[x] = map[int]int{}
 	}
-	w.area[x][y] = true
+	if w.area[x][y] == 0 {
+		w.area[x][y] = dist
+	}
 	w.points = append(w.points, point{x, y})
 }
 
 func (w *wire) occupied(x, y int) bool {
 	if w.area[x] != nil {
-		return w.area[x][y]
+		return w.area[x][y] > 0
 	}
 	return false
 }
 
+func (w *wire) distance(x, y int) int {
+	if w.area[x] != nil {
+		if w.area[x][y] == 0 {
+			return utils.MaxInt
+		}
+		return w.area[x][y]
+	}
+	return utils.MaxInt
+}
+
 func parsePath(input string) *wire {
 	newWire := NewWire()
-	// newWire.set(0, 0)
 	x := 0
 	y := 0
+	travelled := 0
 
 	instructions := strings.Split(input, ",")
 	for _, instruction := range instructions {
@@ -130,9 +161,10 @@ func parsePath(input string) *wire {
 			log.Fatalf("Could not decode %s as int\n", distString)
 		}
 		for i := 0; i < dist; i++ {
+			travelled = travelled + 1
 			x = x + xDir
 			y = y + yDir
-			newWire.set(x, y)
+			newWire.set(x, y, travelled)
 		}
 	}
 	return newWire
