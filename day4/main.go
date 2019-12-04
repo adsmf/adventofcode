@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 )
 
 var (
@@ -16,19 +15,17 @@ func main() {
 }
 
 func day1() int {
-	validPasses := 0
-	for test := passMin; test <= passMax; test++ {
-		if validatePass(test, false) {
-			validPasses = validPasses + 1
-		}
-	}
-	return validPasses
+	return countValid(false)
 }
 
 func day2() int {
+	return countValid(true)
+}
+
+func countValid(strict bool) int {
 	validPasses := 0
 	for test := passMin; test <= passMax; test++ {
-		if validatePass(test, true) {
+		if validatePass(test, strict) {
 			validPasses = validPasses + 1
 		}
 	}
@@ -36,19 +33,14 @@ func day2() int {
 }
 
 func validatePass(testPass int, strict bool) bool {
-	passString := strconv.Itoa(testPass)
-	if len(passString) != 6 {
+	if testPass < 100000 || testPass > 999999 {
 		return false
 	}
-	digits := []int{}
-	for _, ch := range passString {
-		val := int(ch - '0' + 1)
-		digits = append(digits, val)
-	}
-	lastDigit := -1
+	lastDigit := 10
 	rangeLengths := []int{}
-	for _, digit := range digits {
-		if digit < lastDigit {
+	for testPass > 0 {
+		digit := testPass % 10
+		if digit > lastDigit {
 			return false
 		}
 		if digit == lastDigit {
@@ -57,8 +49,8 @@ func validatePass(testPass int, strict bool) bool {
 			rangeLengths = append(rangeLengths, 1)
 		}
 		lastDigit = digit
+		testPass = int(testPass / 10)
 	}
-
 	for _, length := range rangeLengths {
 		if length == 2 || !strict && length > 2 {
 			return true

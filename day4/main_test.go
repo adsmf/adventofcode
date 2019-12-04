@@ -19,10 +19,10 @@ func TestDay1Examples(t *testing.T) {
 		123789,
 		135679,
 	}
+
 	for _, good := range goodPasswords {
 		assert.True(t, validatePass(good, false), fmt.Sprintf("%d should be valid", good))
 	}
-
 	for _, bad := range badPasswords {
 		assert.False(t, validatePass(bad, false), fmt.Sprintf("%d should be invalid", bad))
 	}
@@ -40,18 +40,18 @@ func TestDay2Examples(t *testing.T) {
 		111111,
 		123444,
 	}
+
 	for _, good := range goodPasswords {
 		assert.True(t, validatePass(good, true), fmt.Sprintf("%d should be valid", good))
 	}
-
 	for _, bad := range badPasswords {
 		assert.False(t, validatePass(bad, true), fmt.Sprintf("%d should be invalid", bad))
 	}
 }
 
 func TestAnswers(t *testing.T) {
-	assert.Equal(t, day1(), 921)
-	assert.Equal(t, day2(), 603)
+	assert.Equal(t, 921, day1())
+	assert.Equal(t, 603, day2())
 }
 
 func TestMainRuns(t *testing.T) {
