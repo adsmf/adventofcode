@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// var debug = debugPrintf
+var debug = noOut
+
 func main() {
 	fmt.Printf("Day 1: %d\n", day1())
 	fmt.Printf("Day 2: %d\n", day2())
@@ -19,7 +22,7 @@ func day1() int {
 }
 
 func day2() int {
-	return 0
+	return runInput(5)
 }
 
 func runInput(input int) int {
@@ -73,56 +76,123 @@ func (t *machine) run() {
 }
 
 func (t *machine) step() bool {
-	oper := t.values[t.headPos]
+	initialHead := t.headPos
+	oper := t.values[initialHead]
 	paramModes := int(oper / 100)
-	// fmt.Printf("Inst: %d (%d)\n", oper, paramModes)
 	oper = oper % 100
+	debug("\t%04d\tInst: %d #%d\n", initialHead, oper, paramModes)
 	switch oper {
 	case 1:
 		// Add
-		p1 := t.getVal(t.headPos + 1)
-		p2 := t.getVal(t.headPos + 2)
-		p3 := t.getVal(t.headPos + 3)
-		if t.paramMode(paramModes, 0) == 0 {
-			p1 = t.getVal(p1)
-		}
-		if t.paramMode(paramModes, 1) == 0 {
-			p2 = t.getVal(p2)
-		}
+		params := t.getParams(paramModes, 3, true)
+		p1 := params[0]
+		p2 := params[1]
+		p3 := params[2]
+
+		debug("\t\t\tAdd: %d + %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 + p2
-		t.headPos = t.headPos + 4
 	case 2:
 		// Mult
-		p1 := t.getVal(t.headPos + 1)
-		p2 := t.getVal(t.headPos + 2)
-		p3 := t.getVal(t.headPos + 3)
+		params := t.getParams(paramModes, 3, true)
+		p1 := params[0]
+		p2 := params[1]
+		p3 := params[2]
 
-		if t.paramMode(paramModes, 0) == 0 {
-			p1 = t.getVal(p1)
-		}
-		if t.paramMode(paramModes, 1) == 0 {
-			p2 = t.getVal(p2)
-		}
+		debug("\t\t\tMul: %d * %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 * p2
-		t.headPos = t.headPos + 4
 	case 3:
 		// Input
-		p := t.getVal(t.headPos + 1)
-		fmt.Printf("Storing input in %d\n", p)
+		params := t.getParams(paramModes, 1, true)
+		p := params[0]
+
+		debug("\t\t\tStore: %d => %d\n", t.input, p)
 		t.values[p] = t.input
-		t.headPos = t.headPos + 2
 	case 4:
 		// Output
-		p := t.getVal(t.headPos + 1)
-		t.lastOutput = t.values[p]
-		fmt.Printf("Value at %d is %d\n", p, t.values[p])
-		t.headPos = t.headPos + 2
+		params := t.getParams(paramModes, 1, false)
+		p := params[0]
+		t.lastOutput = p
+		debug("\t\t\tRead: %d is %d\n", p, t.lastOutput)
+	case 5:
+		// Opcode 5 is jump-if-true:
+		//   if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter.
+		//   Otherwise, it does nothing.
+
+		params := t.getParams(paramModes, 2, false)
+		p1 := params[0]
+		p2 := params[1]
+
+		debug("\t\t\tJump if %d != 0\n", p1)
+		if p1 != 0 {
+			debug("\t\t\tJumping to %d\n", p2)
+			t.headPos = p2
+		}
+	case 6:
+		// Opcode 6 is jump-if-false:
+		//   if the first parameter is zero, it sets the instruction pointer to the value from the second parameter.
+		//   Otherwise, it does nothing.
+		params := t.getParams(paramModes, 2, false)
+		p1 := params[0]
+		p2 := params[1]
+
+		debug("\t\t\tJump if %d == 0\n", p1)
+		if p1 == 0 {
+			debug("\t\t\tJumping to %d\n", p2)
+			t.headPos = p2
+		}
+	case 7:
+		// Opcode 7 is less than:
+		//   if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter.
+		//   Otherwise, it stores 0.
+		params := t.getParams(paramModes, 3, true)
+		p1 := params[0]
+		p2 := params[1]
+		p3 := params[2]
+
+		debug("\t\t\tset %d < %d => %d\n", p1, p2, p3)
+		if p1 < p2 {
+			t.values[p3] = 1
+		} else {
+			t.values[p3] = 0
+		}
+	case 8:
+		// Opcode 8 is equals:
+		//   if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter.
+		//   Otherwise, it stores 0.
+		params := t.getParams(paramModes, 3, true)
+		p1 := params[0]
+		p2 := params[1]
+		p3 := params[2]
+
+		debug("\t\t\tset %d == %d => %d\n", p1, p2, p3)
+		if p1 == p2 {
+			t.values[p3] = 1
+		} else {
+			t.values[p3] = 0
+		}
 	case 99:
 		return true
 	default:
 		panic(fmt.Errorf("Invalid opcode %d at position %d: %#v", oper, t.headPos, t))
 	}
 	return false
+}
+
+func (t *machine) getParams(paramModes, numParams int, hasOutput bool) []int {
+	params := []int{}
+	for param := 0; param < numParams; param++ {
+		lastParam := (param == numParams-1)
+		p := t.getVal(t.headPos + param + 1)
+		if !hasOutput || !lastParam {
+			if t.paramMode(paramModes, param) == 0 {
+				p = t.getVal(p)
+			}
+		}
+		params = append(params, p)
+	}
+
+	t.headPos = t.headPos + numParams + 1
+	return params
 }
 
 func (t *machine) paramMode(modes, pos int) int {
@@ -149,3 +219,8 @@ func (t *machine) String() string {
 	}
 	return strings.Join(valueStrings, ",")
 }
+
+func debugPrintf(format string, params ...interface{}) {
+	fmt.Printf(format, params...)
+}
+func noOut(format string, params ...interface{}) {}
