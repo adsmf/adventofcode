@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/adsmf/adventofcode2019/utils"
 )
@@ -21,21 +22,33 @@ func main() {
 
 func part1() int {
 	inputString := loadInputString()
-	_, thrust := findBestSequence(inputString)
+	_, thrust := findBestSequence(inputString, false)
 	return thrust
 }
 
 func part2() int {
-	return 0
+	inputString := loadInputString()
+	_, thrust := findBestSequence(inputString, true)
+	return thrust
 }
 
-func findBestSequence(program string) ([]int, int) {
-	phases := []int{0, 1, 2, 3, 4}
+func findBestSequence(program string, feedback bool) ([]int, int) {
+	var phases []int
+	if feedback {
+		phases = []int{5, 6, 7, 8, 9}
+	} else {
+		phases = []int{0, 1, 2, 3, 4}
+	}
 	bestSeq := []int{}
 	bestThrust := 0
 	perms := utils.PermuteInts(phases)
 	for _, phase := range perms {
-		thrust := testPhaseSequence(phase, program)
+		var thrust int
+		if feedback {
+			thrust = testPhaseSequenceWithFeedback(phase, program)
+		} else {
+			thrust = testPhaseSequence(phase, program)
+		}
 		if thrust > bestThrust {
 			bestThrust = thrust
 			bestSeq = phase
@@ -58,6 +71,31 @@ func testPhaseSequence(phases []int, program string) int {
 	}
 	close(output)
 	return signal
+}
+
+func testPhaseSequenceWithFeedback(phases []int, program string) int {
+	thrust := 0
+	wires := make([](chan int), len(phases))
+	for id := range phases {
+		wires[id] = make(chan int, 2)
+	}
+	machines := make([]machine, len(phases))
+	for id, phase := range phases {
+		wires[id] <- phase
+		machines[id] = newMachine(program, wires[id], wires[(id+1)%len(wires)])
+	}
+	wires[0] <- 0
+	wg := sync.WaitGroup{}
+	for _, m := range machines {
+		wg.Add(1)
+		go func(m machine) {
+			m.run()
+			wg.Done()
+		}(m)
+	}
+	wg.Wait()
+	thrust = <-wires[0]
+	return thrust
 }
 
 func loadInputString() string {
@@ -109,7 +147,6 @@ func (t *machine) step() bool {
 	oper := t.values[initialHead]
 	paramModes := int(oper / 100)
 	oper = oper % 100
-	// debug("\t%04d\tInst: %d #%d\n", initialHead, oper, paramModes)
 	switch oper {
 	case 1:
 		// Add
@@ -118,7 +155,6 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		// debug("\t\t\tAdd: %d + %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 + p2
 	case 2:
 		// Mult
@@ -127,82 +163,64 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		// debug("\t\t\tMul: %d * %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 * p2
 	case 3:
 		// Input
 		params := t.getParams(paramModes, 1, true)
 		p := params[0]
 
-		debug("\t\t\tStore:")
 		nextInput := <-t.inputs
-		debug("%d => %d\n", nextInput, p)
 		t.values[p] = nextInput
 	case 4:
 		// Output
 		params := t.getParams(paramModes, 1, false)
 		p := params[0]
-		debug("\t\t\tOutput: %d\n", p)
-		t.outputs <- p
-		debug("\t\t\t\tdone\n", p)
-	case 5:
-		// Opcode 5 is jump-if-true:
-		//   if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter.
-		//   Otherwise, it does nothing.
 
+		t.outputs <- p
+	case 5:
+		// JNZ
 		params := t.getParams(paramModes, 2, false)
 		p1 := params[0]
 		p2 := params[1]
 
-		// debug("\t\t\tJump if %d != 0\n", p1)
 		if p1 != 0 {
-			// debug("\t\t\tJumping to %d\n", p2)
 			t.headPos = p2
 		}
 	case 6:
-		// Opcode 6 is jump-if-false:
-		//   if the first parameter is zero, it sets the instruction pointer to the value from the second parameter.
-		//   Otherwise, it does nothing.
+		// JEZ
 		params := t.getParams(paramModes, 2, false)
 		p1 := params[0]
 		p2 := params[1]
 
-		// debug("\t\t\tJump if %d == 0\n", p1)
 		if p1 == 0 {
-			// debug("\t\t\tJumping to %d\n", p2)
 			t.headPos = p2
 		}
 	case 7:
-		// Opcode 7 is less than:
-		//   if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter.
-		//   Otherwise, it stores 0.
+		// CLT
 		params := t.getParams(paramModes, 3, true)
 		p1 := params[0]
 		p2 := params[1]
 		p3 := params[2]
 
-		// debug("\t\t\tset %d < %d => %d\n", p1, p2, p3)
 		if p1 < p2 {
 			t.values[p3] = 1
 		} else {
 			t.values[p3] = 0
 		}
 	case 8:
-		// Opcode 8 is equals:
-		//   if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter.
-		//   Otherwise, it stores 0.
+		// CMP
 		params := t.getParams(paramModes, 3, true)
 		p1 := params[0]
 		p2 := params[1]
 		p3 := params[2]
 
-		// debug("\t\t\tset %d == %d => %d\n", p1, p2, p3)
 		if p1 == p2 {
 			t.values[p3] = 1
 		} else {
 			t.values[p3] = 0
 		}
 	case 99:
+		// HCF
 		return true
 	default:
 		panic(fmt.Errorf("Invalid opcode %d at position %d: %#v", oper, t.headPos, t))

@@ -171,5 +171,9 @@ func TestPart1Answer(t *testing.T) {
 
 func TestPart2Answer(t *testing.T) {
 	debug = noOut
-	assert.Equal(t, 0, part2())
+	assert.Equal(t, 4275738, part2())
+}
+
+func TestMainRuns(t *testing.T) {
+	assert.NotPanics(t, func() { main() })
 }
