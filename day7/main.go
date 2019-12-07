@@ -46,12 +46,17 @@ func findBestSequence(program string) ([]int, int) {
 
 func testPhaseSequence(phases []int, program string) int {
 	signal := 0
+	output := make(chan int, 1)
 	for _, phase := range phases {
-		inputs := []int{phase, signal}
-		tape := newMachine(program, inputs)
+		inputs := make(chan int, 2)
+		inputs <- phase
+		inputs <- signal
+		tape := newMachine(program, inputs, output)
 		tape.run()
-		signal = tape.lastOutput
+		close(inputs)
+		signal = <-output
 	}
+	close(output)
 	return signal
 }
 
@@ -65,13 +70,13 @@ func loadInputString() string {
 }
 
 type machine struct {
-	headPos    int
-	values     map[int]int
-	inputs     []int
-	lastOutput int
+	headPos int
+	values  map[int]int
+	inputs  <-chan int
+	outputs chan<- int
 }
 
-func newMachine(initial string, inputs []int) machine {
+func newMachine(initial string, inputs <-chan int, output chan<- int) machine {
 	initialValueStrings := strings.Split(strings.TrimSpace(initial), ",")
 	initialValues := map[int]int{}
 	for pos, valString := range initialValueStrings {
@@ -85,6 +90,7 @@ func newMachine(initial string, inputs []int) machine {
 		values:  initialValues,
 		headPos: 0,
 		inputs:  inputs,
+		outputs: output,
 	}
 	return mach
 }
@@ -103,7 +109,7 @@ func (t *machine) step() bool {
 	oper := t.values[initialHead]
 	paramModes := int(oper / 100)
 	oper = oper % 100
-	debug("\t%04d\tInst: %d #%d\n", initialHead, oper, paramModes)
+	// debug("\t%04d\tInst: %d #%d\n", initialHead, oper, paramModes)
 	switch oper {
 	case 1:
 		// Add
@@ -112,7 +118,7 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		debug("\t\t\tAdd: %d + %d => %d\n", p1, p2, p3)
+		// debug("\t\t\tAdd: %d + %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 + p2
 	case 2:
 		// Mult
@@ -121,23 +127,24 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		debug("\t\t\tMul: %d * %d => %d\n", p1, p2, p3)
+		// debug("\t\t\tMul: %d * %d => %d\n", p1, p2, p3)
 		t.values[p3] = p1 * p2
 	case 3:
 		// Input
 		params := t.getParams(paramModes, 1, true)
 		p := params[0]
 
-		nextInput := t.inputs[0]
-		t.inputs = t.inputs[1:]
-		debug("\t\t\tStore: %d => %d\n", nextInput, p)
+		debug("\t\t\tStore:")
+		nextInput := <-t.inputs
+		debug("%d => %d\n", nextInput, p)
 		t.values[p] = nextInput
 	case 4:
 		// Output
 		params := t.getParams(paramModes, 1, false)
 		p := params[0]
-		t.lastOutput = p
-		debug("\t\t\tRead: %d is %d\n", p, t.lastOutput)
+		debug("\t\t\tOutput: %d\n", p)
+		t.outputs <- p
+		debug("\t\t\t\tdone\n", p)
 	case 5:
 		// Opcode 5 is jump-if-true:
 		//   if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter.
@@ -147,9 +154,9 @@ func (t *machine) step() bool {
 		p1 := params[0]
 		p2 := params[1]
 
-		debug("\t\t\tJump if %d != 0\n", p1)
+		// debug("\t\t\tJump if %d != 0\n", p1)
 		if p1 != 0 {
-			debug("\t\t\tJumping to %d\n", p2)
+			// debug("\t\t\tJumping to %d\n", p2)
 			t.headPos = p2
 		}
 	case 6:
@@ -160,9 +167,9 @@ func (t *machine) step() bool {
 		p1 := params[0]
 		p2 := params[1]
 
-		debug("\t\t\tJump if %d == 0\n", p1)
+		// debug("\t\t\tJump if %d == 0\n", p1)
 		if p1 == 0 {
-			debug("\t\t\tJumping to %d\n", p2)
+			// debug("\t\t\tJumping to %d\n", p2)
 			t.headPos = p2
 		}
 	case 7:
@@ -174,7 +181,7 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		debug("\t\t\tset %d < %d => %d\n", p1, p2, p3)
+		// debug("\t\t\tset %d < %d => %d\n", p1, p2, p3)
 		if p1 < p2 {
 			t.values[p3] = 1
 		} else {
@@ -189,7 +196,7 @@ func (t *machine) step() bool {
 		p2 := params[1]
 		p3 := params[2]
 
-		debug("\t\t\tset %d == %d => %d\n", p1, p2, p3)
+		// debug("\t\t\tset %d == %d => %d\n", p1, p2, p3)
 		if p1 == p2 {
 			t.values[p3] = 1
 		} else {
@@ -209,7 +216,7 @@ func (t *machine) getParams(paramModes, numParams int, hasOutput bool) []int {
 		lastParam := (param == numParams-1)
 		p := t.getVal(t.headPos + param + 1)
 		if !hasOutput || !lastParam {
-			if t.paramMode(paramModes, param) == 0 {
+			if paramMode(paramModes, param) == 0 {
 				p = t.getVal(p)
 			}
 		}
@@ -220,7 +227,7 @@ func (t *machine) getParams(paramModes, numParams int, hasOutput bool) []int {
 	return params
 }
 
-func (t *machine) paramMode(modes, pos int) int {
+func paramMode(modes, pos int) int {
 	mask := int(math.Pow(10, float64(pos)))
 	return (modes / mask) % 10
 }

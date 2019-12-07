@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,8 +23,17 @@ func TestDay5Part1Examples(t *testing.T) {
 		"3,1,99": "3,1002,99",
 	}
 
-	for input, expected := range tests {
-		mach := newMachine(input, []int{1002})
+	for program, expected := range tests {
+		inputs := make(chan int, 1)
+		outputs := make(chan int)
+		var output int
+		go func() {
+			output = <-outputs
+			t.Logf("Got output: %d", output)
+		}()
+		inputs <- 1002
+		mach := newMachine(program, inputs, outputs)
+		assert.Equal(t, 0, output)
 		mach.run()
 		assert.Equal(t, expected, mach.String())
 	}
@@ -75,27 +85,40 @@ func TestDay5Part2Examples(t *testing.T) {
 	}
 
 	for prog, expected := range tests {
-		for input, output := range expected {
+		for input, expectedOutput := range expected {
 			t.Run(fmt.Sprintf("Day 2 - %s - %d", prog, input), func(t *testing.T) {
+				inputs := make(chan int, 1)
+				inputs <- input
+				outputs := make(chan int)
+				var output int
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+				go func() {
+					for output = range outputs {
+						t.Logf("Got output: %d", output)
+					}
+					wg.Done()
+				}()
 				debug = t.Logf
 				t.Logf("Loading...\nprog:\t%s\ninput:\t%d\n", prog, input)
 
-				mach := newMachine(prog, []int{input})
+				mach := newMachine(prog, inputs, outputs)
 				assert.NotPanics(t, func() {
 					mach.run()
 				})
+				close(inputs)
+				close(outputs)
+				wg.Wait()
 				t.Logf("Final state:\n\t%s\n", mach.String())
-				assert.Equal(t, output, mach.lastOutput)
+				assert.Equal(t, expectedOutput, output)
 			})
 		}
 	}
 }
 
 func TestPositionMode(t *testing.T) {
-	debug = noOut
-	mach := newMachine("99", []int{})
-	assert.Equal(t, 0, mach.paramMode(10, 0))
-	assert.Equal(t, 1, mach.paramMode(10, 1))
+	assert.Equal(t, 0, paramMode(10, 0))
+	assert.Equal(t, 1, paramMode(10, 1))
 }
 
 func TestSequence(t *testing.T) {
