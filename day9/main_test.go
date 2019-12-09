@@ -8,7 +8,6 @@ import (
 )
 
 func TestDay5Part1Examples(t *testing.T) {
-	debug = noOut
 	tests := map[string]string{
 		// Previous
 		"1,0,0,0,99":                    "2,0,0,0,99",
@@ -24,7 +23,6 @@ func TestDay5Part1Examples(t *testing.T) {
 
 	for program, expected := range tests {
 		t.Run("Day5 "+program, func(t *testing.T) {
-			debug = t.Logf
 			inputs := make(chan int64, 1)
 			outputs := make(chan int64)
 			var output int64
@@ -230,7 +228,6 @@ func TestDay9Part1Examples(t *testing.T) {
 	for prog, expected := range tests {
 		for input, expectedOutput := range expected {
 			t.Run(fmt.Sprintf("Day 9 part 2 - %s - %d", prog, input), func(t *testing.T) {
-				debug = t.Logf
 				assert.NotPanics(t, func() {
 					outputs := gatherOutputs(prog, -1, input)
 					assert.Equal(t, expectedOutput, outputs)
@@ -249,23 +246,20 @@ func TestParamModeDecode(t *testing.T) {
 }
 
 func TestPart1Answer(t *testing.T) {
-	// result := part1()
-	// assert.Equal(t, 3063082071, result)
-	// assert.NotEqual(t, 209, result)
-
-	debug = t.Logf
 	prog := loadInputString()
 	outputs := gatherOutputs(prog, -1, 1)
 	assert.Equal(t, []int64{3063082071}, outputs)
 }
 
 func TestPart2Answer(t *testing.T) {
-	// debug = t.Logf
 	prog := loadInputString()
 	outputs := gatherOutputs(prog, -1, 2)
-	assert.Equal(t, []int64{0}, outputs, "Should retun coordinate")
+	assert.Equal(t, []int64{81348}, outputs, "Should retun coordinate")
 }
 
-// func TestMainRuns(t *testing.T) {
-// 	assert.NotPanics(t, func() { main() })
-// }
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 3063082071
+	//Part 2: 81348
+}

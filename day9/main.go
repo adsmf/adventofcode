@@ -10,18 +10,14 @@ import (
 	"sync"
 )
 
-// var debug = debugPrintf
-var debug = noOut
-
 func main() {
 	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	fmt.Printf("Part 2: %d\n", part2()[0])
 }
 
 func part1() int64 {
 	inputString := loadInputString()
 	outputs := gatherOutputs(inputString, -1, 1)
-	fmt.Printf("Outputs: %#v\n", outputs)
 	return outputs[len(outputs)-1]
 }
 
@@ -49,7 +45,6 @@ func gatherOutputs(program string, maxSteps, in int64) []int64 {
 	tape.run(maxSteps)
 
 	wg.Wait()
-	debug("Final state: %#v\n", tape)
 	return outputs
 }
 
@@ -90,20 +85,20 @@ func newMachine(initial string, inputs <-chan int64, output chan<- int64) machin
 }
 
 func (t *machine) run(maxSteps int64) {
-	if maxSteps == -1 {
-		maxSteps = 10000
-	}
-	steps := maxSteps
+	// if maxSteps == -1 {
+	// 	maxSteps = 1000000
+	// }
+	// steps := maxSteps
 	for {
 		done := t.step()
 		if done {
 			return
 		}
-		steps--
-		if steps <= 0 {
-			close(t.outputs)
-			return
-		}
+		// steps--
+		// if steps <= 0 {
+		// 	close(t.outputs)
+		// 	return
+		// }
 	}
 }
 
@@ -111,7 +106,6 @@ func (t *machine) step() bool {
 	// debug("#100 => %d", t.values[100])
 	initialHead := t.headPos
 	oper := t.values[initialHead]
-	debug("  -- Addr: %d; op: %d; base: %d\n", initialHead, oper, t.relativeBase)
 	paramModes := int64(oper / 100)
 	oper = oper % 100
 	switch oper {
@@ -122,8 +116,6 @@ func (t *machine) step() bool {
 		p2 := t.values[params[1]]
 		p3 := params[2]
 
-		debug("ADD %d+%d => #%d", p1, p2, p3)
-
 		t.values[p3] = p1 + p2
 	case 2:
 		// Mult
@@ -132,8 +124,6 @@ func (t *machine) step() bool {
 		p2 := t.values[params[1]]
 		p3 := params[2]
 
-		debug("MUL %d*%d => #%d", p1, p2, p3)
-
 		t.values[p3] = p1 * p2
 	case 3:
 		// Input
@@ -141,13 +131,11 @@ func (t *machine) step() bool {
 		p := params[0]
 
 		nextInput := <-t.inputs
-		debug("STO %d => #%d", nextInput, p)
 		t.values[p] = nextInput
 	case 4:
 		// Output
 		params := t.getParamAddresses(paramModes, 1)
 		p := t.values[params[0]]
-		debug("READ %d", p)
 		t.outputs <- p
 	case 5:
 		// JNZ
@@ -155,7 +143,6 @@ func (t *machine) step() bool {
 		p1 := t.values[params[0]]
 		p2 := t.values[params[1]]
 
-		debug("JNZ %d (%v) => %d", p1, p1 != 0, p2)
 		if p1 != 0 {
 			t.headPos = p2
 		}
@@ -197,7 +184,6 @@ func (t *machine) step() bool {
 		// Update relative base
 		params := t.getParamAddresses(paramModes, 1)
 		p1 := t.values[params[0]]
-		debug("URB %d; %d => %d", p1, t.relativeBase, t.relativeBase+p1)
 		t.relativeBase += p1
 	case 99:
 		// HCF
@@ -216,8 +202,6 @@ func (t *machine) getParamAddresses(paramModes, numParams int64) []int64 {
 
 		p := t.getVal(pAddress)
 		mode := paramMode(paramModes, param)
-		debug("Param %d; mode %d; addr: @%d == #%d", param, mode, pAddress, p)
-		// deref := false
 		switch mode {
 		case 0:
 			params = append(params, p)
