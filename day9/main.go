@@ -117,23 +117,27 @@ func (t *machine) step() bool {
 	switch oper {
 	case 1:
 		// Add
-		params := t.getParams(paramModes, 3, true)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 3)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 		p3 := params[2]
+
+		debug("ADD %d+%d => #%d", p1, p2, p3)
 
 		t.values[p3] = p1 + p2
 	case 2:
 		// Mult
-		params := t.getParams(paramModes, 3, true)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 3)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 		p3 := params[2]
+
+		debug("MUL %d*%d => #%d", p1, p2, p3)
 
 		t.values[p3] = p1 * p2
 	case 3:
 		// Input
-		params := t.getParams(paramModes, 1, true)
+		params := t.getParamAddresses(paramModes, 1)
 		p := params[0]
 
 		nextInput := <-t.inputs
@@ -141,33 +145,34 @@ func (t *machine) step() bool {
 		t.values[p] = nextInput
 	case 4:
 		// Output
-		params := t.getParams(paramModes, 1, false)
-		p := params[0]
+		params := t.getParamAddresses(paramModes, 1)
+		p := t.values[params[0]]
 		debug("READ %d", p)
 		t.outputs <- p
 	case 5:
 		// JNZ
-		params := t.getParams(paramModes, 2, false)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 2)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 
+		debug("JNZ %d (%v) => %d", p1, p1 != 0, p2)
 		if p1 != 0 {
 			t.headPos = p2
 		}
 	case 6:
 		// JEZ
-		params := t.getParams(paramModes, 2, false)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 2)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 
 		if p1 == 0 {
 			t.headPos = p2
 		}
 	case 7:
 		// CLT
-		params := t.getParams(paramModes, 3, true)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 3)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 		p3 := params[2]
 
 		if p1 < p2 {
@@ -177,9 +182,9 @@ func (t *machine) step() bool {
 		}
 	case 8:
 		// CMP
-		params := t.getParams(paramModes, 3, true)
-		p1 := params[0]
-		p2 := params[1]
+		params := t.getParamAddresses(paramModes, 3)
+		p1 := t.values[params[0]]
+		p2 := t.values[params[1]]
 		p3 := params[2]
 
 		// debug("CMP %d == %d => %v", p1, p2, p1 == p2)
@@ -190,10 +195,10 @@ func (t *machine) step() bool {
 		}
 	case 9:
 		// Update relative base
-		params := t.getParams(paramModes, 1, false)
-		p1 := params[0]
+		params := t.getParamAddresses(paramModes, 1)
+		p1 := t.values[params[0]]
+		debug("URB %d; %d => %d", p1, t.relativeBase, t.relativeBase+p1)
 		t.relativeBase += p1
-		// debug("Adjusted relative base by %d to %d\n", p1, t.relativeBase)
 	case 99:
 		// HCF
 		close(t.outputs)
@@ -204,31 +209,28 @@ func (t *machine) step() bool {
 	return false
 }
 
-func (t *machine) getParams(paramModes, numParams int64, lastIsAddress bool) []int64 {
+func (t *machine) getParamAddresses(paramModes, numParams int64) []int64 {
 	params := []int64{}
 	for param := int64(0); param < numParams; param++ {
-		lastParam := (param == numParams-1)
-		p := t.getVal(t.headPos + param + 1)
+		pAddress := t.headPos + param + 1
+
+		p := t.getVal(pAddress)
 		mode := paramMode(paramModes, param)
-		returnAddress := lastParam && lastIsAddress
+		debug("Param %d; mode %d; addr: @%d == #%d", param, mode, pAddress, p)
+		// deref := false
 		switch mode {
 		case 0:
-			if !returnAddress {
-				p = t.getVal(p)
-			}
+			params = append(params, p)
 		case 1:
-			// Immediate mode, nothing further to do
+			params = append(params, pAddress)
 		case 2:
 			p += t.relativeBase
-			if !returnAddress {
-				p = t.getVal(p)
-			} else {
-			}
+			params = append(params, p)
 		default:
 			panic(fmt.Errorf("Unknown parameter mode %d", mode))
 		}
-		params = append(params, p)
 	}
+	// debug(" => %v", params)
 
 	t.headPos = t.headPos + numParams + 1
 	return params
