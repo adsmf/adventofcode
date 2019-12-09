@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,17 +16,17 @@ func main() {
 
 func part1() int64 {
 	inputString := loadInputString()
-	outputs := gatherOutputs(inputString, -1, 1)
+	outputs := gatherOutputs(inputString, 1)
 	return outputs[len(outputs)-1]
 }
 
 func part2() []int64 {
 	inputString := loadInputString()
-	outputs := gatherOutputs(inputString, -1, 2)
+	outputs := gatherOutputs(inputString, 2)
 	return outputs
 }
 
-func gatherOutputs(program string, maxSteps, in int64) []int64 {
+func gatherOutputs(program string, in int64) []int64 {
 	outputs := []int64{}
 	output := make(chan int64)
 	wg := sync.WaitGroup{}
@@ -42,7 +41,7 @@ func gatherOutputs(program string, maxSteps, in int64) []int64 {
 	input := make(chan int64, 1)
 	input <- in
 	tape := newMachine(program, input, output)
-	tape.run(maxSteps)
+	tape.run()
 
 	wg.Wait()
 	return outputs
@@ -84,26 +83,16 @@ func newMachine(initial string, inputs <-chan int64, output chan<- int64) machin
 	return mach
 }
 
-func (t *machine) run(maxSteps int64) {
-	// if maxSteps == -1 {
-	// 	maxSteps = 1000000
-	// }
-	// steps := maxSteps
+func (t *machine) run() {
 	for {
 		done := t.step()
 		if done {
 			return
 		}
-		// steps--
-		// if steps <= 0 {
-		// 	close(t.outputs)
-		// 	return
-		// }
 	}
 }
 
 func (t *machine) step() bool {
-	// debug("#100 => %d", t.values[100])
 	initialHead := t.headPos
 	oper := t.values[initialHead]
 	paramModes := int64(oper / 100)
@@ -196,40 +185,28 @@ func (t *machine) step() bool {
 }
 
 func (t *machine) getParamAddresses(paramModes, numParams int64) []int64 {
-	params := []int64{}
+	params := make([]int64, numParams)
 	for param := int64(0); param < numParams; param++ {
 		pAddress := t.headPos + param + 1
 
-		p := t.getVal(pAddress)
-		mode := paramMode(paramModes, param)
+		p := t.values[pAddress]
+		mode := paramModes % 10
+		paramModes /= 10
 		switch mode {
 		case 0:
-			params = append(params, p)
+			params[param] = p
 		case 1:
-			params = append(params, pAddress)
+			params[param] = pAddress
 		case 2:
 			p += t.relativeBase
-			params = append(params, p)
+			params[param] = p
 		default:
 			panic(fmt.Errorf("Unknown parameter mode %d", mode))
 		}
 	}
-	// debug(" => %v", params)
 
 	t.headPos = t.headPos + numParams + 1
 	return params
-}
-
-func paramMode(modes, pos int64) int64 {
-	mask := int64(math.Pow(10, float64(pos)))
-	return (modes / mask) % 10
-}
-
-func (t *machine) getVal(pos int64) int64 {
-	if pos < 0 {
-		panic("Cannot read negative address")
-	}
-	return t.values[pos]
 }
 
 func (t *machine) String() string {

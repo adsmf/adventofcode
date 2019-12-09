@@ -34,7 +34,7 @@ func TestDay5Part1Examples(t *testing.T) {
 			mach := newMachine(program, inputs, outputs)
 			assert.Equal(t, int64(0), output)
 			assert.NotPanics(t, func() {
-				mach.run(-1)
+				mach.run()
 			})
 			assert.Equal(t, expected, mach.String())
 		})
@@ -88,7 +88,7 @@ func TestDay5Part2Examples(t *testing.T) {
 		for input, expectedOutput := range expected {
 			t.Run(fmt.Sprintf("Day 5 part 2 - %s - %d", prog, input), func(t *testing.T) {
 				assert.NotPanics(t, func() {
-					outputs := gatherOutputs(prog, -1, input)
+					outputs := gatherOutputs(prog, input)
 					assert.Equal(t, expectedOutput, outputs[0])
 				})
 			})
@@ -229,7 +229,7 @@ func TestDay9Part1Examples(t *testing.T) {
 		for input, expectedOutput := range expected {
 			t.Run(fmt.Sprintf("Day 9 part 2 - %s - %d", prog, input), func(t *testing.T) {
 				assert.NotPanics(t, func() {
-					outputs := gatherOutputs(prog, -1, input)
+					outputs := gatherOutputs(prog, input)
 					assert.Equal(t, expectedOutput, outputs)
 				})
 			})
@@ -237,24 +237,31 @@ func TestDay9Part1Examples(t *testing.T) {
 	}
 }
 
-func TestParamModeDecode(t *testing.T) {
-	assert.Equal(t, int64(0), paramMode(10, 0))
-	assert.Equal(t, int64(1), paramMode(10, 1))
-	assert.Equal(t, int64(2), paramMode(212, 0))
-	assert.Equal(t, int64(1), paramMode(212, 1))
-	assert.Equal(t, int64(2), paramMode(212, 2))
-}
-
 func TestPart1Answer(t *testing.T) {
 	prog := loadInputString()
-	outputs := gatherOutputs(prog, -1, 1)
+	outputs := gatherOutputs(prog, 1)
 	assert.Equal(t, []int64{3063082071}, outputs)
+}
+func BenchmarkPart1(b *testing.B) {
+	inputString := loadInputString()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gatherOutputs(inputString, 1)
+	}
 }
 
 func TestPart2Answer(t *testing.T) {
 	prog := loadInputString()
-	outputs := gatherOutputs(prog, -1, 2)
+	outputs := gatherOutputs(prog, 2)
 	assert.Equal(t, []int64{81348}, outputs, "Should retun coordinate")
+}
+
+func BenchmarkPart2(b *testing.B) {
+	inputString := loadInputString()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gatherOutputs(inputString, 2)
+	}
 }
 
 func ExampleMain() {
