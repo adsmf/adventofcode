@@ -4,28 +4,42 @@ import (
 	"fmt"
 	"github.com/adsmf/adventofcode2019/utils"
 	"math"
+	"sort"
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	fmt.Printf("Part 1: %d\n", part1V2())
+	fmt.Printf("Part 2: %d\n", part2V2())
 }
 
-func part1() int {
+func part1V1() int {
 	g := loadInputFile("input.txt")
-	_, count := g.getBestLineOfSight()
+	_, count := g.getBestLineOfSightV1()
+	return count
+}
+func part1V2() int {
+	g := loadInputFile("input.txt")
+	_, count := g.getBestLineOfSightV2()
 	return count
 }
 
-func part2() int {
+func part2V1() int {
 	g := loadInputFile("input.txt")
-	base, _ := g.getBestLineOfSight()
-	destroyed := destroyN(g, base, 200)
+	base, _ := g.getBestLineOfSightV1()
+	destroyed := destroyNV1(g, base, 200)
 	lastDestroyed := destroyed[len(destroyed)-1]
 	return int(lastDestroyed.position.x)*100 + int(lastDestroyed.position.y)
 }
 
-func destroyN(g grid, base asteroid, num int) []asteroid {
+func part2V2() int {
+	g := loadInputFile("input.txt")
+	base, _ := g.getBestLineOfSightV2()
+	destroyed := destroyNV2(g, base, 200)
+	lastDestroyed := destroyed[len(destroyed)-1]
+	return int(lastDestroyed.position.x)*100 + int(lastDestroyed.position.y)
+}
+
+func destroyNV1(g grid, base asteroid, num int) []asteroid {
 	destroyed := []asteroid{}
 
 	offsetAngle := 0.000001
@@ -59,15 +73,46 @@ func destroyN(g grid, base asteroid, num int) []asteroid {
 	return destroyed
 }
 
+func destroyNV2(g grid, base asteroid, num int) []asteroid {
+	destroyed := make([]asteroid, num)
+	angleIndex := 0
+	lines := sortSightlines(base.getLines(g))
+	for numDestroyed := 0; numDestroyed < num; numDestroyed++ {
+		for len(lines[angleIndex]) == 0 {
+			angleIndex++
+			angleIndex %= len(lines)
+		}
+		destroyed[numDestroyed] = lines[angleIndex][0]
+		lines[angleIndex] = lines[angleIndex][1:]
+		angleIndex++
+		angleIndex %= len(lines)
+	}
+	return destroyed
+}
+
 type grid struct {
 	asteroids []asteroid
 }
 
-func (g grid) getBestLineOfSight() (asteroid, int) {
+func (g grid) getBestLineOfSightV1() (asteroid, int) {
 	bestAsteroid := asteroid{}
 	bestCount := 0
 	for _, ast := range g.asteroids {
 		count := ast.countLineOfSight(g)
+		if count > bestCount {
+			bestCount = count
+			bestAsteroid = ast
+		}
+	}
+	return bestAsteroid, bestCount
+}
+
+func (g grid) getBestLineOfSightV2() (asteroid, int) {
+	bestAsteroid := asteroid{}
+	bestCount := 0
+	for _, ast := range g.asteroids {
+		lines := ast.getLines(g)
+		count := len(lines)
 		if count > bestCount {
 			bestCount = count
 			bestAsteroid = ast
@@ -97,8 +142,61 @@ func (g *grid) remove(target asteroid) {
 	g.asteroids = g.asteroids[:n]
 }
 
+type sightLinesMap map[float64]map[float64]asteroid
+type sightLines [][]asteroid
+
 type asteroid struct {
 	position vector
+}
+
+func (a asteroid) getLines(g grid) sightLinesMap {
+	linesMap := make(sightLinesMap)
+	for _, other := range g.asteroids {
+		if other == a {
+			continue
+		}
+		vecOther := vectorBetween(a, other)
+		pAngle := math.Atan2(vecOther.y, vecOther.x) - math.Pi/2
+		if pAngle < 0 {
+			pAngle += 2 * math.Pi
+		}
+		if pAngle > 2*math.Pi {
+			pAngle -= 2 * math.Pi
+		}
+
+		if _, found := linesMap[pAngle]; found {
+			linesMap[pAngle][vecOther.length()] = other
+		} else {
+			linesMap[pAngle] = map[float64]asteroid{
+				vecOther.length(): other,
+			}
+		}
+	}
+	return linesMap
+}
+
+func sortSightlines(linesMap sightLinesMap) sightLines {
+	lines := make(sightLines, len(linesMap))
+	angles := []float64{}
+	for angle := range linesMap {
+		angles = append(angles, angle)
+	}
+	sort.Float64s(angles)
+	for angleIndex, angle := range angles {
+		astMap := linesMap[angle]
+
+		distances := []float64{}
+		for distance := range astMap {
+			distances = append(distances, distance)
+		}
+		sort.Float64s(distances)
+		asteroids := make([]asteroid, len(distances))
+		for distIndex, distance := range distances {
+			asteroids[distIndex] = astMap[distance]
+		}
+		lines[angleIndex] = asteroids
+	}
+	return lines
 }
 
 func (a asteroid) countLineOfSight(g grid) int {
