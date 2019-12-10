@@ -20,7 +20,8 @@ func part1() int {
 
 func part2() int {
 	g := loadInputFile("input.txt")
-	base, _ := g.getBestLineOfSight()
+	// base, _ := g.getBestLineOfSight()
+	base := asteroid{position: vector{11, 11}} // From part 1
 	destroyed := destroyNV(g, base, 200)
 	lastDestroyed := destroyed[len(destroyed)-1]
 	return int(lastDestroyed.position.x)*100 + int(lastDestroyed.position.y)
