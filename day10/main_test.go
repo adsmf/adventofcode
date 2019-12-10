@@ -26,7 +26,7 @@ func TestPart1Examples(t *testing.T) {
 		t.Run(fmt.Sprintf("Day 10 part 1 - %d", id), func(t *testing.T) {
 			g := loadInputFile("examples/" + test.inputFile)
 			t.Logf("%d %v", len(g.asteroids), g)
-			ast, count := g.getBestLineOfSightV2()
+			ast, count := g.getBestLineOfSight()
 			assert.EqualValues(t, test.bestLocation, ast.position)
 			assert.Equal(t, test.bestCount, count)
 		})
@@ -43,7 +43,7 @@ func TestPart2Examples(t *testing.T) {
 		asteroid{vector{9, 2}},
 	}
 	g := loadInputFile("examples/part2ex1.txt")
-	destroyed := destroyNV2(g, base, len(removalOrder))
+	destroyed := destroyNV(g, base, len(removalOrder))
 	for num, expectDestroyed := range removalOrder {
 		t.Run(fmt.Sprintf("Test destroy order %d", num+1), func(t *testing.T) {
 			assert.Equal(t, expectDestroyed, destroyed[num])
@@ -58,24 +58,14 @@ func ExampleMain() {
 	//Part 2: 806
 }
 
-func BenchmarkPart1V1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part1V1()
-	}
-}
 func BenchmarkPart1V2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part1V2()
+		part1()
 	}
 }
 
-func BenchmarkPart2V1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part2V1()
-	}
-}
 func BenchmarkPart2V2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part2V2()
+		part2()
 	}
 }
