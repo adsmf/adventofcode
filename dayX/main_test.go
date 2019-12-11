@@ -19,6 +19,21 @@ func TestAnswers(t *testing.T) {
 	assert.Equal(t, 0, part2())
 }
 
-func TestMainRuns(t *testing.T) {
-	assert.NotPanics(t, func() { main() })
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 0
+	//Part 2: 0
+}
+
+func BenchmarkPart1(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		part1()
+	}
+}
+
+func BenchmarkPart2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		part2()
+	}
 }
