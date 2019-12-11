@@ -13,7 +13,7 @@ func main() {
 func part1() int {
 	inputString := loadInputString()
 	hull := runPainter(inputString, 0)
-	return hull.countVisited()
+	return len(hull.visited) //hull.countVisited()
 }
 
 func part2() string {
@@ -22,36 +22,39 @@ func part2() string {
 	return hull.print()
 }
 
+type point struct {
+	x, y int
+}
+type boolGrid map[point]bool
+
 type shipHull struct {
-	paintColour map[int]map[int]int
-	visited     map[int]map[int]bool
+	paintColour boolGrid
+	visited     boolGrid
 }
 
 func (h *shipHull) print() string {
 	printout := ""
 	var minX, maxX int
 	var minY, maxY int
-	for x, cols := range h.paintColour {
-		for y, tile := range cols {
-			if tile > 0 {
-				if x < minX {
-					minX = x
-				}
-				if x > maxX {
-					maxX = x
-				}
-				if y < minY {
-					minY = y
-				}
-				if y > maxY {
-					maxY = y
-				}
+	for point, tile := range h.paintColour {
+		if tile {
+			if point.x < minX {
+				minX = point.x
+			}
+			if point.x > maxX {
+				maxX = point.x
+			}
+			if point.y < minY {
+				minY = point.y
+			}
+			if point.y > maxY {
+				maxY = point.y
 			}
 		}
 	}
 	for y := minY; y < maxY+1; y++ {
-		for x := minX + 1; x < maxX+1; x++ {
-			if h.painted(x, y) == 1 {
+		for x := minX; x < maxX+1; x++ {
+			if h.paintColour[point{x, y}] {
 				printout += fmt.Sprint("#")
 			} else {
 				printout += fmt.Sprint(".")
@@ -62,51 +65,8 @@ func (h *shipHull) print() string {
 	return printout
 }
 
-func (h *shipHull) visit(x, y int) {
-	if h.visited == nil {
-		h.visited = map[int]map[int]bool{}
-	}
-	if h.visited[x] == nil {
-		h.visited[x] = map[int]bool{}
-	}
-	h.visited[x][y] = true
-}
-
-func (h *shipHull) paint(x, y, colour int) {
-	h.visit(x, y)
-	if h.paintColour == nil {
-		h.paintColour = map[int]map[int]int{}
-	}
-	if h.paintColour[x] == nil {
-		h.paintColour[x] = map[int]int{}
-	}
-	h.paintColour[x][y] = colour
-}
-
-func (h *shipHull) painted(x, y int) int {
-	if h.paintColour == nil {
-		return 0
-	}
-	if h.paintColour[x] == nil {
-		return 0
-	}
-	return h.paintColour[x][y]
-}
-
-func (h *shipHull) countVisited() int {
-	count := 0
-	for _, cols := range h.visited {
-		for _, tile := range cols {
-			if tile {
-				count++
-			}
-		}
-	}
-	return count
-}
-
 type robot struct {
-	x, y   int
+	pos    point
 	facing facing
 }
 
@@ -119,23 +79,23 @@ func (r *robot) turnLeft() {
 func (r *robot) move() {
 	switch r.facing {
 	case facingUp:
-		r.y--
+		r.pos.y--
 	case facingDown:
-		r.y++
+		r.pos.y++
 	case facingRight:
-		r.x++
+		r.pos.x++
 	case facingLeft:
-		r.x--
+		r.pos.x--
 	}
 }
 
 type facing int
 
 const (
-	facingUp    facing = 0
-	facingRight facing = 1
-	facingDown  facing = 2
-	facingLeft  facing = 3
+	facingUp facing = iota
+	facingRight
+	facingDown
+	facingLeft
 )
 
 func (f facing) right() facing {
@@ -150,7 +110,10 @@ func (f facing) left() facing {
 }
 
 func runPainter(program string, startingPanel int64) shipHull {
-	hull := shipHull{}
+	hull := shipHull{
+		paintColour: boolGrid{},
+		visited:     boolGrid{},
+	}
 	robo := robot{}
 	output := make(chan int64)
 	input := make(chan int64, 1)
@@ -161,7 +124,12 @@ func runPainter(program string, startingPanel int64) shipHull {
 		for op := range output {
 			if nextInstructionIsPaint {
 				// We're painting
-				hull.paint(robo.x, robo.y, int(op))
+				hull.visited[robo.pos] = true
+				if op == 1 {
+					hull.paintColour[robo.pos] = true
+				} else {
+					hull.paintColour[robo.pos] = false
+				}
 			} else {
 				// We're moving
 				if op == 1 {
@@ -170,7 +138,11 @@ func runPainter(program string, startingPanel int64) shipHull {
 					robo.turnLeft()
 				}
 				robo.move()
-				input <- int64(hull.painted(robo.x, robo.y))
+				if hull.paintColour[robo.pos] {
+					input <- 1
+				} else {
+					input <- 0
+				}
 			}
 			nextInstructionIsPaint = !nextInstructionIsPaint
 		}
