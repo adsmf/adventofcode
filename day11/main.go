@@ -32,6 +32,10 @@ type shipHull struct {
 	visited     boolGrid
 }
 
+func (h *shipHull) decode() string {
+	return ""
+}
+
 func (h *shipHull) print() string {
 	printout := ""
 	var minX, maxX int
