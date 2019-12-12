@@ -95,23 +95,26 @@ func TestPart2Examples(t *testing.T) {
 	repeat := findRepeat(planets)
 	assert.Equal(t, 2772, repeat)
 
-	// planets = loadInput("examples/ex2.txt")
-	// repeat = findRepeat(planets)
-	// assert.Equal(t, 4686774924, repeat)
+	planets = loadInput("examples/ex1.txt")
+	period := planets.calculatePeriod()
+	assert.Equal(t, 2772, period)
+
+	planets = loadInput("examples/ex2.txt")
+	period = planets.calculatePeriod()
+	assert.Equal(t, 4686774924, period)
 }
 
 func TestAnswers(t *testing.T) {
 	assert.Equal(t, 6227, part1())
 
-	// assert.Equal(t, 0, part2())
+	assert.Equal(t, 331346071640472, part2())
 }
 
 func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 6227
-
-	//Part 2: ???
+	//Part 2: 331346071640472
 }
 
 func BenchmarkStep(b *testing.B) {

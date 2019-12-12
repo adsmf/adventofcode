@@ -11,7 +11,7 @@ import (
 
 func main() {
 	fmt.Printf("Part 1: %d\n", part1())
-	// fmt.Printf("Part 2: %d\n", part2())
+	fmt.Printf("Part 2: %d\n", part2())
 }
 
 func part1() int {
@@ -22,11 +22,13 @@ func part1() int {
 
 func part2() int {
 	planets := loadInput("input.txt")
-	return findRepeat(planets)
+	period := planets.calculatePeriod()
+	return period
 }
 
 func findRepeat(planets system) int {
 	initialPositions := planets.positions()
+
 	for i := 2; ; i++ {
 		planets.step()
 		positions := planets.positions()
@@ -64,6 +66,90 @@ func (s system) step() {
 	for _, p := range s {
 		p.move()
 	}
+}
+
+func (s system) axisString(axis int) string {
+	retString := ""
+	for _, p := range s {
+		retString += fmt.Sprintf("%v", p.axisString(axis))
+	}
+	return retString
+}
+
+type axisVec struct {
+	axis     int
+	position int
+	velocity int
+}
+
+func (s system) calculatePeriod() int {
+	axisPeriods := []int{0, 0, 0}
+
+	previousX := map[string]int{}
+	previousY := map[string]int{}
+	previousZ := map[string]int{}
+
+	for i := 0; ; i++ {
+		s.step()
+		if axisPeriods[0] == 0 {
+			systemX := s.axisString(0)
+			if prev, found := previousX[systemX]; found {
+				axisPeriods[0] = i - prev
+			}
+			previousX[systemX] = i
+		}
+		if axisPeriods[1] == 0 {
+			systemY := s.axisString(1)
+			if prev, found := previousY[systemY]; found {
+				axisPeriods[1] = i - prev
+			}
+			previousY[systemY] = i
+		}
+		if axisPeriods[2] == 0 {
+			systemZ := s.axisString(2)
+			if prev, found := previousZ[systemZ]; found {
+				axisPeriods[2] = i - prev
+			}
+			previousZ[systemZ] = i
+		}
+		if axisPeriods[0] > 0 &&
+			axisPeriods[1] > 0 &&
+			axisPeriods[2] > 0 {
+			break
+		}
+	}
+
+	period := lcm(axisPeriods...)
+	return period
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+func lcm(integers ...int) int {
+	if len(integers) < 2 {
+		return 0
+	}
+	a := integers[0]
+	b := integers[1]
+	integers = integers[2:]
+	g := gcd(a, b)
+	if g == 0 {
+		return 0
+	}
+	result := a * b / g
+
+	for i := 0; i < len(integers); i++ {
+		result = lcm(result, integers[i])
+	}
+
+	return result
 }
 
 func (s system) positions() positionList {
@@ -130,6 +216,18 @@ func (p planet) energy() int {
 
 func (p planet) String() string {
 	return fmt.Sprintf("pos=%v, vel=%v", p.position, p.velocity)
+}
+
+func (p planet) axisString(axis int) string {
+	switch axis {
+	case 0:
+		return fmt.Sprintf("<%d,%d>", p.position.x, p.velocity.x)
+	case 1:
+		return fmt.Sprintf("<%d,%d>", p.position.y, p.velocity.y)
+	case 2:
+		return fmt.Sprintf("<%d,%d>", p.position.z, p.velocity.z)
+	}
+	panic(fmt.Sprintf("Unknown axis %d", axis))
 }
 
 type vector struct {
