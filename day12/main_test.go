@@ -91,6 +91,13 @@ func TestPart1Energy(t *testing.T) {
 
 func TestPart2Examples(t *testing.T) {
 
+	planets := loadInput("examples/ex1.txt")
+	repeat := findRepeat(planets)
+	assert.Equal(t, 2772, repeat)
+
+	// planets = loadInput("examples/ex2.txt")
+	// repeat = findRepeat(planets)
+	// assert.Equal(t, 4686774924, repeat)
 }
 
 func TestAnswers(t *testing.T) {
@@ -107,14 +114,22 @@ func ExampleMain() {
 	//Part 2: ???
 }
 
+func BenchmarkStep(b *testing.B) {
+	planets := loadInput("input.txt")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		planets.step()
+	}
+}
+
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		part1()
 	}
 }
 
-func BenchmarkPart2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part2()
-	}
-}
+// func BenchmarkPart2(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		part2()
+// 	}
+// }

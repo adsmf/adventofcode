@@ -21,23 +21,17 @@ func part1() int {
 }
 
 func part2() int {
-	seenPositions := map[int][]positionList{}
 	planets := loadInput("input.txt")
-	initialEnergy := planets.energy()
-	seenPositions[initialEnergy] = []positionList{planets.positions()}
-	for i := 0; ; i++ {
+	return findRepeat(planets)
+}
+
+func findRepeat(planets system) int {
+	initialPositions := planets.positions()
+	for i := 2; ; i++ {
 		planets.step()
 		positions := planets.positions()
-		energy := planets.energy()
-		if previousPositionsList, found := seenPositions[energy]; found {
-			for _, previous := range previousPositionsList {
-				if previous.matches(positions) {
-					return i
-				}
-			}
-			seenPositions[energy] = append(seenPositions[energy], positions)
-		} else {
-			seenPositions[energy] = []positionList{positions}
+		if positions.matches(initialPositions) {
+			return i
 		}
 	}
 }
@@ -72,8 +66,8 @@ func (s system) step() {
 	}
 }
 
-func (s system) positions() []vector {
-	positions := []vector{}
+func (s system) positions() positionList {
+	positions := positionList{}
 	for _, p := range s {
 		positions = append(positions, p.position)
 	}
