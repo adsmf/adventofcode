@@ -3,15 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"sync"
+	"time"
 
+	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
 var interactive bool
+var autopilot bool
 
 func init() {
 	flag.BoolVar(&interactive, "interactive", false, "Run game interactively")
+	flag.BoolVar(&autopilot, "autopilot", false, "Turn on autopilot for interactive mode")
 }
 
 func main() {
@@ -61,6 +66,8 @@ type game struct {
 	lastDraw       string
 	screen         *tview.TextView
 	cabinet        *tview.Application
+	nextInput      int64
+	cpu            *machine
 }
 
 func (s *game) String() string {
@@ -101,6 +108,7 @@ func (s *game) autopilot() int64 {
 	s.lock.Lock()
 	ball := s.ballX
 	paddle := s.paddleX
+	time.Sleep(10 * time.Millisecond)
 	s.lock.Unlock()
 	if ball < paddle {
 		return -1
@@ -109,6 +117,15 @@ func (s *game) autopilot() int64 {
 	} else {
 		return 0
 	}
+}
+
+func (s *game) manualpilot() int64 {
+	s.lock.Lock()
+	time.Sleep(1 * time.Second)
+	returnValue := s.nextInput
+	s.nextInput = 0
+	s.lock.Unlock()
+	return returnValue
 }
 
 func (s *game) outputCountHandler(wg *sync.WaitGroup, output chan int64, blockTileCount *int) {
@@ -157,6 +174,7 @@ func (s *game) outputHandler(wg *sync.WaitGroup, output chan int64, score *int) 
 			AddButtons([]string{"Quit"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				s.cabinet.Stop()
+				os.Exit(0)
 			}).
 			SetTitle("~ FIN ~")
 		s.cabinet.SetRoot(modal, false)
@@ -164,27 +182,54 @@ func (s *game) outputHandler(wg *sync.WaitGroup, output chan int64, score *int) 
 	wg.Done()
 }
 
+func (s *game) keyboadHandler(event *tcell.EventKey) *tcell.EventKey {
+	switch event.Key() {
+	// switch event.Rune() {
+	case tcell.KeyEnter:
+		if autopilot {
+			s.cpu.inputCallback = s.manualpilot
+		} else {
+			s.cpu.inputCallback = s.autopilot
+		}
+		autopilot = !autopilot
+	case tcell.KeyLeft, ',', 'a':
+		s.nextInput = -1
+	case tcell.KeyRight, '.', 'd':
+		s.nextInput = 1
+	case 'q':
+		s.cabinet.Stop()
+		os.Exit(0)
+	}
+	return event
+}
+
 func runGame(program string, play bool, interactive bool) int {
 	score := 0
+	output := make(chan int64)
+	cpu := newMachine(program, nil, output)
 	gameInst := game{
 		lock:  &sync.Mutex{},
 		tiles: grid{},
+		cpu:   &cpu,
 	}
 	blockTileCount := 0
-	output := make(chan int64)
 	wg := sync.WaitGroup{}
-
-	cpu := newMachine(program, nil, output)
 
 	wg.Add(1)
 	if play && interactive {
-		cpu.inputCallback = gameInst.autopilot
+		if autopilot {
+			cpu.inputCallback = gameInst.autopilot
+		} else {
+			cpu.inputCallback = gameInst.manualpilot
+		}
 		cpu.values[0] = 2
 		mainView := tview.NewTextView()
 		mainView.SetBorder(true).SetTitle("Int(eractive)")
 
 		gameInst.cabinet = tview.NewApplication().SetRoot(mainView, true)
 		gameInst.screen = mainView
+
+		gameInst.cabinet.SetInputCapture(gameInst.keyboadHandler)
 
 		go gameInst.outputHandler(&wg, output, &score)
 	} else if play {
