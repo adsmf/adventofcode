@@ -22,3 +22,10 @@ func BenchmarkPart2(b *testing.B) {
 		part2()
 	}
 }
+
+func ExampleMain() {
+	main()
+	//Output:
+	// Part 1: 341
+	// Part 2: 17138
+}

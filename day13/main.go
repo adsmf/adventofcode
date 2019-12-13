@@ -1,23 +1,38 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"sync"
+
+	"github.com/rivo/tview"
 )
 
+var interactive bool
+
+func init() {
+	flag.BoolVar(&interactive, "interactive", false, "Run game interactively")
+}
+
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	flag.Parse()
+	if interactive {
+		inputString := loadInputString()
+		runGame(inputString, true, true)
+	} else {
+		fmt.Printf("Part 1: %d\n", part1())
+		fmt.Printf("Part 2: %d\n", part2())
+	}
 }
 
 func part1() int {
 	inputString := loadInputString()
-	return runGame(inputString, false)
+	return runGame(inputString, false, false)
 }
 
 func part2() int {
 	inputString := loadInputString()
-	return runGame(inputString, true)
+	return runGame(inputString, true, false)
 }
 
 type tile int
@@ -43,6 +58,9 @@ type game struct {
 	maxX, maxY     int
 	ballX          int
 	paddleX        int
+	lastDraw       string
+	screen         *tview.TextView
+	cabinet        *tview.Application
 }
 
 func (s *game) String() string {
@@ -119,15 +137,34 @@ func (s *game) outputHandler(wg *sync.WaitGroup, output chan int64, score *int) 
 		case tilePaddle:
 			s.paddleX = int(x)
 		}
-		s.lock.Unlock()
 		if x == -1 && y == 0 {
 			*score = int(tileType)
 		}
+		s.set(int(x), int(y), tileType)
+		lastDraw := s.String()
+		s.lock.Unlock()
+		if s.screen != nil {
+			s.cabinet.QueueUpdateDraw(func() {
+				s.screen.SetText(fmt.Sprintf("Ball: %d; Paddle: %d\n%s", s.ballX, s.paddleX, lastDraw))
+				// s.cabinet.Draw()
+			})
+		}
+	}
+	if s.cabinet != nil {
+		modal := tview.NewModal()
+		modal.
+			SetText(fmt.Sprintf("Score: %d", *score)).
+			AddButtons([]string{"Quit"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				s.cabinet.Stop()
+			}).
+			SetTitle("~ FIN ~")
+		s.cabinet.SetRoot(modal, false)
 	}
 	wg.Done()
 }
 
-func runGame(program string, play bool) int {
+func runGame(program string, play bool, interactive bool) int {
 	score := 0
 	gameInst := game{
 		lock:  &sync.Mutex{},
@@ -137,17 +174,30 @@ func runGame(program string, play bool) int {
 	output := make(chan int64)
 	wg := sync.WaitGroup{}
 
-	cabinet := newMachine(program, nil, output)
+	cpu := newMachine(program, nil, output)
 
 	wg.Add(1)
-	if play {
-		cabinet.inputCallback = gameInst.autopilot
-		cabinet.values[0] = 2
+	if play && interactive {
+		cpu.inputCallback = gameInst.autopilot
+		cpu.values[0] = 2
+		mainView := tview.NewTextView()
+		mainView.SetBorder(true).SetTitle("Int(eractive)")
+
+		gameInst.cabinet = tview.NewApplication().SetRoot(mainView, true)
+		gameInst.screen = mainView
+
+		go gameInst.outputHandler(&wg, output, &score)
+	} else if play {
+		cpu.inputCallback = gameInst.autopilot
+		cpu.values[0] = 2
 		go gameInst.outputHandler(&wg, output, &score)
 	} else {
 		go gameInst.outputCountHandler(&wg, output, &blockTileCount)
 	}
-	cabinet.run()
+	go cpu.run()
+	if gameInst.cabinet != nil {
+		gameInst.cabinet.Run()
+	}
 	wg.Wait()
 
 	if play {
