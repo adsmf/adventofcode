@@ -79,6 +79,54 @@ func (s *game) set(x, y int, tileType tile) {
 	s.tiles[point{x, y}] = tileType
 }
 
+func (s *game) autopilot() int64 {
+	s.lock.Lock()
+	ball := s.ballX
+	paddle := s.paddleX
+	s.lock.Unlock()
+	if ball < paddle {
+		return -1
+	} else if ball > paddle {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func (s *game) outputCountHandler(wg *sync.WaitGroup, output chan int64, blockTileCount *int) {
+	for range output {
+		s.lock.Lock()
+		<-output
+		tileType := tile(<-output)
+
+		if tile(tileType) == tileBlock {
+			*blockTileCount++
+		}
+		s.lock.Unlock()
+	}
+	wg.Done()
+}
+
+func (s *game) outputHandler(wg *sync.WaitGroup, output chan int64, score *int) {
+	for x := range output {
+		s.lock.Lock()
+		y := <-output
+		tileType := tile(<-output)
+
+		switch tileType {
+		case tileBall:
+			s.ballX = int(x)
+		case tilePaddle:
+			s.paddleX = int(x)
+		}
+		s.lock.Unlock()
+		if x == -1 && y == 0 {
+			*score = int(tileType)
+		}
+	}
+	wg.Done()
+}
+
 func runGame(program string, play bool) int {
 	score := 0
 	gameInst := game{
@@ -88,52 +136,20 @@ func runGame(program string, play bool) int {
 	blockTileCount := 0
 	output := make(chan int64)
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		for x := range output {
-			gameInst.lock.Lock()
-			y := <-output
-			tileType := tile(<-output)
-
-			if play == false {
-				if tile(tileType) == tileBlock {
-					blockTileCount++
-				}
-			}
-			switch tileType {
-			case tileBall:
-				gameInst.ballX = int(x)
-			case tilePaddle:
-				gameInst.paddleX = int(x)
-			}
-			gameInst.lock.Unlock()
-			if x == -1 && y == 0 {
-				score = int(tileType)
-			}
-		}
-		wg.Done()
-	}()
 
 	cabinet := newMachine(program, nil, output)
-	cabinet.inputCallback = func() int64 {
-		gameInst.lock.Lock()
-		ball := gameInst.ballX
-		paddle := gameInst.paddleX
-		gameInst.lock.Unlock()
-		if ball < paddle {
-			return -1
-		} else if ball > paddle {
-			return 1
-		} else {
-			return 0
-		}
-	}
+
+	wg.Add(1)
 	if play {
+		cabinet.inputCallback = gameInst.autopilot
 		cabinet.values[0] = 2
+		go gameInst.outputHandler(&wg, output, &score)
+	} else {
+		go gameInst.outputCountHandler(&wg, output, &blockTileCount)
 	}
 	cabinet.run()
-
 	wg.Wait()
+
 	if play {
 		return score
 	}
