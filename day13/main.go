@@ -52,10 +52,8 @@ func (s *game) String() string {
 				newOutput += fmt.Sprint("~")
 			case tilePaddle:
 				newOutput += fmt.Sprint("-")
-				s.paddleX = x
 			case tileBall:
 				newOutput += fmt.Sprint("o")
-				s.ballX = x
 			default:
 				newOutput += fmt.Sprint("?")
 			}
@@ -78,12 +76,6 @@ func (s *game) set(x, y int, tileType tile) {
 	if s.tiles[x] == nil {
 		s.tiles[x] = map[int]tile{}
 	}
-	switch tileType {
-	case tileBall:
-		s.ballX = x
-	case tilePaddle:
-		s.paddleX = x
-	}
 	s.tiles[x][y] = tileType
 }
 
@@ -92,44 +84,46 @@ func runGame(program string, play bool) int {
 	gameInst := game{lock: &sync.Mutex{}}
 	blockTileCount := 0
 	output := make(chan int64)
-	input := make(chan int64, 1)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		for x := range output {
-			gameInst.lock.Lock()
 			y := <-output
+			gameInst.lock.Lock()
 			tileType := tile(<-output)
+			gameInst.lock.Unlock()
 
 			if play == false {
 				if tile(tileType) == tileBlock {
 					blockTileCount++
 				}
 			}
+			switch tileType {
+			case tileBall:
+				gameInst.ballX = int(x)
+			case tilePaddle:
+				gameInst.paddleX = int(x)
+			}
 			if x == -1 && y == 0 {
 				score = int(tileType)
 			}
-			gameInst.set(int(x), int(y), tileType)
-			gameInst.lock.Unlock()
 		}
 		wg.Done()
 	}()
 
-	cabinet := newMachine(program, input, output)
+	cabinet := newMachine(program, nil, output)
 	cabinet.inputCallback = func() int64 {
 		gameInst.lock.Lock()
-		var direction int64
 		ball := gameInst.ballX
 		paddle := gameInst.paddleX
-		if ball < paddle {
-			direction = -1
-		} else if ball > paddle {
-			direction = 1
-		} else {
-			direction = 0
-		}
 		gameInst.lock.Unlock()
-		return direction
+		if ball < paddle {
+			return -1
+		} else if ball > paddle {
+			return 1
+		} else {
+			return 0
+		}
 	}
 	if play {
 		cabinet.values[0] = 2
