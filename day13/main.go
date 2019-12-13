@@ -30,9 +30,15 @@ const (
 	tileBall               // 4 is a ball tile. The ball moves diagonally and bounces off objects.
 )
 
+type point struct {
+	x, y int
+}
+
+type grid map[point]tile
+
 type game struct {
 	lock           *sync.Mutex
-	tiles          map[int]map[int]tile
+	tiles          grid
 	displayHistory []string
 	maxX, maxY     int
 	ballX          int
@@ -43,7 +49,7 @@ func (s *game) String() string {
 	newOutput := ""
 	for y := 0; y <= s.maxY; y++ {
 		for x := 0; x <= s.maxX; x++ {
-			switch s.tiles[x][y] {
+			switch s.tiles[point{x, y}] {
 			case tileEmpty:
 				newOutput += fmt.Sprint(" ")
 			case tileWall:
@@ -70,28 +76,24 @@ func (s *game) set(x, y int, tileType tile) {
 	if y > s.maxY {
 		s.maxY = y
 	}
-	if s.tiles == nil {
-		s.tiles = map[int]map[int]tile{}
-	}
-	if s.tiles[x] == nil {
-		s.tiles[x] = map[int]tile{}
-	}
-	s.tiles[x][y] = tileType
+	s.tiles[point{x, y}] = tileType
 }
 
 func runGame(program string, play bool) int {
 	score := 0
-	gameInst := game{lock: &sync.Mutex{}}
+	gameInst := game{
+		lock:  &sync.Mutex{},
+		tiles: grid{},
+	}
 	blockTileCount := 0
 	output := make(chan int64)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		for x := range output {
-			y := <-output
 			gameInst.lock.Lock()
+			y := <-output
 			tileType := tile(<-output)
-			gameInst.lock.Unlock()
 
 			if play == false {
 				if tile(tileType) == tileBlock {
@@ -104,6 +106,7 @@ func runGame(program string, play bool) int {
 			case tilePaddle:
 				gameInst.paddleX = int(x)
 			}
+			gameInst.lock.Unlock()
 			if x == -1 && y == 0 {
 				score = int(tileType)
 			}
