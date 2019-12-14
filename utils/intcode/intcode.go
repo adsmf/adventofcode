@@ -36,8 +36,41 @@ func (m *Machine) LoadProgram(program string) error {
 func (m Machine) String() string {
 	state := []string{
 		"Model: " + m.model.name(),
-		fmt.Sprintf("Program:\n%v", m.operations),
+		"Decode:",
 	}
+	opAddresses := addressList{}
+	for opAddress := range m.operations {
+		opAddresses = append(opAddresses, opAddress)
+	}
+	sort.Sort(opAddresses)
+
+	ramAddresses := addressList{}
+	for ramAddress := range m.ram {
+		ramAddresses = append(ramAddresses, ramAddress)
+	}
+	sort.Sort(ramAddresses)
+
+	lastRAMAccounted := address(-1)
+	for _, ramAddress := range ramAddresses {
+		if ramAddress <= lastRAMAccounted {
+			continue
+		}
+		lastRAMAccounted = ramAddress
+		if len(opAddresses) == 0 || ramAddress < opAddresses[0] {
+			// Not an op
+			val := m.ram[ramAddress].Value()
+			state = append(state, fmt.Sprintf("\t%v:\tDATA\t%d\t(%x)", address(ramAddress), val, val))
+		} else {
+			// Is op
+			op := m.operations[ramAddress]
+			state = append(state, fmt.Sprintf("\t%v:\tOPER\t%v", address(ramAddress), op))
+			lastRAMAccounted += address(op.NumParams())
+			opAddresses = opAddresses[1:]
+		}
+	}
+
+	state = append(state, fmt.Sprintf("RAM: %v", m.ram))
+
 	stateString := ""
 	for _, line := range state {
 		stateString += line + "\n"
@@ -51,6 +84,33 @@ func (m *Machine) readAddress(addr address) integer {
 }
 
 type ram map[address]integer
+
+func (r ram) String() string {
+	retString := ""
+	ramAddresses := addressList{}
+	for ramAddress := range r {
+		ramAddresses = append(ramAddresses, ramAddress)
+	}
+	sort.Sort(ramAddresses)
+	lastAddress := address(-1)
+	for _, ramAddress := range ramAddresses {
+		val := r[ramAddress].Value()
+		if ramAddress == lastAddress+1 {
+			if retString != "" {
+				retString += ","
+			}
+			retString += fmt.Sprintf("%d", val)
+			lastAddress = ramAddress
+		} else {
+			if val != 0 {
+				retString += fmt.Sprintf(",...,#%d=%d", ramAddress, val)
+				lastAddress = ramAddress
+			}
+		}
+	}
+	return retString
+}
+
 type operationMap map[address]operation
 
 func (om operationMap) String() string {
@@ -89,6 +149,12 @@ type address int
 func (a address) String() string {
 	return fmt.Sprintf("#%04d", a)
 }
+
+type addressList []address
+
+func (a addressList) Len() int           { return len(a) }
+func (a addressList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a addressList) Less(i, j int) bool { return a[i] < a[j] }
 
 type integer interface {
 	Address() address

@@ -7,13 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestModel2019(t *testing.T) {
+func TestM19(t *testing.T) {
 	type testDef struct {
-		program string
+		program  string
+		endState string
 	}
 	tests := []testDef{
 		testDef{
-			program: "1,0,0,0,99",
+			program:  "1,0,0,0,99",
+			endState: "1,0,0,0,99",
+		},
+		testDef{
+			program:  "1,0,0,0,99,0,0,0,0,0",
+			endState: "1,0,0,0,99,0,0,0,0,0",
 		},
 	}
 	for id, test := range tests {
@@ -21,10 +27,13 @@ func TestModel2019(t *testing.T) {
 			t.Logf("Test definition:\n%#v", test)
 			inputStream := make(chan int)
 			outputStream := make(chan int)
-			m := NewMachine(Model2019(inputStream, outputStream))
+			m := NewMachine(M19(inputStream, outputStream))
 			m.LoadProgram(test.program)
 			t.Logf("Initial machine state:\n%v", m)
-			assert.Equal(t, true, false)
+
+			if test.endState != "" {
+				assert.Equal(t, test.endState, m.ram.String())
+			}
 		})
 	}
 }
