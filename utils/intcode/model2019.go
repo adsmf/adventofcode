@@ -13,7 +13,13 @@ const (
 
 // M19 sets the behaviour of the intcode machine to AoC 2019 rules
 func M19(input <-chan int, output chan<- int) MachineOption {
-	return func(m *Machine) { m.model = &m19{machine: m} }
+	return func(m *Machine) {
+		m.model = &m19{
+			machine: m,
+			input:   input,
+			output:  output,
+		}
+	}
 }
 
 type m19 struct {
@@ -61,28 +67,28 @@ func (m *m19) decodeAddress(addr address) operation {
 	switch opCode {
 	case m19OpAdd:
 		op.repr = "ADD"
-		numParams := 3
-		op.mode = make([]m19opMode, numParams)
-		op.numParams = numParams
+		op.numParams = 3
 	case m19OpMultiply:
 		op.repr = "MUL"
-		numParams := 3
-		op.mode = make([]m19opMode, numParams)
-		op.numParams = numParams
+		op.numParams = 3
 	case m19OpInput:
 		op.repr = "INP"
-		numParams := 1
-		op.mode = make([]m19opMode, numParams)
-		op.numParams = numParams
+		op.numParams = 1
 	case m19OpOutput:
 		op.repr = "OUT"
-		numParams := 1
-		op.mode = make([]m19opMode, numParams)
-		op.numParams = numParams
-	case 5:
-	case 6:
-	case 7:
-	case 8:
+		op.numParams = 1
+	case m19OpJumpTrue:
+		op.repr = "JNZ"
+		op.numParams = 2
+	case m19OpJumpFalse:
+		op.repr = "JEZ"
+		op.numParams = 2
+	case m19OpLess:
+		op.repr = "CLT"
+		op.numParams = 3
+	case m19OpEqual:
+		op.repr = "CEQ"
+		op.numParams = 3
 	case m19OpHCF:
 		op.repr = "HCF"
 		op.numParams = 0
@@ -90,6 +96,7 @@ func (m *m19) decodeAddress(addr address) operation {
 		op.repr = fmt.Sprintf("UNK-%d", opCode)
 		return nil
 	}
+	op.mode = make([]m19opMode, op.NumParams())
 	for i := 0; i < op.numParams; i++ {
 		op.mode[i] = m19opMode(opMode % 10)
 		opMode /= 10
@@ -129,6 +136,10 @@ const (
 	m19OpMultiply
 	m19OpInput
 	m19OpOutput
+	m19OpJumpTrue
+	m19OpJumpFalse
+	m19OpLess
+	m19OpEqual
 
 	m19OpHCF m19operationCode = 99
 )
@@ -159,27 +170,53 @@ func (mo *m19operation) Exec() ExecReturnCode {
 	case m19OpAdd:
 		a := read(paramAddresses[0]).Value()
 		b := read(paramAddresses[1]).Value()
-
 		newVal := a + b
-		// log.Printf("ADD: %d + %d => %v\n", a, b, address(paramAddresses[2]))
 
 		write(address(paramAddresses[2]), newVal)
 	case m19OpMultiply:
 		a := read(paramAddresses[0]).Value()
 		b := read(paramAddresses[1]).Value()
-
 		newVal := a * b
-		// log.Printf("MUL: %d * %d => %v\n", a, b, address(paramAddresses[2]))
 
 		write(address(paramAddresses[2]), newVal)
 	case m19OpOutput:
 		newVal := read(paramAddresses[0]).Value()
-		// log.Printf("OUTPUT: #%v (%d)\n", paramAddresses[0], newVal)
 		mo.baseInteger.machine.setRegister(
 			M19RegisterOutput,
 			newVal,
 		)
 		return ExecRCInterrupt
+	case m19OpInput:
+		in := <-mo.baseInteger.machine.model.(*m19).input
+		write(address(paramAddresses[0]), in)
+	case m19OpJumpTrue:
+		test := read(paramAddresses[0]).Value()
+		jmp := read(paramAddresses[1]).Value()
+		if test != 0 {
+			mo.baseInteger.machine.setRegister(RegisterInstructionPointer, jmp)
+		}
+	case m19OpJumpFalse:
+		test := read(paramAddresses[0]).Value()
+		jmp := read(paramAddresses[1]).Value()
+		if test == 0 {
+			mo.baseInteger.machine.setRegister(RegisterInstructionPointer, jmp)
+		}
+	case m19OpLess:
+		a := read(paramAddresses[0]).Value()
+		b := read(paramAddresses[1]).Value()
+		if a < b {
+			write(address(paramAddresses[2]), 1)
+		} else {
+			write(address(paramAddresses[2]), 0)
+		}
+	case m19OpEqual:
+		a := read(paramAddresses[0]).Value()
+		b := read(paramAddresses[1]).Value()
+		if a == b {
+			write(address(paramAddresses[2]), 1)
+		} else {
+			write(address(paramAddresses[2]), 0)
+		}
 	default:
 		return ExecRCInvalidInstruction
 	}
