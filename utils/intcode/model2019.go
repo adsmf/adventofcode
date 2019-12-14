@@ -9,6 +9,9 @@ import (
 const (
 	// M19RegisterOutput is the register used to store the last value output
 	M19RegisterOutput registerID = iota + registerCommonEnd
+
+	// M19RelativeBase is the offset used for relative mode operations
+	M19RelativeBase
 )
 
 // M19 sets the behaviour of the intcode machine to AoC 2019 rules
@@ -25,8 +28,9 @@ func M19(input <-chan int, output chan<- int) MachineOption {
 type m19 struct {
 	machine *Machine
 
-	input  <-chan int
-	output chan<- int
+	relativeBase int
+	input        <-chan int
+	output       chan<- int
 }
 
 func (m *m19) name() string {
@@ -89,6 +93,9 @@ func (m *m19) decodeAddress(addr address) operation {
 	case m19OpEqual:
 		op.repr = "CEQ"
 		op.numParams = 3
+	case m19OpAdjustRelativeBase:
+		op.repr = "ARB"
+		op.numParams = 1
 	case m19OpHCF:
 		op.repr = "HCF"
 		op.numParams = 0
@@ -140,6 +147,7 @@ const (
 	m19OpJumpFalse
 	m19OpLess
 	m19OpEqual
+	m19OpAdjustRelativeBase
 
 	m19OpHCF m19operationCode = 99
 )
@@ -217,6 +225,9 @@ func (mo *m19operation) Exec() ExecReturnCode {
 		} else {
 			write(address(paramAddresses[2]), 0)
 		}
+	case m19OpAdjustRelativeBase:
+		value := read(paramAddresses[0]).Value()
+		mo.baseInteger.machine.registers[M19RelativeBase] += value
 	default:
 		return ExecRCInvalidInstruction
 	}
@@ -235,6 +246,9 @@ func (mo *m19operation) getParamAddresses() []address {
 			addrs[i] = paramAddress
 		case m19opModePositional:
 			addrs[i] = indirectAddress
+		case m19opModeRelative:
+			offset := mo.baseInteger.machine.Register(M19RelativeBase)
+			addrs[i] = indirectAddress + address(offset)
 		default:
 			panic("Unsupported mode")
 		}
@@ -262,6 +276,10 @@ func (mo m19operation) String() string {
 			retString = fmt.Sprintf("%s\t%v'", retString, paramInteger)
 		case m19opModePositional:
 			dereferenced := mo.baseInteger.machine.readAddress(address(paramInteger.Value())).Value()
+			retString = fmt.Sprintf("%s\t#%v (%d)", retString, paramInteger, dereferenced)
+		case m19opModeRelative:
+			offset := mo.baseInteger.machine.Register(M19RelativeBase)
+			dereferenced := mo.baseInteger.machine.readAddress(address(paramInteger.Value() + offset)).Value()
 			retString = fmt.Sprintf("%s\t#%v (%d)", retString, paramInteger, dereferenced)
 		default:
 			retString = fmt.Sprintf("%s\t??'%v'", retString, paramInteger)
