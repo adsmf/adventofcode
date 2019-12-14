@@ -100,6 +100,7 @@ func (m *m19) guessOps() {
 			return
 		}
 		m19op := op.(*m19operation)
+		m19op.guessed = true
 
 		m.machine.ram[addr] = m19op
 		m.machine.operations[addr] = m19op
@@ -146,22 +147,46 @@ func (mo m19operation) NumParams() int { return mo.numParams }
 func (mo *m19operation) Exec() ExecReturnCode {
 	read := mo.baseInteger.machine.readAddress
 	write := mo.baseInteger.machine.writeAddress
+	paramAddresses := mo.getParamAddresses()
 	switch m19operationCode(mo.baseInteger.value) {
 	case m19OpAdd:
-		a := read(mo.baseInteger.address + 1).Value()
-		b := read(mo.baseInteger.address + 2).Value()
-		c := read(mo.baseInteger.address + 1).Value()
-
-		a = read(address(a)).Value()
-		b = read(address(b)).Value()
+		a := read(paramAddresses[0]).Value()
+		b := read(paramAddresses[1]).Value()
 
 		newVal := a + b
+		fmt.Printf("ADD %d + %d => %v\n", a, b, paramAddresses[2])
 
-		fmt.Printf("Write %d+%d (%d) => %v\n", a, b, newVal, c)
+		write(address(paramAddresses[2]), newVal)
+	case m19OpMultiply:
+		a := read(paramAddresses[0]).Value()
+		b := read(paramAddresses[1]).Value()
 
-		write(address(c), newVal)
+		newVal := a * b
+
+		fmt.Printf("MUL %d * %d => %v\n", a, b, paramAddresses[2])
+
+		write(address(paramAddresses[2]), newVal)
 	}
 	return ExecRCInvalidInstruction
+}
+
+func (mo *m19operation) getParamAddresses() []address {
+	addrs := make([]address, mo.numParams)
+
+	for i := 0; i < mo.numParams; i++ {
+		paramAddress := mo.baseInteger.address + address(i+1)
+		indirectAddress := address(mo.baseInteger.machine.readAddress(paramAddress).Value())
+
+		switch mo.mode[i] {
+		case m19opModeImmediate:
+			addrs[i] = paramAddress
+		case m19opModePositional:
+			addrs[i] = indirectAddress
+		default:
+			panic("Unsupported mode")
+		}
+	}
+	return addrs
 }
 
 func (mo *m19operation) writeToRAM(addr address, value int) {
@@ -171,7 +196,7 @@ func (mo *m19operation) writeToRAM(addr address, value int) {
 func (mo m19operation) String() string {
 	retString := ""
 	if mo.guessed {
-		retString += "?=>\t"
+		retString += "?>\t"
 	}
 	retString += fmt.Sprintf("%s", mo.repr)
 	for i := 0; i < mo.numParams; i++ {
@@ -180,12 +205,12 @@ func (mo m19operation) String() string {
 
 		switch mo.mode[i] {
 		case m19opModeImmediate:
-			retString = fmt.Sprintf("%s '%v'", retString, paramInteger)
+			retString = fmt.Sprintf("%s\t%v'", retString, paramInteger)
 		case m19opModePositional:
 			dereferenced := mo.baseInteger.machine.readAddress(address(paramInteger.Value())).Value()
-			retString = fmt.Sprintf("%s #%v (%d)", retString, paramInteger, dereferenced)
+			retString = fmt.Sprintf("%s\t#%v (%d)", retString, paramInteger, dereferenced)
 		default:
-			retString = fmt.Sprintf("%s ??'%v'", retString, paramInteger)
+			retString = fmt.Sprintf("%s\t??'%v'", retString, paramInteger)
 		}
 	}
 	return retString

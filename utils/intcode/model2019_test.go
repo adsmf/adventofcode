@@ -21,6 +21,10 @@ func TestM19(t *testing.T) {
 			program:  "1,0,0,0,99,0,0,0,0,0",
 			endState: "2,0,0,0,99,0,0,0,0,0",
 		},
+		testDef{
+			program:  "2,3,0,3,99",
+			endState: "2,3,0,6,99",
+		},
 	}
 	for id, test := range tests {
 		t.Run(fmt.Sprintf("Test %d", id), func(t *testing.T) {

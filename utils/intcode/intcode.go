@@ -210,9 +210,7 @@ func (i baseInteger) Value() int {
 }
 
 func (i *baseInteger) Set(value int) {
-	fmt.Printf("Setting %v to %d ...", i.Address(), value)
 	i.value = value
-	fmt.Printf("%d\n", i.Value())
 }
 
 func (i baseInteger) String() string {
