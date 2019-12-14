@@ -23,9 +23,6 @@ type Edge struct {
 // Cost is, unsurprisingly, the cost associated with a graph edge
 type Cost float64
 
-type routedNode struct {
-}
-
 // Route finds a path from start to goal, returning the list of nodes to visit
 func Route(start, goal Node) ([]Node, error) {
 	openSet := nodeSet{}
