@@ -53,9 +53,10 @@ func (m *m19) decodeAddress(addr address) operation {
 			address: addr,
 			value:   m.machine.ram[addr].Value(),
 		},
+		guessed: false,
 	}
 	opCode := m19operationCode(op.Value() % 100)
-	// opMode := op.Value() / 100
+	opMode := op.Value() / 100
 	// fmt.Printf("Decoding operation %d: %d / %d\n", addr, opCode, opMode)
 	switch opCode {
 	case m19OpAdd:
@@ -88,6 +89,10 @@ func (m *m19) decodeAddress(addr address) operation {
 	default:
 		op.repr = fmt.Sprintf("UNK-%d", opCode)
 		return nil
+	}
+	for i := 0; i < op.numParams; i++ {
+		op.mode[i] = m19opMode(opMode % 10)
+		opMode /= 10
 	}
 	return op
 }
@@ -148,13 +153,15 @@ func (mo *m19operation) Exec() ExecReturnCode {
 	read := mo.baseInteger.machine.readAddress
 	write := mo.baseInteger.machine.writeAddress
 	paramAddresses := mo.getParamAddresses()
-	switch m19operationCode(mo.baseInteger.value) {
+	mo.baseInteger.machine.registers[RegisterInstructionPointer] += 1 + mo.numParams
+	op := m19operationCode(mo.baseInteger.value % 100)
+	switch op {
 	case m19OpAdd:
 		a := read(paramAddresses[0]).Value()
 		b := read(paramAddresses[1]).Value()
 
 		newVal := a + b
-		fmt.Printf("ADD %d + %d => %v\n", a, b, paramAddresses[2])
+		// log.Printf("ADD: %d + %d => %v\n", a, b, address(paramAddresses[2]))
 
 		write(address(paramAddresses[2]), newVal)
 	case m19OpMultiply:
@@ -162,12 +169,21 @@ func (mo *m19operation) Exec() ExecReturnCode {
 		b := read(paramAddresses[1]).Value()
 
 		newVal := a * b
-
-		fmt.Printf("MUL %d * %d => %v\n", a, b, paramAddresses[2])
+		// log.Printf("MUL: %d * %d => %v\n", a, b, address(paramAddresses[2]))
 
 		write(address(paramAddresses[2]), newVal)
+	case m19OpOutput:
+		newVal := read(paramAddresses[0]).Value()
+		// log.Printf("OUTPUT: #%v (%d)\n", paramAddresses[0], newVal)
+		mo.baseInteger.machine.setRegister(
+			M19RegisterOutput,
+			newVal,
+		)
+		return ExecRCInterrupt
+	default:
+		return ExecRCInvalidInstruction
 	}
-	return ExecRCInvalidInstruction
+	return ExecRCNone
 }
 
 func (mo *m19operation) getParamAddresses() []address {
@@ -186,6 +202,7 @@ func (mo *m19operation) getParamAddresses() []address {
 			panic("Unsupported mode")
 		}
 	}
+
 	return addrs
 }
 

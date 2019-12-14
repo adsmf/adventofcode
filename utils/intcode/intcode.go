@@ -11,7 +11,9 @@ func NewMachine(options ...MachineOption) Machine {
 	m := Machine{
 		ram:        map[address]integer{},
 		operations: map[address]operation{},
-		registers:  registerList{},
+		registers: registerList{
+			RegisterInstructionPointer: 0,
+		},
 	}
 	for _, option := range options {
 		option(&m)
@@ -36,23 +38,40 @@ func (m *Machine) LoadProgram(program string) error {
 }
 
 // Register reads the value from a machine register
-func (m *Machine) Register(registerID) int {
-	return 0
+func (m *Machine) Register(reg registerID) int {
+	return m.registers[reg]
 }
 
 // Step executes a single operation on the processor
 func (m *Machine) Step() ExecReturnCode {
 	ip := address(m.registers[RegisterInstructionPointer])
 	op := m.model.decodeAddress(ip)
+	m.operations[ip] = op
 
 	return op.Exec()
+}
+
+// Run runs the processor until a halt signal is hit
+func (m *Machine) Run() {
+	for {
+		rc := m.Step()
+		if rc != ExecRCNone {
+			break
+		}
+	}
 }
 
 func (m Machine) String() string {
 	state := []string{
 		"Model: " + m.model.name(),
-		"Decode:",
 	}
+
+	state = append(state, "Registers:")
+	for reg, value := range m.registers {
+		state = append(state, fmt.Sprintf("\t%d: %d", reg, value))
+	}
+
+	state = append(state, "Decode:")
 	opAddresses := addressList{}
 	for opAddress := range m.operations {
 		opAddresses = append(opAddresses, opAddress)
@@ -100,6 +119,15 @@ func (m *Machine) readAddress(addr address) integer {
 
 func (m *Machine) writeAddress(addr address, value int) {
 	m.ram[addr].Set(value)
+	delete(m.operations, addr)
+	// if _,found := m.operations[addr]; found {
+	// 	// TODO decode?
+	// }
+}
+
+// Register reads the value from a machine register
+func (m *Machine) setRegister(reg registerID, value int) {
+	m.registers[reg] = value
 }
 
 type registerList map[registerID]int
