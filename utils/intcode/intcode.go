@@ -11,6 +11,7 @@ func NewMachine(options ...MachineOption) Machine {
 	m := Machine{
 		ram:        map[address]integer{},
 		operations: map[address]operation{},
+		registers:  registerList{},
 	}
 	for _, option := range options {
 		option(&m)
@@ -23,6 +24,7 @@ type Machine struct {
 	model      model
 	ram        ram
 	operations operationMap
+	registers  registerList
 }
 
 // LoadProgram wipes the machine and loads a new program from an input string
@@ -31,6 +33,19 @@ func (m *Machine) LoadProgram(program string) error {
 		return fmt.Errorf("Cannot parse program: No intcode machine model defined")
 	}
 	return m.model.parse(program)
+}
+
+// Register reads the value from a machine register
+func (m *Machine) Register(registerID) int {
+	return 0
+}
+
+// Step executes a single operation on the processor
+func (m *Machine) Step() ExecReturnCode {
+	ip := address(m.registers[RegisterInstructionPointer])
+	op := m.model.decodeAddress(ip)
+
+	return op.Exec()
 }
 
 func (m Machine) String() string {
@@ -82,6 +97,21 @@ func (m Machine) String() string {
 func (m *Machine) readAddress(addr address) integer {
 	return m.ram[addr]
 }
+
+func (m *Machine) writeAddress(addr address, value int) {
+	m.ram[addr].Set(value)
+}
+
+type registerList map[registerID]int
+
+const (
+	_ registerID = iota // Skip 0
+
+	// RegisterInstructionPointer register stores the current processor instruction pointer
+	RegisterInstructionPointer
+
+	registerCommonEnd // Used for derived models to continue numbering
+)
 
 type ram map[address]integer
 
@@ -139,6 +169,7 @@ func (om operationMap) String() string {
 type model interface {
 	name() string
 	parse(program string) error
+	decodeAddress(addr address) operation
 }
 
 // MachineOption defines configuration options that can be applied to an intcode machine
@@ -158,42 +189,55 @@ func (a addressList) Less(i, j int) bool { return a[i] < a[j] }
 
 type integer interface {
 	Address() address
-	IntegerType() integerType
 	Value() int
+	Set(int)
 }
 
+type registerID int
+
 type baseInteger struct {
-	machine     *Machine
-	address     address
-	integerType integerType
-	value       int
+	machine *Machine
+	address address
+	value   int
 }
 
 func (i baseInteger) Address() address {
 	return i.address
 }
 
-func (i baseInteger) IntegerType() integerType {
-	return i.integerType
-}
-
 func (i baseInteger) Value() int {
 	return i.value
+}
+
+func (i *baseInteger) Set(value int) {
+	fmt.Printf("Setting %v to %d ...", i.Address(), value)
+	i.value = value
+	fmt.Printf("%d\n", i.Value())
 }
 
 func (i baseInteger) String() string {
 	return fmt.Sprintf("%d", i.value)
 }
 
-type integerType int
-
-const (
-	integerTypeInstruction integerType = iota
-	integerTypeData
-)
-
 type operation interface {
-	Exec()
+	Exec() ExecReturnCode
 	Name() string
 	NumParams() int
 }
+
+// ExecReturnCode represents the return code from executing an operation
+type ExecReturnCode int
+
+const (
+	// ExecRCNone indicates a normal (non-halting) operation
+	ExecRCNone ExecReturnCode = iota
+
+	// ExecRCInvalidInstruction indicates an invalid instruction execution was attempted
+	ExecRCInvalidInstruction
+
+	// ExecRCHCF indicates that the machine should Halt and Catch Fire
+	ExecRCHCF
+
+	// ExecRCInterrupt indicates that operation triggered an interrupt
+	ExecRCInterrupt
+)

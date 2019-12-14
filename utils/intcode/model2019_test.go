@@ -15,11 +15,11 @@ func TestM19(t *testing.T) {
 	tests := []testDef{
 		testDef{
 			program:  "1,0,0,0,99",
-			endState: "1,0,0,0,99",
+			endState: "2,0,0,0,99",
 		},
 		testDef{
 			program:  "1,0,0,0,99,0,0,0,0,0",
-			endState: "1,0,0,0,99,0,0,0,0,0",
+			endState: "2,0,0,0,99,0,0,0,0,0",
 		},
 	}
 	for id, test := range tests {
@@ -32,6 +32,7 @@ func TestM19(t *testing.T) {
 			t.Logf("Initial machine state:\n%v", m)
 
 			if test.endState != "" {
+				m.Step()
 				assert.Equal(t, test.endState, m.ram.String())
 			}
 		})
