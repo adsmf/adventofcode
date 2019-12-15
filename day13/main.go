@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/adsmf/adventofcode2019/utils/intcode"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
@@ -57,17 +59,19 @@ type point struct {
 type grid map[point]tile
 
 type game struct {
-	lock           *sync.Mutex
-	tiles          grid
-	displayHistory []string
-	maxX, maxY     int
-	ballX          int
-	paddleX        int
-	lastDraw       string
-	screen         *tview.TextView
-	cabinet        *tview.Application
-	nextInput      int64
-	cpu            *machine
+	tiles           grid
+	displayHistory  []string
+	maxX, maxY      int
+	ballX           int
+	paddleX         int
+	lastDraw        string
+	screen          *tview.TextView
+	cabinet         *tview.Application
+	nextInput       int
+	cpu             *intcode.Machine
+	piloter         intcode.InputCallback
+	bufferedOutputs []int
+	score           int
 }
 
 func (s *game) String() string {
@@ -104,94 +108,83 @@ func (s *game) set(x, y int, tileType tile) {
 	s.tiles[point{x, y}] = tileType
 }
 
-func (s *game) autopilot() int64 {
-	s.lock.Lock()
+func (s *game) pilot() (int, bool) {
+	return s.piloter()
+}
+
+func (s *game) autopilot() (int, bool) {
 	ball := s.ballX
 	paddle := s.paddleX
 	if interactive {
 		time.Sleep(10 * time.Millisecond)
 	}
-	s.lock.Unlock()
 	if ball < paddle {
-		return -1
+		return -1, false
 	} else if ball > paddle {
-		return 1
+		return 1, false
 	} else {
-		return 0
+		return 0, false
 	}
 }
 
-func (s *game) manualpilot() int64 {
-	s.lock.Lock()
+func (s *game) manualpilot() (int, bool) {
 	time.Sleep(1 * time.Second)
 	returnValue := s.nextInput
 	s.nextInput = 0
-	s.lock.Unlock()
-	return returnValue
+	return returnValue, false
 }
 
-func (s *game) outputCountHandler(wg *sync.WaitGroup, output chan int64, blockTileCount *int) {
-	for range output {
-		s.lock.Lock()
-		<-output
-		tileType := tile(<-output)
+type blockCounter struct {
+	opCount        int
+	blockTileCount int
+}
 
+func (s *blockCounter) outputCountHandler(output int) {
+	s.opCount++
+	if s.opCount == 3 {
+		tileType := tile(output)
 		if tile(tileType) == tileBlock {
-			*blockTileCount++
+			s.blockTileCount++
 		}
-		s.lock.Unlock()
+		s.opCount = 0
 	}
-	wg.Done()
 }
 
-func (s *game) outputHandler(wg *sync.WaitGroup, output chan int64, score *int) {
-	for x := range output {
-		s.lock.Lock()
-		y := <-output
-		tileType := tile(<-output)
+func (s *game) outputHandler(output int) {
+	s.bufferedOutputs = append(s.bufferedOutputs, output)
+	if len(s.bufferedOutputs) < 3 {
+		return
+	}
+	x := s.bufferedOutputs[0]
+	y := s.bufferedOutputs[1]
+	tileType := tile(s.bufferedOutputs[2])
+	s.bufferedOutputs = []int{}
 
-		switch tileType {
-		case tileBall:
-			s.ballX = int(x)
-		case tilePaddle:
-			s.paddleX = int(x)
-		}
-		if x == -1 && y == 0 {
-			*score = int(tileType)
-		}
-		s.set(int(x), int(y), tileType)
-		lastDraw := s.String()
-		s.lock.Unlock()
-		if s.screen != nil {
-			s.cabinet.QueueUpdateDraw(func() {
-				s.screen.SetText(fmt.Sprintf("Ball: %d; Paddle: %d\n%s", s.ballX, s.paddleX, lastDraw))
-				// s.cabinet.Draw()
-			})
-		}
+	switch tileType {
+	case tileBall:
+		s.ballX = x
+	case tilePaddle:
+		s.paddleX = x
 	}
-	if s.cabinet != nil {
-		modal := tview.NewModal()
-		modal.
-			SetText(fmt.Sprintf("Score: %d", *score)).
-			AddButtons([]string{"Quit"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				s.cabinet.Stop()
-				os.Exit(0)
-			}).
-			SetTitle("~ FIN ~")
-		s.cabinet.SetRoot(modal, false)
+	if x == -1 && y == 0 {
+		s.score = int(tileType)
 	}
-	wg.Done()
+	s.set(x, y, tileType)
+	lastDraw := s.String()
+	if s.screen != nil {
+		s.cabinet.QueueUpdateDraw(func() {
+			s.screen.SetText(fmt.Sprintf("Ball: %d; Paddle: %d\n%s", s.ballX, s.paddleX, lastDraw))
+		})
+	}
 }
 
 func (s *game) keyboadHandler(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Key() {
-	// switch event.Rune() {
 	case tcell.KeyEnter:
 		if autopilot {
-			s.cpu.inputCallback = s.manualpilot
+			s.piloter = s.manualpilot
 		} else {
-			s.cpu.inputCallback = s.autopilot
+			s.piloter = s.autopilot
 		}
 		autopilot = !autopilot
 	case tcell.KeyLeft, ',', 'a':
@@ -206,25 +199,28 @@ func (s *game) keyboadHandler(event *tcell.EventKey) *tcell.EventKey {
 }
 
 func runGame(program string, play bool, interactive bool) int {
-	score := 0
-	output := make(chan int64)
-	cpu := newMachine(program, nil, output)
 	gameInst := game{
-		lock:  &sync.Mutex{},
-		tiles: grid{},
-		cpu:   &cpu,
+		tiles:   grid{},
+		piloter: nil,
 	}
-	blockTileCount := 0
-	wg := sync.WaitGroup{}
+	var opHandler intcode.OutputCallback
+	counter := blockCounter{}
+	if play {
+		opHandler = gameInst.outputHandler
+	} else {
+		opHandler = counter.outputCountHandler
+	}
+	cpu := intcode.NewMachine(intcode.M19(gameInst.pilot, opHandler))
+	cpu.LoadProgram(program)
+	gameInst.cpu = &cpu
 
-	wg.Add(1)
 	if play && interactive {
 		if autopilot {
-			cpu.inputCallback = gameInst.autopilot
+			gameInst.piloter = gameInst.autopilot
 		} else {
-			cpu.inputCallback = gameInst.manualpilot
+			gameInst.piloter = gameInst.manualpilot
 		}
-		cpu.values[0] = 2
+		cpu.WriteRAM(0, 2)
 		mainView := tview.NewTextView()
 		mainView.SetBorder(true).SetTitle("Int(eractive)")
 
@@ -232,23 +228,43 @@ func runGame(program string, play bool, interactive bool) int {
 		gameInst.screen = mainView
 
 		gameInst.cabinet.SetInputCapture(gameInst.keyboadHandler)
-
-		go gameInst.outputHandler(&wg, output, &score)
 	} else if play {
-		cpu.inputCallback = gameInst.autopilot
-		cpu.values[0] = 2
-		go gameInst.outputHandler(&wg, output, &score)
-	} else {
-		go gameInst.outputCountHandler(&wg, output, &blockTileCount)
+		gameInst.piloter = gameInst.autopilot
+		cpu.WriteRAM(0, 2)
 	}
-	go cpu.run()
 	if gameInst.cabinet != nil {
-		gameInst.cabinet.Run()
+		go gameInst.cabinet.Run()
 	}
-	wg.Wait()
+	cpu.Run(false)
+
+	if gameInst.cabinet != nil {
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		modal := tview.NewModal()
+		modal.
+			SetText(fmt.Sprintf("Score: %d", gameInst.score)).
+			AddButtons([]string{"Quit"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				wg.Done()
+				gameInst.cabinet.Stop()
+				os.Exit(0)
+			}).
+			SetTitle("~ FIN ~")
+		gameInst.cabinet.SetRoot(modal, false)
+		wg.Wait()
+	}
 
 	if play {
-		return score
+		return gameInst.score
 	}
-	return blockTileCount
+	return counter.blockTileCount
+}
+
+func loadInputString() string {
+	inputRaw, err := ioutil.ReadFile("input.txt")
+	if err != nil {
+		panic(err)
+	}
+	return string(inputRaw)
+
 }
