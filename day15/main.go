@@ -62,35 +62,36 @@ func exploreAll(program string, start point) area {
 			point{0, 0}: tileEmpty,
 		},
 	}
-	routes := [][]int{
-		[]int{1},
-		[]int{2},
-		[]int{3},
-		[]int{4},
+	type routeState struct {
+		nextStep      int
+		previousState []byte
+		lastPos       point
 	}
 
-	lastRegionMap := ""
+	routes := []routeState{
+		routeState{1, []byte{}, start},
+		routeState{2, []byte{}, start},
+		routeState{3, []byte{}, start},
+		routeState{4, []byte{}, start},
+	}
+
+	lastRegionLen := -1
 	for {
-		nextRoutes := [][]int{}
+		nextRoutes := []routeState{}
 		for _, route := range routes {
-			wall, _ := tryRoute(program, &region, route, start)
+			wall, _, state, lastPos := tryRoute(program, &region, []int{route.nextStep}, route.previousState, route.lastPos)
 			if !wall {
-				lastDir := route[len(route)-1]
-				if lastDir != 1 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 2))
+				if route.nextStep != 1 {
+					nextRoutes = append(nextRoutes, routeState{2, state, lastPos})
 				}
-				if lastDir != 2 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 1))
+				if route.nextStep != 2 {
+					nextRoutes = append(nextRoutes, routeState{1, state, lastPos})
 				}
-				if lastDir != 3 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 4))
+				if route.nextStep != 3 {
+					nextRoutes = append(nextRoutes, routeState{4, state, lastPos})
 				}
-				if lastDir != 4 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 3))
+				if route.nextStep != 4 {
+					nextRoutes = append(nextRoutes, routeState{3, state, lastPos})
 				}
 			}
 		}
@@ -98,11 +99,12 @@ func exploreAll(program string, start point) area {
 			break
 		}
 		routes = nextRoutes
-		newRegionMap := region.String()
-		if lastRegionMap == newRegionMap {
+
+		newRegionLen := len(region.grid)
+		if lastRegionLen == newRegionLen {
 			break
 		}
-		lastRegionMap = newRegionMap
+		lastRegionLen = newRegionLen
 	}
 
 	return region
@@ -115,37 +117,38 @@ func findOxygen(program string) int {
 		},
 	}
 
-	routes := [][]int{
-		[]int{1},
-		[]int{2},
-		[]int{3},
-		[]int{4},
+	type routeState struct {
+		nextStep      int
+		previousState []byte
+		lastPos       point
+	}
+
+	routes := []routeState{
+		routeState{1, []byte{}, point{0, 0}},
+		routeState{2, []byte{}, point{0, 0}},
+		routeState{3, []byte{}, point{0, 0}},
+		routeState{4, []byte{}, point{0, 0}},
 	}
 
 	for i := 1; i < 400; i++ {
-		nextRoutes := [][]int{}
+		nextRoutes := []routeState{}
 		for _, route := range routes {
-			wall, oxygen := tryRoute(program, &region, route, point{0, 0})
+			wall, oxygen, state, lastPos := tryRoute(program, &region, []int{route.nextStep}, route.previousState, route.lastPos)
 			if oxygen {
 				return i
 			}
 			if !wall {
-				lastDir := route[len(route)-1]
-				if lastDir != 1 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 2))
+				if route.nextStep != 1 {
+					nextRoutes = append(nextRoutes, routeState{2, state, lastPos})
 				}
-				if lastDir != 2 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 1))
+				if route.nextStep != 2 {
+					nextRoutes = append(nextRoutes, routeState{1, state, lastPos})
 				}
-				if lastDir != 3 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 4))
+				if route.nextStep != 3 {
+					nextRoutes = append(nextRoutes, routeState{4, state, lastPos})
 				}
-				if lastDir != 4 {
-					copy := append(route[:0:0], route...)
-					nextRoutes = append(nextRoutes, append(copy, 3))
+				if route.nextStep != 4 {
+					nextRoutes = append(nextRoutes, routeState{3, state, lastPos})
 				}
 			}
 		}
@@ -155,24 +158,28 @@ func findOxygen(program string) int {
 		routes = nextRoutes
 	}
 
-	// fmt.Printf("Region:\n%#v\n%v\n", region, region)
 	return 0
 }
 
-func tryRoute(program string, region *area, inputs []int, start point) (bool, bool) {
+func tryRoute(program string, region *area, inputs []int, previousState []byte, start point) (bool, bool, []byte, point) {
 	mapper := robot{
 		tiles:     region,
 		inputList: inputs,
 		position:  start,
 	}
 	cpu := intcode.NewMachine(intcode.M19(mapper.guided, mapper.outputCallback))
-	cpu.LoadProgram(program)
+	if len(previousState) > 0 {
+		cpu.Restore(previousState)
+	} else {
+		cpu.LoadProgram(program)
+	}
 
 	mapper.cpu = &cpu
 
-	cpu.Run(false)
+	cpu.Run(true)
 
-	return mapper.hitWall, mapper.foundOxygen
+	state := cpu.Save()
+	return mapper.hitWall, mapper.foundOxygen, state, mapper.position
 }
 
 type tile int
@@ -202,16 +209,16 @@ func (a area) String() string {
 			switch a.grid[point{x, y}] {
 			case tileEmpty:
 				if x == 0 && y == 0 {
-					newOutput += fmt.Sprint("*")
+					newOutput += fmt.Sprint("⭐")
 				} else {
-					newOutput += fmt.Sprint(" ")
+					newOutput += fmt.Sprint("⬜")
 				}
 			case tileWall:
-				newOutput += fmt.Sprint("█")
+				newOutput += fmt.Sprint("🟥")
 			case tileOxygen:
-				newOutput += fmt.Sprint("o")
+				newOutput += fmt.Sprint("🟦")
 			default:
-				newOutput += fmt.Sprint("░")
+				newOutput += fmt.Sprint("⬛")
 			}
 		}
 		newOutput += fmt.Sprintln()
