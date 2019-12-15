@@ -70,6 +70,16 @@ func (m *Machine) Run(stopOnInterrupt bool) {
 	}
 }
 
+// ReadRAM returns the value at a given address
+func (m Machine) ReadRAM(addr address) int {
+	return m.ram[addr].Value()
+}
+
+// ReadRAM returns the value at a given address
+func (m Machine) WriteRAM(addr address, value int) {
+	m.ram[addr].Set(value)
+}
+
 func (m Machine) String() string {
 	state := []string{
 		"Model: " + m.model.name(),
