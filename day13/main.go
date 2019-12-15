@@ -108,7 +108,9 @@ func (s *game) autopilot() int64 {
 	s.lock.Lock()
 	ball := s.ballX
 	paddle := s.paddleX
-	time.Sleep(10 * time.Millisecond)
+	if interactive {
+		time.Sleep(10 * time.Millisecond)
+	}
 	s.lock.Unlock()
 	if ball < paddle {
 		return -1
