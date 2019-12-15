@@ -1,6 +1,8 @@
 package intcode
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"sort"
 	"strings"
@@ -75,7 +77,7 @@ func (m Machine) ReadRAM(addr address) int {
 	return m.ram[addr].Value()
 }
 
-// ReadRAM returns the value at a given address
+// WriteRAM stores a value at a given address
 func (m Machine) WriteRAM(addr address, value int) {
 	m.ram[addr].Set(value)
 }
@@ -86,7 +88,13 @@ func (m Machine) String() string {
 	}
 
 	state = append(state, "Registers:")
-	for reg, value := range m.registers {
+	registerIDs := registerIDList{}
+	for reg := range m.registers {
+		registerIDs = append(registerIDs, reg)
+	}
+	sort.Sort(registerIDs)
+	for _, reg := range registerIDs {
+		value := m.registers[reg]
 		state = append(state, fmt.Sprintf("\t%d: %d", reg, value))
 	}
 
@@ -148,7 +156,7 @@ func (m *Machine) writeAddress(addr address, value int) {
 		m.ram[addr] = &baseInteger{
 			machine: m,
 			address: addr,
-			value:   value,
+			Val:     value,
 		}
 	} else {
 		m.ram[addr].Set(value)
@@ -159,12 +167,60 @@ func (m *Machine) writeAddress(addr address, value int) {
 	// }
 }
 
+// Save serialises the machine state to be restored later
+func (m *Machine) Save() []byte {
+	buffer := bytes.NewBufferString("")
+	enc := gob.NewEncoder(buffer)
+	ram := map[address]int{}
+	for addr, value := range m.ram {
+		ram[addr] = value.Value()
+	}
+	state := savedState{
+		RAM:       ram,
+		Registers: m.registers,
+		ModelData: m.model.save(),
+	}
+	gob.Register(baseInteger{})
+	enc.Encode(state)
+	return buffer.Bytes()
+}
+
+// Restore recovers machine state from serialised data
+func (m *Machine) Restore(raw []byte) {
+	var state savedState
+
+	dec := gob.NewDecoder(bytes.NewReader(raw))
+	dec.Decode(&state)
+	for reg, value := range state.Registers {
+		m.setRegister(reg, value)
+	}
+	for addr, value := range state.RAM {
+		m.ram[addr] = &baseInteger{
+			machine: m,
+			address: addr,
+			Val:     value,
+		}
+	}
+	m.model.restore(state.ModelData)
+}
+
 // Register reads the value from a machine register
 func (m *Machine) setRegister(reg registerID, value int) {
 	m.registers[reg] = value
 }
 
+type savedState struct {
+	RAM       map[address]int `json:"ram"`
+	Registers registerList    `json:"registers"`
+	ModelData interface{}     `json:"modelData"`
+}
+
 type registerList map[registerID]int
+type registerIDList []registerID
+
+func (a registerIDList) Len() int           { return len(a) }
+func (a registerIDList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a registerIDList) Less(i, j int) bool { return a[i] < a[j] }
 
 const (
 	_ registerID = iota // Skip 0
@@ -232,6 +288,8 @@ type model interface {
 	name() string
 	parse(program string) error
 	decodeAddress(addr address) operation
+	save() interface{}
+	restore(interface{})
 }
 
 // MachineOption defines configuration options that can be applied to an intcode machine
@@ -260,7 +318,7 @@ type registerID int
 type baseInteger struct {
 	machine *Machine
 	address address
-	value   int
+	Val     int `json:"value"`
 }
 
 func (i baseInteger) Address() address {
@@ -268,15 +326,15 @@ func (i baseInteger) Address() address {
 }
 
 func (i baseInteger) Value() int {
-	return i.value
+	return i.Val
 }
 
 func (i *baseInteger) Set(value int) {
-	i.value = value
+	i.Val = value
 }
 
 func (i baseInteger) String() string {
-	return fmt.Sprintf("%d", i.value)
+	return fmt.Sprintf("%d", i.Val)
 }
 
 type operation interface {

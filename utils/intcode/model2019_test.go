@@ -140,3 +140,37 @@ func TestARB(t *testing.T) {
 
 	assert.Equal(t, expected, outputs)
 }
+
+func TestSaveRestore(t *testing.T) {
+	program := "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
+	expected := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
+
+	outputs := []int{}
+	outputStream := func(out int) {
+		outputs = append(outputs, out)
+	}
+
+	m := NewMachine(M19(nil, outputStream))
+	m.LoadProgram(program)
+	m.Step()
+	m.Step()
+	m.Step()
+	t.Logf("M1:\n%v\n", m)
+	backup := m.Save()
+
+	m2 := NewMachine(M19(nil, outputStream))
+	m2.Restore(backup)
+	t.Logf("M2:\n%v\n", m)
+
+	assert.Equal(t, m.Register(RegisterInstructionPointer), m2.Register(RegisterInstructionPointer))
+
+	assert.Equal(
+		t,
+		fmt.Sprintf("%v", m),
+		fmt.Sprintf("%v", m2),
+	)
+
+	m2.Run(false)
+
+	assert.Equal(t, expected, outputs)
+}

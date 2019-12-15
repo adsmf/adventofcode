@@ -1,6 +1,7 @@
 package intcode
 
 import (
+	"encoding/gob"
 	"fmt"
 	"strconv"
 	"strings"
@@ -54,7 +55,7 @@ func (m *m19) parse(program string) error {
 		decode := &baseInteger{
 			machine: m.machine,
 			address: address(pos),
-			value:   value,
+			Val:     value,
 		}
 		m.machine.ram[address(pos)] = decode
 	}
@@ -62,14 +63,30 @@ func (m *m19) parse(program string) error {
 	return nil
 }
 
+type saveData struct {
+	RelativeBase int `json:"relativeBase"`
+}
+
+func (m *m19) save() interface{} {
+	gob.Register(saveData{})
+	return saveData{
+		RelativeBase: m.relativeBase,
+	}
+}
+
+func (m *m19) restore(data interface{}) {
+	dataAssert := data.(saveData)
+	m.relativeBase = dataAssert.RelativeBase //int(math.Round(dataAssert["relativeBase"].(float64)))
+	m.guessOps()
+}
+
 func (m *m19) decodeAddress(addr address) operation {
 	op := &m19operation{
 		baseInteger: &baseInteger{
 			machine: m.machine,
 			address: addr,
-			value:   m.machine.readAddress(addr).Value(),
+			Val:     m.machine.readAddress(addr).Value(),
 		},
-		guessed: false,
 	}
 	opCode := m19operationCode(op.Value() % 100)
 	opMode := op.Value() / 100
@@ -124,7 +141,6 @@ func (m *m19) guessOps() {
 			return
 		}
 		m19op := op.(*m19operation)
-		m19op.guessed = true
 
 		m.machine.ram[addr] = m19op
 		m.machine.operations[addr] = m19op
@@ -163,7 +179,6 @@ type m19operation struct {
 	repr      string
 	numParams int
 	mode      []m19opMode
-	guessed   bool
 }
 
 func (mo m19operation) Address() address { return mo.baseInteger.Address() }
@@ -178,7 +193,7 @@ func (mo *m19operation) Exec() ExecReturnCode {
 	write := mo.baseInteger.machine.writeAddress
 	paramAddresses := mo.getParamAddresses()
 	mo.baseInteger.machine.registers[RegisterInstructionPointer] += 1 + mo.numParams
-	op := m19operationCode(mo.baseInteger.value % 100)
+	op := m19operationCode(mo.baseInteger.Val % 100)
 	switch op {
 	case m19OpAdd:
 		a := read(paramAddresses[0]).Value()
@@ -274,9 +289,6 @@ func (mo *m19operation) writeToRAM(addr address, value int) {
 
 func (mo m19operation) String() string {
 	retString := ""
-	if mo.guessed {
-		retString += "?>\t"
-	}
 	retString += fmt.Sprintf("%s", mo.repr)
 	for i := 0; i < mo.numParams; i++ {
 		paramAddress := mo.baseInteger.address + address(i+1)
