@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestPart1Answer(t *testing.T) {
-// 	assert.Equal(t, 252, part1())
-// }
+func TestPart1Answer(t *testing.T) {
+	assert.Equal(t, 252, part1())
+}
 
 func TestPart2Answer(t *testing.T) {
-	assert.Equal(t, 0, part2())
+	assert.Equal(t, 350, part2())
 }
 
 func BenchmarkPart1(b *testing.B) {
@@ -26,9 +26,9 @@ func BenchmarkPart2(b *testing.B) {
 	}
 }
 
-// func ExampleMain() {
-// 	main()
-// 	//Output:
-// 	// Part 1: 252
-// 	// Part 2: 0
-// }
+func ExampleMain() {
+	main()
+	//Output:
+	// Part 1: 252
+	// Part 2: 350
+}

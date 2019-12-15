@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sync"
 )
 
 var interactive bool
@@ -20,12 +19,44 @@ func part1() int {
 
 func part2() int {
 	inputString := loadInputString()
-	region := exploreAll(inputString)
-	fmt.Printf("Region:\n%v\n", region)
-	return -1
+	region := exploreAll(inputString, point{0, 0})
+	// fmt.Printf("Explored in %d steps\nRegion:\n%v\n", steps, region)
+	return fillOxygen(region)
 }
 
-func exploreAll(program string) area {
+func fillOxygen(region area) int {
+
+	oxyMap := area{
+		grid: grid{},
+		minX: region.minX,
+		maxX: region.maxX,
+		minY: region.minX,
+		maxY: region.maxY,
+	}
+	for pos, tile := range region.grid {
+		oxyMap.grid[pos] = tile
+	}
+	steps := 0
+	for ; oxyMap.countEmpty() > 0; steps++ {
+		nextFill := []point{}
+		for pos, tile := range oxyMap.grid {
+			if tile == tileEmpty {
+				if oxyMap.grid[point{pos.x + 1, pos.y}] == tileOxygen ||
+					oxyMap.grid[point{pos.x - 1, pos.y}] == tileOxygen ||
+					oxyMap.grid[point{pos.x, pos.y + 1}] == tileOxygen ||
+					oxyMap.grid[point{pos.x, pos.y - 1}] == tileOxygen {
+					nextFill = append(nextFill, pos)
+				}
+			}
+		}
+		for _, fill := range nextFill {
+			oxyMap.set(fill, tileOxygen)
+		}
+	}
+	return steps
+}
+
+func exploreAll(program string, start point) area {
 	region := area{
 		grid: grid{
 			point{0, 0}: tileEmpty,
@@ -39,10 +70,10 @@ func exploreAll(program string) area {
 	}
 
 	lastRegionMap := ""
-	for i := 1; i < 800; i++ {
+	for {
 		nextRoutes := [][]int64{}
 		for _, route := range routes {
-			wall, _ := tryRoute(program, &region, route)
+			wall, _ := tryRoute(program, &region, route, start)
 			if !wall {
 				lastDir := route[len(route)-1]
 				if lastDir != 1 {
@@ -94,7 +125,7 @@ func findOxygen(program string) int {
 	for i := 1; i < 400; i++ {
 		nextRoutes := [][]int64{}
 		for _, route := range routes {
-			wall, oxygen := tryRoute(program, &region, route)
+			wall, oxygen := tryRoute(program, &region, route, point{0, 0})
 			if oxygen {
 				return i
 			}
@@ -124,17 +155,17 @@ func findOxygen(program string) int {
 		routes = nextRoutes
 	}
 
-	fmt.Printf("Region:\n%#v\n%v\n", region, region)
+	// fmt.Printf("Region:\n%#v\n%v\n", region, region)
 	return 0
 }
 
-func tryRoute(program string, region *area, inputs []int64) (bool, bool) {
+func tryRoute(program string, region *area, inputs []int64, start point) (bool, bool) {
 	cpu := newMachine(program, nil, nil)
 	mapper := robot{
 		tiles:     region,
 		cpu:       &cpu,
 		inputList: inputs,
-		position:  point{0, 0},
+		position:  start,
 	}
 
 	cpu.inputCallback = mapper.guided
@@ -187,6 +218,16 @@ func (a area) String() string {
 		newOutput += fmt.Sprintln()
 	}
 	return newOutput
+}
+
+func (a *area) countEmpty() int {
+	count := 0
+	for _, tile := range a.grid {
+		if tile == tileEmpty {
+			count++
+		}
+	}
+	return count
 }
 
 func (a *area) set(pos point, tileType tile) {
@@ -266,11 +307,4 @@ func (r *robot) outputCallback(out int64) {
 		r.oxygenPos = pos
 		// fmt.Printf("Oxygen at %v!\n", pos)
 	}
-}
-
-func (r *robot) outputHandler(wg *sync.WaitGroup, output chan int64) {
-	for x := range output {
-		r.outputCallback(x)
-	}
-	wg.Done()
 }
