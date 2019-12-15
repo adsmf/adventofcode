@@ -14,13 +14,19 @@ const (
 	M19RelativeBase
 )
 
+// InputCallback is the function to be used by the processor to retrieve new input
+type InputCallback func() (int, bool)
+
+// OutputCallback is the function called by the processor when a value is output
+type OutputCallback func(int)
+
 // M19 sets the behaviour of the intcode machine to AoC 2019 rules
-func M19(input <-chan int, output chan<- int) MachineOption {
+func M19(inputCallback InputCallback, outputCallback OutputCallback) MachineOption {
 	return func(m *Machine) {
 		m.model = &m19{
-			machine: m,
-			input:   input,
-			output:  output,
+			machine:        m,
+			inputCallback:  inputCallback,
+			outputCallback: outputCallback,
 		}
 	}
 }
@@ -28,9 +34,9 @@ func M19(input <-chan int, output chan<- int) MachineOption {
 type m19 struct {
 	machine *Machine
 
-	relativeBase int
-	input        <-chan int
-	output       chan<- int
+	relativeBase   int
+	inputCallback  InputCallback
+	outputCallback OutputCallback
 }
 
 func (m *m19) name() string {
@@ -192,12 +198,15 @@ func (mo *m19operation) Exec() ExecReturnCode {
 			M19RegisterOutput,
 			newVal,
 		)
-		if mo.baseInteger.machine.model.(*m19).output != nil {
-			mo.baseInteger.machine.model.(*m19).output <- newVal
+		if mo.baseInteger.machine.model.(*m19).outputCallback != nil {
+			mo.baseInteger.machine.model.(*m19).outputCallback(newVal)
 		}
 		return ExecRCInterrupt
 	case m19OpInput:
-		in := <-mo.baseInteger.machine.model.(*m19).input
+		in, halt := mo.baseInteger.machine.model.(*m19).inputCallback()
+		if halt {
+			return ExecRCHCF
+		}
 		write(address(paramAddresses[0]), in)
 	case m19OpJumpTrue:
 		test := read(paramAddresses[0]).Value()

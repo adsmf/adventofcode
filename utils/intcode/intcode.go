@@ -49,7 +49,6 @@ func (m *Machine) Step() ExecReturnCode {
 	if op == nil {
 		panic(fmt.Sprintf("Unable to decode op att address %v", ip))
 	}
-	fmt.Printf("Running op %v\n", op)
 	m.operations[ip] = op
 
 	return op.Exec()
