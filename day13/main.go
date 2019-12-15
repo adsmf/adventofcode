@@ -82,11 +82,11 @@ func (s *game) String() string {
 			case tileEmpty:
 				newOutput += fmt.Sprint(" ")
 			case tileWall:
-				newOutput += fmt.Sprint("#")
+				newOutput += fmt.Sprint("█")
 			case tileBlock:
-				newOutput += fmt.Sprint("~")
+				newOutput += fmt.Sprint("▄")
 			case tilePaddle:
-				newOutput += fmt.Sprint("-")
+				newOutput += fmt.Sprint("─")
 			case tileBall:
 				newOutput += fmt.Sprint("o")
 			default:
