@@ -19,7 +19,62 @@ func part1() int {
 }
 
 func part2() int {
-	return 0
+	inputString := loadInputString()
+	region := exploreAll(inputString)
+	fmt.Printf("Region:\n%v\n", region)
+	return -1
+}
+
+func exploreAll(program string) area {
+	region := area{
+		grid: grid{
+			point{0, 0}: tileEmpty,
+		},
+	}
+	routes := [][]int64{
+		[]int64{1},
+		[]int64{2},
+		[]int64{3},
+		[]int64{4},
+	}
+
+	lastRegionMap := ""
+	for i := 1; i < 800; i++ {
+		nextRoutes := [][]int64{}
+		for _, route := range routes {
+			wall, _ := tryRoute(program, &region, route)
+			if !wall {
+				lastDir := route[len(route)-1]
+				if lastDir != 1 {
+					copy := append(route[:0:0], route...)
+					nextRoutes = append(nextRoutes, append(copy, 2))
+				}
+				if lastDir != 2 {
+					copy := append(route[:0:0], route...)
+					nextRoutes = append(nextRoutes, append(copy, 1))
+				}
+				if lastDir != 3 {
+					copy := append(route[:0:0], route...)
+					nextRoutes = append(nextRoutes, append(copy, 4))
+				}
+				if lastDir != 4 {
+					copy := append(route[:0:0], route...)
+					nextRoutes = append(nextRoutes, append(copy, 3))
+				}
+			}
+		}
+		if len(nextRoutes) == 0 {
+			break
+		}
+		routes = nextRoutes
+		newRegionMap := region.String()
+		if lastRegionMap == newRegionMap {
+			break
+		}
+		lastRegionMap = newRegionMap
+	}
+
+	return region
 }
 
 func findOxygen(program string) int {
@@ -119,14 +174,14 @@ func (a area) String() string {
 				if x == 0 && y == 0 {
 					newOutput += fmt.Sprint("*")
 				} else {
-					newOutput += fmt.Sprint(".")
+					newOutput += fmt.Sprint(" ")
 				}
 			case tileWall:
-				newOutput += fmt.Sprint("#")
+				newOutput += fmt.Sprint("█")
 			case tileOxygen:
 				newOutput += fmt.Sprint("o")
 			default:
-				newOutput += fmt.Sprint("?")
+				newOutput += fmt.Sprint("░")
 			}
 		}
 		newOutput += fmt.Sprintln()
