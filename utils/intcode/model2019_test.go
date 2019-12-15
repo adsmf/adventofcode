@@ -2,6 +2,7 @@ package intcode
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,18 +78,26 @@ func TestM19(t *testing.T) {
 			input:   9,
 			output:  1001,
 		},
+		testDef{
+			program: "1102,34915192,34915192,7,4,7,99,0",
+			output:  1219070632396864,
+		},
+		testDef{
+			program: "104,1125899906842624,99",
+			output:  1125899906842624,
+		},
 	}
 	for id, test := range tests {
 		t.Run(fmt.Sprintf("Test %d", id), func(t *testing.T) {
 			t.Logf("Test definition:\n%#v", test)
 			inputStream := make(chan int, 1)
-			outputStream := make(chan int)
+			// outputStream := make(chan int)
 
 			inputStream <- test.input
 
 			var m Machine
 			assert.NotPanics(t, func() {
-				m = NewMachine(M19(inputStream, outputStream))
+				m = NewMachine(M19(inputStream, nil))
 				m.LoadProgram(test.program)
 			})
 			t.Logf("Initial machine state:\n%v", m)
@@ -110,4 +119,30 @@ func TestM19(t *testing.T) {
 			assert.Equal(t, test.output, m.registers[M19RegisterOutput])
 		})
 	}
+}
+
+func TestARB(t *testing.T) {
+	program := "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
+	expected := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
+	outputStream := make(chan int)
+	var m Machine
+	assert.NotPanics(t, func() {
+		m = NewMachine(M19(nil, outputStream))
+		m.LoadProgram(program)
+	})
+	outputs := []int{}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for op := range outputStream {
+			outputs = append(outputs, op)
+		}
+		wg.Done()
+	}()
+	m.Run(false)
+	// assert.NotPanics(t, func() {
+	// })
+	close(outputStream)
+	wg.Wait()
+	assert.Equal(t, expected, outputs)
 }

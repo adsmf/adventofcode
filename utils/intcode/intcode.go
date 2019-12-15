@@ -46,17 +46,27 @@ func (m *Machine) Register(reg registerID) int {
 func (m *Machine) Step() ExecReturnCode {
 	ip := address(m.registers[RegisterInstructionPointer])
 	op := m.model.decodeAddress(ip)
+	if op == nil {
+		panic(fmt.Sprintf("Unable to decode op att address %v", ip))
+	}
+	fmt.Printf("Running op %v\n", op)
 	m.operations[ip] = op
 
 	return op.Exec()
 }
 
 // Run runs the processor until a halt signal is hit
-func (m *Machine) Run() {
+func (m *Machine) Run(stopOnInterrupt bool) {
 	for {
 		rc := m.Step()
-		if rc != ExecRCNone {
-			break
+		switch rc {
+		case ExecRCNone:
+		case ExecRCInterrupt:
+			if stopOnInterrupt {
+				return
+			}
+		default:
+			return
 		}
 	}
 }
@@ -114,11 +124,26 @@ func (m Machine) String() string {
 }
 
 func (m *Machine) readAddress(addr address) integer {
-	return m.ram[addr]
+	// return m.ram[addr]
+	if value, found := m.ram[addr]; found {
+		return value
+	}
+	return &baseInteger{
+		machine: m,
+		address: addr,
+	}
 }
 
 func (m *Machine) writeAddress(addr address, value int) {
-	m.ram[addr].Set(value)
+	if m.ram[addr] == nil {
+		m.ram[addr] = &baseInteger{
+			machine: m,
+			address: addr,
+			value:   value,
+		}
+	} else {
+		m.ram[addr].Set(value)
+	}
 	delete(m.operations, addr)
 	// if _,found := m.operations[addr]; found {
 	// 	// TODO decode?

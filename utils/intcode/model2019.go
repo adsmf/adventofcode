@@ -61,13 +61,12 @@ func (m *m19) decodeAddress(addr address) operation {
 		baseInteger: &baseInteger{
 			machine: m.machine,
 			address: addr,
-			value:   m.machine.ram[addr].Value(),
+			value:   m.machine.readAddress(addr).Value(),
 		},
 		guessed: false,
 	}
 	opCode := m19operationCode(op.Value() % 100)
 	opMode := op.Value() / 100
-	// fmt.Printf("Decoding operation %d: %d / %d\n", addr, opCode, opMode)
 	switch opCode {
 	case m19OpAdd:
 		op.repr = "ADD"
@@ -193,6 +192,9 @@ func (mo *m19operation) Exec() ExecReturnCode {
 			M19RegisterOutput,
 			newVal,
 		)
+		if mo.baseInteger.machine.model.(*m19).output != nil {
+			mo.baseInteger.machine.model.(*m19).output <- newVal
+		}
 		return ExecRCInterrupt
 	case m19OpInput:
 		in := <-mo.baseInteger.machine.model.(*m19).input
@@ -273,14 +275,14 @@ func (mo m19operation) String() string {
 
 		switch mo.mode[i] {
 		case m19opModeImmediate:
-			retString = fmt.Sprintf("%s\t%v'", retString, paramInteger)
+			retString = fmt.Sprintf("%s\t'%v'", retString, paramInteger)
 		case m19opModePositional:
 			dereferenced := mo.baseInteger.machine.readAddress(address(paramInteger.Value())).Value()
 			retString = fmt.Sprintf("%s\t#%v (%d)", retString, paramInteger, dereferenced)
 		case m19opModeRelative:
 			offset := mo.baseInteger.machine.Register(M19RelativeBase)
 			dereferenced := mo.baseInteger.machine.readAddress(address(paramInteger.Value() + offset)).Value()
-			retString = fmt.Sprintf("%s\t#%v (%d)", retString, paramInteger, dereferenced)
+			retString = fmt.Sprintf("%s\t#%v+%v (%d)", retString, paramInteger, offset, dereferenced)
 		default:
 			retString = fmt.Sprintf("%s\t??'%v'", retString, paramInteger)
 		}
