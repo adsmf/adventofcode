@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/adsmf/adventofcode2019/utils/intcode"
+	"io/ioutil"
 )
 
 var interactive bool
@@ -60,16 +62,16 @@ func exploreAll(program string, start point) area {
 			point{0, 0}: tileEmpty,
 		},
 	}
-	routes := [][]int64{
-		[]int64{1},
-		[]int64{2},
-		[]int64{3},
-		[]int64{4},
+	routes := [][]int{
+		[]int{1},
+		[]int{2},
+		[]int{3},
+		[]int{4},
 	}
 
 	lastRegionMap := ""
 	for {
-		nextRoutes := [][]int64{}
+		nextRoutes := [][]int{}
 		for _, route := range routes {
 			wall, _ := tryRoute(program, &region, route, start)
 			if !wall {
@@ -113,15 +115,15 @@ func findOxygen(program string) int {
 		},
 	}
 
-	routes := [][]int64{
-		[]int64{1},
-		[]int64{2},
-		[]int64{3},
-		[]int64{4},
+	routes := [][]int{
+		[]int{1},
+		[]int{2},
+		[]int{3},
+		[]int{4},
 	}
 
 	for i := 1; i < 400; i++ {
-		nextRoutes := [][]int64{}
+		nextRoutes := [][]int{}
 		for _, route := range routes {
 			wall, oxygen := tryRoute(program, &region, route, point{0, 0})
 			if oxygen {
@@ -157,19 +159,18 @@ func findOxygen(program string) int {
 	return 0
 }
 
-func tryRoute(program string, region *area, inputs []int64, start point) (bool, bool) {
-	cpu := newMachine(program, nil, nil)
+func tryRoute(program string, region *area, inputs []int, start point) (bool, bool) {
 	mapper := robot{
 		tiles:     region,
-		cpu:       &cpu,
 		inputList: inputs,
 		position:  start,
 	}
+	cpu := intcode.NewMachine(intcode.M19(mapper.guided, mapper.outputCallback))
+	cpu.LoadProgram(program)
 
-	cpu.inputCallback = mapper.guided
-	cpu.outputCallback = mapper.outputCallback
+	mapper.cpu = &cpu
 
-	cpu.run()
+	cpu.Run(false)
 
 	return mapper.hitWall, mapper.foundOxygen
 }
@@ -257,8 +258,8 @@ const (
 
 type robot struct {
 	tiles       *area
-	cpu         *machine
-	inputList   []int64
+	cpu         *intcode.Machine
+	inputList   []int
 	heading     direction
 	position    point
 	hitWall     bool
@@ -266,7 +267,7 @@ type robot struct {
 	oxygenPos   point
 }
 
-func (r *robot) guided() (int64, bool) {
+func (r *robot) guided() (int, bool) {
 	if len(r.inputList) > 0 {
 		nextInput := r.inputList[0]
 		r.inputList = r.inputList[1:]
@@ -276,7 +277,7 @@ func (r *robot) guided() (int64, bool) {
 	return 99, true
 }
 
-func (r *robot) outputCallback(out int64) {
+func (r *robot) outputCallback(out int) {
 	pos := r.position
 	switch r.heading {
 	case directionNorth:
@@ -305,4 +306,13 @@ func (r *robot) outputCallback(out int64) {
 		r.oxygenPos = pos
 		// fmt.Printf("Oxygen at %v!\n", pos)
 	}
+}
+
+func loadInputString() string {
+	inputRaw, err := ioutil.ReadFile("input.txt")
+	if err != nil {
+		panic(err)
+	}
+	return string(inputRaw)
+
 }
