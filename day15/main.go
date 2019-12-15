@@ -20,12 +20,10 @@ func part1() int {
 func part2() int {
 	inputString := loadInputString()
 	region := exploreAll(inputString, point{0, 0})
-	// fmt.Printf("Explored in %d steps\nRegion:\n%v\n", steps, region)
 	return fillOxygen(region)
 }
 
 func fillOxygen(region area) int {
-
 	oxyMap := area{
 		grid: grid{},
 		minX: region.minX,
