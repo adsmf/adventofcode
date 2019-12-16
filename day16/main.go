@@ -14,23 +14,21 @@ func main() {
 
 func part1() string {
 	input := loadInput("input.txt")
-	result := fftString(input, 100)
-	return result
+	return fftString(input, 100)
 }
 
 func part2() string {
 	input := loadInput("input.txt")
-	result := fftStringPart2(input)
-	return result
+	return fftStringPart2(input)
 }
 
 func fftString(input string, times int) string {
 	inputSig := splitString(input)
 	resultSig := fftTimes(inputSig, times)
 
-	resultBytes := []byte{}
+	resultBytes := make([]byte, 8)
 	for i := 0; i < 8; i++ {
-		resultBytes = strconv.AppendInt(resultBytes, int64(resultSig[i]), 10)
+		resultBytes[i] = byte(resultSig[i] + '0')
 	}
 	return string(resultBytes)
 }
@@ -40,18 +38,17 @@ func fftStringPart2(input string) string {
 	inputSig := splitString(input)
 
 	offset, _ := strconv.Atoi(input[0:7])
-	parts := offset
 
-	fftPartial := fftFromEnd(inputSig, parts, 100)
+	fftPartial := fftFromEnd(inputSig, 100)
 
-	resultBytes := []byte{}
+	resultBytes := make([]byte, 8)
 	for i := 0; i < 8; i++ {
-		resultBytes = strconv.AppendInt(resultBytes, int64(fftPartial[i+offset]), 10)
+		resultBytes[i] = byte(fftPartial[i+offset] + '0')
 	}
 	return string(resultBytes)
 }
 
-func fftFromEnd(input signal, length int, phase int) signal {
+func fftFromEnd(input signal, phase int) signal {
 	result := append(input[0:0], input...)
 	for i := 0; i < phase; i++ {
 		result = calcFromEnd(result)
@@ -62,7 +59,7 @@ func fftFromEnd(input signal, length int, phase int) signal {
 func calcFromEnd(input signal) signal {
 	result := make(signal, len(input))
 	sum := 0
-	for i := 0; i < len(input); i++ {
+	for i := 0; i < len(input)/2; i++ {
 		fromEnd := len(input) - i - 1
 		sum += input[fromEnd]
 		sum %= 10
