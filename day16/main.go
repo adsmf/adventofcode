@@ -39,27 +39,27 @@ func fftStringPart2(input string) string {
 
 	offset, _ := strconv.Atoi(input[0:7])
 
-	fftPartial := fftFromEnd(inputSig, 100, len(inputSig)-offset)
+	fftPartial := fftFromEnd(inputSig[offset:], 100)
 
 	resultBytes := make([]byte, 8)
 	for i := 0; i < 8; i++ {
-		resultBytes[i] = byte(fftPartial[i+offset] + '0')
+		resultBytes[i] = byte(fftPartial[i] + '0')
 	}
 	return string(resultBytes)
 }
 
-func fftFromEnd(input signal, phase, length int) signal {
+func fftFromEnd(input signal, phase int) signal {
 	result := append(input[0:0], input...)
 	for i := 0; i < phase; i++ {
-		result = calcFromEnd(result, length)
+		result = calcFromEnd(result)
 	}
 	return result
 }
 
-func calcFromEnd(input signal, length int) signal {
+func calcFromEnd(input signal) signal {
 	result := make(signal, len(input))
 	sum := 0
-	for i := 0; i < length; i++ {
+	for i := 0; i < len(input); i++ {
 		fromEnd := len(input) - i - 1
 		sum += input[fromEnd]
 		sum %= 10
