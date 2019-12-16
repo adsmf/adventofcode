@@ -8,7 +8,6 @@ import (
 )
 
 func TestPart1Examples1(t *testing.T) {
-	pattern := signal{0, 1, 0, -1}
 	type testData struct {
 		fftInput  signal
 		times     int
@@ -28,7 +27,7 @@ func TestPart1Examples1(t *testing.T) {
 	}
 	for id, test := range tests {
 		t.Run(fmt.Sprintf("Day16Part1-ex%d", id), func(t *testing.T) {
-			result := fftTimes(test.fftInput, pattern, test.times)
+			result := fftTimes(test.fftInput, test.times)
 			assert.Equal(t, test.fftOutput, result)
 		})
 	}
@@ -50,19 +49,30 @@ func TestPart1Examples2(t *testing.T) {
 }
 
 func TestPart2Examples(t *testing.T) {
-
+	tests := map[string]string{
+		"03036732577212944063491565474664": "84462026",
+		"02935109699940807407585447034323": "78725270",
+		"03081770884921959731165446850517": "53553731",
+	}
+	for input, output := range tests {
+		t.Run(fmt.Sprintf("Day16Part2-%s", input), func(t *testing.T) {
+			// result := fftTimes(output.fftInput, pattern, output.times)
+			result := fftStringPart2(input)
+			assert.Equal(t, output, result)
+		})
+	}
 }
 
 func TestAnswers(t *testing.T) {
 	assert.Equal(t, "29795507", part1())
-	assert.Equal(t, 0, part2())
+	assert.Equal(t, "89568529", part2())
 }
 
 func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 29795507
-	//Part 2: 0
+	//Part 2: 89568529
 }
 
 func BenchmarkPart1(b *testing.B) {
