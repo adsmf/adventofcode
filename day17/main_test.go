@@ -27,14 +27,14 @@ func TestPart2Examples(t *testing.T) {
 
 func TestAnswers(t *testing.T) {
 	assert.Equal(t, 4372, part1())
-	assert.Equal(t, 0, part2())
+	assert.Equal(t, 945911, part2())
 }
 
 func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 4372
-	//Part 2: 0
+	//Part 2: 945911
 }
 
 func BenchmarkPart1(b *testing.B) {
