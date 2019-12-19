@@ -55,7 +55,6 @@ func find1010(filename string) int {
 		}
 		up100 := rows[len(rows)-searchSize]
 		if up100[1] >= newRow[0]+searchSize-1 {
-			fmt.Printf("Found row %d: %v->%v\n", y, up100, newRow)
 			return xStart*10000 + (y - searchSize + 1)
 		}
 	}

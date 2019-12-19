@@ -19,13 +19,6 @@ func TestAnswers(t *testing.T) {
 	assert.Equal(t, 15090773, part2())
 }
 
-// func ExampleMain() {
-// 	main()
-// 	//Output:
-// 	//Part 1: 121
-// 	//Part 2: 0
-// }
-
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		part1()
