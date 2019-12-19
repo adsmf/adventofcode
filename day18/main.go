@@ -103,8 +103,8 @@ func (v *vault) findNext(entrance point, keys keyring) keyMap {
 	}
 
 	for len(searchArea) > 0 {
-		next := searchArea[0]
-		searchArea = searchArea[1:]
+		var next point
+		next, searchArea = searchArea[0], searchArea[1:]
 		for _, pos := range next.neighbours() {
 			t := v.vault[pos]
 			if t.tileType == tileTypeUnkown ||
