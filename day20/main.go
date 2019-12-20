@@ -138,7 +138,7 @@ type tile struct {
 }
 
 func (t tile) Heuristic(astar.Node) astar.Cost {
-	return 1
+	return astar.Cost(1 + t.level)
 }
 func (t tile) Paths() []astar.Edge {
 	edges := []astar.Edge{}
