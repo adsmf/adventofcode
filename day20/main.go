@@ -19,20 +19,23 @@ func part1() int {
 }
 
 func part2() int {
-	return 0
+	m := loadMap("input.txt")
+	m.recursive = true
+	return m.solve()
 }
 
 type maze struct {
-	grid       map[point]tile
+	grid       map[int]map[point]tile
 	portals    map[point]point
 	start, end point
 	minX, minY int
 	maxX, maxY int
+	recursive  bool
 }
 
 func (m *maze) solve() int {
-	startTile := m.grid[m.start]
-	endTile := m.grid[m.end]
+	startTile := m.grid[0][m.start]
+	endTile := m.grid[0][m.end]
 	route, err := astar.Route(startTile, endTile)
 	if err != nil {
 		fmt.Printf("Could not find route!\n")
@@ -42,10 +45,39 @@ func (m *maze) solve() int {
 	return len(route) - 3
 }
 
-func (m *maze) set(pos point, val tile) {
+func (m *maze) isEdgePortal(p point) bool {
+	if p.x == m.minX ||
+		p.x >= m.maxX-1 ||
+		p.y == m.minY ||
+		p.y >= m.maxY-1 {
+		return true
+	}
+	return false
+}
+
+func (m *maze) get(pos point, level int) tile {
+	if m.grid[level] == nil {
+		m.grid[level] = map[point]tile{}
+		for copyPos, copyTile := range m.grid[0] {
+			copyTile.level = level
+			m.grid[level][copyPos] = copyTile
+		}
+	}
+	return m.grid[level][pos]
+}
+
+func (m *maze) set(pos point, level int, val tile) {
 	val.pos = pos
 	val.maze = m
-	m.grid[pos] = val
+	val.level = level
+	if m.grid[level] == nil {
+		m.grid[level] = map[point]tile{}
+		for copyPos, copyTile := range m.grid[0] {
+			copyTile.level = level
+			m.grid[level][copyPos] = copyTile
+		}
+	}
+	m.grid[level][pos] = val
 	if m.minX > pos.x {
 		m.minX = pos.x
 	}
@@ -64,7 +96,7 @@ func (m maze) String() string {
 	newString := ""
 	for y := m.minY; y <= m.maxY; y++ {
 		for x := m.minX; x <= m.maxX; x++ {
-			newString += fmt.Sprintf("%v", m.grid[point{x, y}])
+			newString += fmt.Sprintf("%v", m.grid[0][point{x, y}])
 		}
 		newString += fmt.Sprintln()
 	}
@@ -76,6 +108,7 @@ type tile struct {
 	portalId string
 	pos      point
 	maze     *maze
+	level    int
 }
 
 func (t tile) Heuristic(astar.Node) astar.Cost {
@@ -85,9 +118,10 @@ func (t tile) Paths() []astar.Edge {
 	edges := []astar.Edge{}
 
 	for _, nPos := range t.pos.neighbours() {
-		n := t.maze.grid[nPos]
+		n := t.maze.get(nPos, t.level)
 		if n.tileType == tileTypeEmpty ||
 			nPos == t.maze.end {
+			n.level = t.level
 			edges = append(
 				edges,
 				astar.Edge{
@@ -96,9 +130,20 @@ func (t tile) Paths() []astar.Edge {
 				},
 			)
 		} else if n.tileType == tileTypePortal {
+			nextLevel := t.level
+			if n.maze.recursive {
+				if t.maze.isEdgePortal(nPos) {
+					nextLevel--
+				} else {
+					nextLevel++
+				}
+			}
+			if nextLevel < 0 {
+				continue
+			}
 			portalPos := t.maze.portals[nPos]
 			for _, portalNeighbourPos := range portalPos.neighbours() {
-				portalNeighbour := t.maze.grid[portalNeighbourPos]
+				portalNeighbour := t.maze.get(portalNeighbourPos, nextLevel)
 				if portalNeighbour.tileType == tileTypeEmpty {
 					edges = append(
 						edges,
@@ -155,9 +200,10 @@ func (p point) neighbours() []point {
 
 func loadMap(filename string) maze {
 	m := maze{
-		grid:    map[point]tile{},
+		grid:    map[int]map[point]tile{},
 		portals: map[point]point{},
 	}
+	// m.grid[0] = map[point]tile{}
 
 	// lines := utils.ReadInputLines(filename)
 	raw, err := ioutil.ReadFile(filename)
@@ -171,12 +217,12 @@ func loadMap(filename string) maze {
 			pos := point{x, y}
 			switch {
 			case char == '.':
-				m.set(pos, tile{tileType: tileTypeEmpty})
+				m.set(pos, 0, tile{tileType: tileTypeEmpty})
 			case char == '#':
-				m.set(pos, tile{tileType: tileTypeWall})
+				m.set(pos, 0, tile{tileType: tileTypeWall})
 			case 'A' <= char && char <= 'Z':
 				// TODO portal links
-				m.set(pos, tile{
+				m.set(pos, 0, tile{
 					tileType: tileTypePortal,
 					portalId: string(char),
 				})
@@ -189,7 +235,7 @@ func loadMap(filename string) maze {
 		var portID string
 		var isNearest bool
 		for _, n := range pos.neighbours() {
-			if m.grid[n].tileType == tileTypeEmpty {
+			if m.get(n, 0).tileType == tileTypeEmpty {
 				isNearest = true
 			} else if _, found := tempPortals[n]; found {
 				if pos.x > n.x || pos.y > n.y {
@@ -202,7 +248,7 @@ func loadMap(filename string) maze {
 
 		}
 		if isNearest {
-			m.set(pos, tile{tileType: tileTypePortal, portalId: portID})
+			m.set(pos, 0, tile{tileType: tileTypePortal, portalId: portID})
 			if portID == "AA" {
 				m.start = pos
 				continue
@@ -216,7 +262,7 @@ func loadMap(filename string) maze {
 				portalLinks[portID] = []point{pos}
 			}
 		} else {
-			m.set(pos, tile{tileType: tileTypeUnkown})
+			m.set(pos, 0, tile{tileType: tileTypeUnkown})
 		}
 	}
 	for _, ends := range portalLinks {
