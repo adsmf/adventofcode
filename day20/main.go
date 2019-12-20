@@ -27,7 +27,7 @@ func part2() int {
 }
 
 type maze struct {
-	grid       map[int]map[point]tile
+	grid       map[point]tile
 	portals    map[point]point
 	start, end point
 	minX, minY int
@@ -36,8 +36,8 @@ type maze struct {
 }
 
 func (m *maze) solve() int {
-	startTile := m.grid[0][m.start]
-	endTile := m.grid[0][m.end]
+	startTile := m.grid[m.start]
+	endTile := m.grid[m.end]
 	route, err := astar.Route(startTile, endTile)
 	if err != nil {
 		fmt.Printf("Could not find route!\n")
@@ -58,37 +58,16 @@ func (m *maze) isEdgePortal(p point) bool {
 }
 
 func (m *maze) get(pos point, level int) tile {
-	if m.grid[level] == nil {
-		m.grid[level] = map[point]tile{}
-		for copyPos, copyTile := range m.grid[0] {
-			copyTile.setLevel(level)
-			m.grid[level][copyPos] = copyTile
-		}
-	}
-	if val, found := m.grid[level][pos]; found {
-		return val
-	}
-	return tile{
-		tileType: tileTypeUnkown,
-		pos:      pos,
-		maze:     m,
-		level:    level,
-	}
+	val := m.grid[pos]
+	val.level = level
+	return val
 }
 
 func (m *maze) set(pos point, level int, val tile) {
 	val.pos = pos
 	val.maze = m
 	val.setLevel(level)
-	if m.grid[level] == nil {
-		newLevel := map[point]tile{}
-		for copyPos, copyTile := range m.grid[0] {
-			copyTile.setLevel(level)
-			newLevel[copyPos] = copyTile
-		}
-		m.grid[level] = newLevel
-	}
-	m.grid[level][pos] = val
+	m.grid[pos] = val
 	if m.minX > pos.x {
 		m.minX = pos.x
 	}
@@ -104,15 +83,25 @@ func (m *maze) set(pos point, level int, val tile) {
 }
 
 func (m *maze) reduce() {
+	walls := map[point]bool{}
+
+	for pos, t := range m.grid {
+		if t.tileType == tileTypeWall {
+			walls[pos] = true
+		}
+	}
+	for pos := range walls {
+		delete(m.grid, pos)
+	}
 	for {
 		simplifyTiles := []point{}
-		for pos, t := range m.grid[0] {
+		for pos, t := range m.grid {
 			if t.tileType != tileTypeEmpty {
 				continue
 			}
 			count := 0
 			for _, n := range pos.neighbours() {
-				if m.get(n, 0).tileType == tileTypeWall {
+				if _, found := m.grid[n]; !found {
 					count++
 				}
 			}
@@ -124,9 +113,7 @@ func (m *maze) reduce() {
 			return
 		}
 		for _, pos := range simplifyTiles {
-			existing := m.get(pos, 0)
-			existing.tileType = tileTypeWall
-			m.set(pos, 0, existing)
+			delete(m.grid, pos)
 		}
 	}
 }
@@ -135,7 +122,7 @@ func (m maze) String() string {
 	newString := ""
 	for y := m.minY; y <= m.maxY; y++ {
 		for x := m.minX; x <= m.maxX; x++ {
-			newString += fmt.Sprintf("%v", m.grid[0][point{x, y}])
+			newString += fmt.Sprintf("%v", m.grid[point{x, y}])
 		}
 		newString += fmt.Sprintln()
 	}
@@ -210,15 +197,13 @@ func (t tile) String() string {
 		return "  "
 	case tileTypeWall:
 		return "██"
-		// return "##"
 	case tileTypePortal:
 		if t.maze.isEdgePortal(t.pos) {
 			return t.portalId
 		}
 		return strings.ToLower(t.portalId)
 	case tileTypeUnkown:
-		// return "░░"
-		return "--"
+		return "░░"
 	default:
 		return "!!"
 	}
@@ -248,10 +233,9 @@ func (p point) neighbours() []point {
 
 func loadMap(filename string) *maze {
 	m := maze{
-		grid:    map[int]map[point]tile{},
+		grid:    map[point]tile{},
 		portals: map[point]point{},
 	}
-	// m.grid[0] = map[point]tile{}
 
 	// lines := utils.ReadInputLines(filename)
 	raw, err := ioutil.ReadFile(filename)
