@@ -15,11 +15,13 @@ func main() {
 
 func part1() int {
 	m := loadMap("input.txt")
+	m.reduce()
 	return m.solve()
 }
 
 func part2() int {
 	m := loadMap("input.txt")
+	m.reduce()
 	m.recursive = true
 	return m.solve()
 }
@@ -46,9 +48,9 @@ func (m *maze) solve() int {
 }
 
 func (m *maze) isEdgePortal(p point) bool {
-	if p.x == m.minX ||
+	if p.x <= m.minX+1 ||
 		p.x >= m.maxX-1 ||
-		p.y == m.minY ||
+		p.y <= m.minY+1 ||
 		p.y >= m.maxY-1 {
 		return true
 	}
@@ -59,23 +61,32 @@ func (m *maze) get(pos point, level int) tile {
 	if m.grid[level] == nil {
 		m.grid[level] = map[point]tile{}
 		for copyPos, copyTile := range m.grid[0] {
-			copyTile.level = level
+			copyTile.setLevel(level)
 			m.grid[level][copyPos] = copyTile
 		}
 	}
-	return m.grid[level][pos]
+	if val, found := m.grid[level][pos]; found {
+		return val
+	}
+	return tile{
+		tileType: tileTypeUnkown,
+		pos:      pos,
+		maze:     m,
+		level:    level,
+	}
 }
 
 func (m *maze) set(pos point, level int, val tile) {
 	val.pos = pos
 	val.maze = m
-	val.level = level
+	val.setLevel(level)
 	if m.grid[level] == nil {
-		m.grid[level] = map[point]tile{}
+		newLevel := map[point]tile{}
 		for copyPos, copyTile := range m.grid[0] {
-			copyTile.level = level
-			m.grid[level][copyPos] = copyTile
+			copyTile.setLevel(level)
+			newLevel[copyPos] = copyTile
 		}
+		m.grid[level] = newLevel
 	}
 	m.grid[level][pos] = val
 	if m.minX > pos.x {
@@ -89,6 +100,34 @@ func (m *maze) set(pos point, level int, val tile) {
 	}
 	if m.maxY < pos.y {
 		m.maxY = pos.y
+	}
+}
+
+func (m *maze) reduce() {
+	for {
+		simplifyTiles := []point{}
+		for pos, t := range m.grid[0] {
+			if t.tileType != tileTypeEmpty {
+				continue
+			}
+			count := 0
+			for _, n := range pos.neighbours() {
+				if m.get(n, 0).tileType == tileTypeWall {
+					count++
+				}
+			}
+			if count >= 3 {
+				simplifyTiles = append(simplifyTiles, pos)
+			}
+		}
+		if len(simplifyTiles) == 0 {
+			return
+		}
+		for _, pos := range simplifyTiles {
+			existing := m.get(pos, 0)
+			existing.tileType = tileTypeWall
+			m.set(pos, 0, existing)
+		}
 	}
 }
 
@@ -161,16 +200,25 @@ func (t tile) Paths() []astar.Edge {
 	return edges
 }
 
+func (t *tile) setLevel(level int) {
+	t.level = level
+}
+
 func (t tile) String() string {
 	switch t.tileType {
 	case tileTypeEmpty:
 		return "  "
 	case tileTypeWall:
 		return "██"
+		// return "##"
 	case tileTypePortal:
-		return t.portalId
+		if t.maze.isEdgePortal(t.pos) {
+			return t.portalId
+		}
+		return strings.ToLower(t.portalId)
 	case tileTypeUnkown:
-		return "░░"
+		// return "░░"
+		return "--"
 	default:
 		return "!!"
 	}
@@ -198,7 +246,7 @@ func (p point) neighbours() []point {
 	}
 }
 
-func loadMap(filename string) maze {
+func loadMap(filename string) *maze {
 	m := maze{
 		grid:    map[int]map[point]tile{},
 		portals: map[point]point{},
@@ -273,5 +321,5 @@ func loadMap(filename string) maze {
 		m.portals[ends[0]] = ends[1]
 		m.portals[ends[1]] = ends[0]
 	}
-	return m
+	return &m
 }

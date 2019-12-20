@@ -55,6 +55,7 @@ func TestPart2Examples(t *testing.T) {
 		for i := 0; i < 1; i++ {
 			t.Run(fmt.Sprintf("Part1 Test%d Iter%d", i, id), func(t *testing.T) {
 				m := loadMap(file)
+				m.reduce()
 				t.Logf("Start:\n%v", m)
 				m.recursive = true
 				steps := m.solve()
@@ -67,24 +68,44 @@ func TestPart2Examples(t *testing.T) {
 
 func TestAnswers(t *testing.T) {
 	assert.Equal(t, 664, part1())
-	// assert.Equal(t, 0, part2())
+	assert.Equal(t, 7334, part2())
 }
 
-// func ExampleMain() {
-// 	main()
-// 	//Output:
-// 	//Part 1: 664
-// 	//Part 2: 0
-// }
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 664
+	//Part 2: 7334
+}
 
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part1()
+		m := loadMap("input.txt")
+		m.solve()
+	}
+}
+
+func BenchmarkPart1Reduced(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		m := loadMap("input.txt")
+		m.reduce()
+		m.solve()
 	}
 }
 
 func BenchmarkPart2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part2()
+		m := loadMap("input.txt")
+		m.recursive = true
+		m.solve()
+	}
+}
+
+func BenchmarkPart2Reduced(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		m := loadMap("input.txt")
+		m.reduce()
+		m.recursive = true
+		m.solve()
 	}
 }
