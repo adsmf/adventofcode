@@ -26,21 +26,37 @@ func part1() int {
 }
 
 func part2() int {
-	return 0
+	s := springdroid{}
+	s.instructions = []string{
+		"NOT A J\n",
+		"NOT B T\n",
+		"OR T J\n",
+		"NOT C T\n",
+		"OR T J\n",
+		"AND H J\n",
+		"OR E J\n",
+		"AND D J\n",
+		"RUN\n",
+	}
+	return s.run()
 }
 
 type springdroid struct {
 	curInst      string
 	instructions []string
-	finalValue   int
 }
 
 func (s *springdroid) run() int {
-	m := intcode.NewMachine(intcode.M19(s.inputHandler, s.outputHandler))
+	var opFunc intcode.OutputCallback
+	// opFunc = s.outputHandler
+	m := intcode.NewMachine(intcode.M19(s.inputHandler, opFunc))
 	prog, _ := ioutil.ReadFile("input.txt")
-	m.LoadProgram(string(prog))
+	err := m.LoadProgram(string(prog))
+	if err != nil {
+		panic(err)
+	}
 	m.Run(false)
-	return s.finalValue
+	return m.Register(intcode.M19RegisterOutput)
 }
 
 func (s *springdroid) inputHandler() (int, bool) {
@@ -59,7 +75,6 @@ func (s *springdroid) outputHandler(op int) {
 	if op < 255 {
 		fmt.Printf("%c", op)
 	} else {
-		s.finalValue = op
 		fmt.Printf("Final value: %d\n", op)
 	}
 }
