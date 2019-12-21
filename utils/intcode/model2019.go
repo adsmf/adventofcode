@@ -32,12 +32,20 @@ func M19(inputCallback InputCallback, outputCallback OutputCallback) MachineOpti
 	}
 }
 
+func DecodeOps() MachineOption {
+	return func(m *Machine) {
+		m.model.(*m19).decodeOps = true
+	}
+}
+
 type m19 struct {
 	machine *Machine
 
 	relativeBase   int
 	inputCallback  InputCallback
 	outputCallback OutputCallback
+
+	decodeOps bool
 }
 
 func (m *m19) name() string {
@@ -59,25 +67,32 @@ func (m *m19) parse(program string) error {
 		}
 		m.machine.ram[address(pos)] = decode
 	}
-	m.guessOps()
+	if m.decodeOps {
+		m.guessOps()
+	}
 	return nil
 }
 
 type saveData struct {
-	RelativeBase int `json:"relativeBase"`
+	RelativeBase int
+	DecodeOps    bool
 }
 
 func (m *m19) save() interface{} {
 	gob.Register(saveData{})
 	return saveData{
 		RelativeBase: m.relativeBase,
+		DecodeOps:    m.decodeOps,
 	}
 }
 
 func (m *m19) restore(data interface{}) {
 	dataAssert := data.(saveData)
 	m.relativeBase = dataAssert.RelativeBase //int(math.Round(dataAssert["relativeBase"].(float64)))
-	m.guessOps()
+	m.decodeOps = dataAssert.DecodeOps
+	if m.decodeOps {
+		m.guessOps()
+	}
 }
 
 func (m *m19) decodeAddress(addr address) operation {

@@ -150,7 +150,7 @@ func TestSaveRestore(t *testing.T) {
 		outputs = append(outputs, out)
 	}
 
-	m := NewMachine(M19(nil, outputStream))
+	m := NewMachine(M19(nil, outputStream), DecodeOps())
 	m.LoadProgram(program)
 	m.Step()
 	m.Step()
