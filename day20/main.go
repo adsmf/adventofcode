@@ -83,16 +83,6 @@ func (m *maze) set(pos point, level int, val tile) {
 }
 
 func (m *maze) reduce() {
-	walls := map[point]bool{}
-
-	for pos, t := range m.grid {
-		if t.tileType == tileTypeWall {
-			walls[pos] = true
-		}
-	}
-	for pos := range walls {
-		delete(m.grid, pos)
-	}
 	for {
 		simplifyTiles := []point{}
 		for pos, t := range m.grid {
@@ -251,7 +241,7 @@ func loadMap(filename string) *maze {
 			case char == '.':
 				m.set(pos, 0, tile{tileType: tileTypeEmpty})
 			case char == '#':
-				m.set(pos, 0, tile{tileType: tileTypeWall})
+				// Do nothing!
 			case 'A' <= char && char <= 'Z':
 				// TODO portal links
 				m.set(pos, 0, tile{
