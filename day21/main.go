@@ -27,17 +27,19 @@ func part1() int {
 
 func part2() int {
 	s := springdroid{}
+
+	// J = D(H!(ABC)+E)
 	s.instructions = []string{
-		"NOT A J\n",
-		"NOT B T\n",
-		"OR T J\n",
-		"NOT C T\n",
-		"OR T J\n",
+		"OR A T\n",
+		"AND B T\n",
+		"AND C T\n",
+		"NOT T J\n",
 		"AND H J\n",
 		"OR E J\n",
 		"AND D J\n",
 		"RUN\n",
 	}
+
 	return s.run()
 }
 
