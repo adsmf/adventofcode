@@ -23,7 +23,6 @@ func part2() int {
 }
 
 type network struct {
-	packets map[address]packetQueue
 	devices map[address]*nic
 
 	currentNAT *packet
@@ -73,14 +72,12 @@ func (n *network) send(addr address, p packet) {
 		n.currentNAT = &p
 	} else {
 		n.packetSent = true
-		n.packets[addr] = append(n.packets[addr], p)
 		n.devices[addr].receive(p)
 	}
 }
 
 func newNetwork() *network {
 	n := network{
-		packets: map[address]packetQueue{},
 		devices: map[address]*nic{},
 	}
 
@@ -106,7 +103,6 @@ func newNetwork() *network {
 
 type address int
 
-type packetQueue []packet
 type packet struct {
 	x, y int
 }
