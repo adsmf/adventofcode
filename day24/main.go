@@ -92,8 +92,12 @@ func (p *planet) iterRecursive() int {
 	sort.Ints(levels)
 	lowestLevel := levels[0]
 	highestLevel := levels[len(levels)-1]
-	p.set(point{0, 0, lowestLevel - 1}, tile{tileType: tileTypeEmpty})
-	p.set(point{0, 0, highestLevel + 1}, tile{tileType: tileTypeEmpty})
+	if p.levelInfested(lowestLevel) {
+		p.set(point{0, 0, lowestLevel - 1}, tile{tileType: tileTypeEmpty})
+	}
+	if p.levelInfested(highestLevel) {
+		p.set(point{0, 0, highestLevel + 1}, tile{tileType: tileTypeEmpty})
+	}
 
 	newGrids := planes{}
 	bugs := 0
@@ -173,6 +177,15 @@ func (p planet) String() string {
 		newString += fmt.Sprintln()
 	}
 	return newString
+}
+
+func (p planet) levelInfested(level int) bool {
+	for _, t := range p.grids[level] {
+		if t.tileType == tileTypeInfested {
+			return true
+		}
+	}
+	return false
 }
 
 func (p planet) biodiversity() int {
