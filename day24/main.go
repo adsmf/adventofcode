@@ -221,14 +221,9 @@ func (p point) recursiveNeighbours(w, h int) []point {
 	midX := (w - 1) / 2
 	midY := (h - 1) / 2
 
-	basePoints := []point{
-		point{p.x - 1, p.y, p.level},
-		point{p.x + 1, p.y, p.level},
-		point{p.x, p.y - 1, p.level},
-		point{p.x, p.y + 1, p.level},
-	}
-	realPoints := []point{}
+	basePoints := p.neighbours()
 
+	realPoints := []point{}
 	for _, pos := range basePoints {
 		normal := true
 		// Check adjacency to center
