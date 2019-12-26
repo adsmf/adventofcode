@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/adsmf/adventofcode/utils"
+	"sort"
 )
 
 func main() {
@@ -16,7 +17,8 @@ func part1() int {
 }
 
 func part2() int {
-	return 0
+	c := loadCuboids("input.txt")
+	return c.ribbonAll()
 }
 
 func loadCuboids(filename string) cuboidList {
@@ -40,24 +42,29 @@ func (c cuboidList) paperAll() int {
 	return total
 }
 
+func (c cuboidList) ribbonAll() int {
+	total := 0
+
+	for _, cube := range c {
+		total += cube.ribbon()
+	}
+	return total
+}
+
 type cuboid struct {
 	w, l, h int
 }
 
 func (c cuboid) paper() int {
-	f1 := c.w * c.l
-	f2 := c.w * c.h
-	f3 := c.h * c.l
-	min := f1
-	if f2 < min {
-		min = f2
-	}
-	if f3 < min {
-		min = f3
-	}
+	areas := []int{c.w * c.l, c.w * c.h, c.h * c.l}
+	sort.Ints(areas)
+	return 3*areas[0] + 2*areas[1] + 2*areas[2]
+}
 
-	return 2*f1 + 2*f2 + 2*f3 + min
-
+func (c cuboid) ribbon() int {
+	dims := []int{c.w, c.l, c.h}
+	sort.Ints(dims)
+	return 2*dims[0] + 2*dims[1] + c.w*c.h*c.l
 }
 
 func newCuboid(def string) cuboid {
