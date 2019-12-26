@@ -42,7 +42,7 @@ func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 400410
-	//Part 2: -1
+	//Part 2: 15343601
 }
 
 func BenchmarkPart1(b *testing.B) {
