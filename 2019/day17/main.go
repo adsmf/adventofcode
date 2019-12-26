@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/adsmf/adventofcode2019/utils/intcode"
+	"github.com/adsmf/adventofcode/utils/intcode"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adsmf/adventofcode2018/utils"
+	"github.com/adsmf/adventofcode/utils"
 
 	"github.com/stretchr/testify/assert"
 )

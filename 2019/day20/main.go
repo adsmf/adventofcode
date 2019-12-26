@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/adsmf/adventofcode2019/utils/pathfinding/astar"
+	"github.com/adsmf/adventofcode/utils/pathfinding/astar"
 )
 
 func main() {

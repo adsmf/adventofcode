@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/adsmf/adventofcode2019/utils"
+	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {

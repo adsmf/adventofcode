@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/adsmf/adventofcode2018/utils"
+	"github.com/adsmf/adventofcode/utils"
 )
 
 func setTargets(cavern *grid, targets []*creature) {

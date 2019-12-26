@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/adsmf/adventofcode2019/utils"
+	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {

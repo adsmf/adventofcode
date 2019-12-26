@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/adsmf/adventofcode2018/utils"
+	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {

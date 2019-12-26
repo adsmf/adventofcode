@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/adsmf/adventofcode2019/utils"
-	"github.com/adsmf/adventofcode2019/utils/intcode"
+	"github.com/adsmf/adventofcode/utils"
+	"github.com/adsmf/adventofcode/utils/intcode"
 )
 
 func main() {

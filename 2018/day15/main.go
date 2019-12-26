@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/adsmf/adventofcode2018/utils"
+	"github.com/adsmf/adventofcode/utils"
 )
 
 var mainLogger func(string, ...interface{}) (int, error)

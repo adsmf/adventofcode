@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/adsmf/adventofcode2019/utils/intcode"
+	"github.com/adsmf/adventofcode/utils/intcode"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
