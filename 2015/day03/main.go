@@ -12,36 +12,42 @@ func main() {
 }
 
 func part1() int {
-	v := loadInput("input.txt")
+	v := loadInput("input.txt", 1)
 	return len(v)
 }
 
 func part2() int {
-	return 0
+	v := loadInput("input.txt", 2)
+	return len(v)
 }
 
 type houses map[vector.GridPoint]int
 
-func loadInput(filename string) houses {
+func loadInput(filename string, numSantas int) houses {
 	input, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	location := vector.GridPoint{X: 0, Y: 0}
+	locations := make([]vector.GridPoint, numSantas)
 	visited := houses{}
-	visited[location]++
+	for id := range locations {
+		visited[locations[id]]++
+	}
+	curMover := 0
 	for _, char := range input {
 		switch char {
 		case '>':
-			location = location.Right()
+			locations[curMover] = locations[curMover].Right()
 		case '<':
-			location = location.Left()
+			locations[curMover] = locations[curMover].Left()
 		case '^':
-			location = location.Up()
+			locations[curMover] = locations[curMover].Up()
 		case 'v':
-			location = location.Down()
+			locations[curMover] = locations[curMover].Down()
 		}
-		visited[location]++
+		visited[locations[curMover]]++
+		curMover++
+		curMover %= len(locations)
 	}
 	return visited
 }
