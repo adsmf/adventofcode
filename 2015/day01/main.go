@@ -11,25 +11,33 @@ func main() {
 }
 
 func part1() int {
-	return getFloor("input.txt")
+	finalFloor, _ := getFloor("input.txt")
+	return finalFloor
 }
 
 func part2() int {
-	return 0
+	_, basement := getFloor("input.txt")
+	return basement
 }
 
-func getFloor(filename string) int {
+func getFloor(filename string) (int, int) {
 	inp, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 	floor := 0
+	basementAt := 0
+	step := 0
 	for _, char := range inp {
+		step++
 		if char == '(' {
 			floor++
 		} else if char == ')' {
 			floor--
 		}
+		if floor < 0 && basementAt == 0 {
+			basementAt = step
+		}
 	}
-	return floor
+	return floor, basementAt
 }
