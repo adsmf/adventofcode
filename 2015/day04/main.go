@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
+	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -13,22 +14,22 @@ func main() {
 }
 
 func part1() int {
-	return santaCoin("input.txt")
+	return santaCoin("input.txt", 5)
 }
 
 func part2() int {
-	return 0
+	return santaCoin("input.txt", 6)
 }
 
-func santaCoin(filename string) int {
+func santaCoin(filename string, numZeros int) int {
 	input := utils.ReadInputLines(filename)[0]
-	for i := 0; i < 1000000; i++ {
+	want := strings.Repeat("0", numZeros)
+	for i := 0; ; i++ {
 		h := md5.New()
 		h.Write([]byte(fmt.Sprintf("%s%d", input, i)))
 		hashString := fmt.Sprintf("%x", h.Sum(nil))
-		if hashString[0:5] == "00000" {
+		if hashString[0:numZeros] == want {
 			return i
 		}
 	}
-	return -1
 }
