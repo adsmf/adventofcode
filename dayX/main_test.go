@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPart1Examples(t *testing.T) {
@@ -38,15 +36,13 @@ func TestPart2Examples(t *testing.T) {
 }
 
 func TestAnswers(t *testing.T) {
-	assert.Equal(t, 0, part1())
-	assert.Equal(t, 0, part2())
 }
 
 func ExampleMain() {
 	main()
 	//Output:
-	//Part 1: 0
-	//Part 2: 0
+	//Part 1: -1
+	//Part 2: -1
 }
 
 func BenchmarkPart1(b *testing.B) {

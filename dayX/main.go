@@ -10,9 +10,9 @@ func main() {
 }
 
 func part1() int {
-	return 0
+	return -1
 }
 
 func part2() int {
-	return 0
+	return -1
 }
