@@ -26,7 +26,10 @@ func santaCoin(filename string, numZeros int) int {
 	want := strings.Repeat("0", numZeros)
 	for i := 0; ; i++ {
 		h := md5.New()
-		h.Write([]byte(fmt.Sprintf("%s%d", input, i)))
+		_, err := h.Write([]byte(fmt.Sprintf("%s%d", input, i)))
+		if err != nil {
+			panic(err)
+		}
 		hashString := fmt.Sprintf("%x", h.Sum(nil))
 		if hashString[0:numZeros] == want {
 			return i
