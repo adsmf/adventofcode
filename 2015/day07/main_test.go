@@ -31,7 +31,7 @@ func TestPart1Examples(t *testing.T) {
 		t.Run(fmt.Sprintf("Part1-Test%d", id+1), func(t *testing.T) {
 			t.Logf("Test def:\n %v", test)
 			w := loadCircuit(test.input)
-			s := w.run()
+			s := w.run(signals{})
 			assert.Equal(t, test.output, s)
 			// Assertions here
 		})
@@ -60,7 +60,7 @@ func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 3176
-	//Part 2: -1
+	//Part 2: 14710
 }
 
 func BenchmarkPart1(b *testing.B) {

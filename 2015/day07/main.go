@@ -15,25 +15,34 @@ func main() {
 
 func part1() int {
 	w := loadCircuit("input.txt")
-	s := w.run()
+	s := w.run(signals{})
 	return int(s["a"])
 }
 
 func part2() int {
-	return -1
+	w := loadCircuit("input.txt")
+	s := w.run(signals{})
+	a := s["a"]
+	w = loadCircuit("input.txt")
+	s = w.run(signals{"b": a})
+	return int(s["a"])
 }
 
 type signals map[string]uint16
 type wiring map[string]string
 
-func (w wiring) run() signals {
+func (w wiring) run(overrides signals) signals {
 	s := signals{}
 	for len(w) > 0 {
 		foundSignals := []string{}
 		for res, inp := range w {
-			num, err := strconv.Atoi(inp)
-			if err == nil {
-				s[res] = uint16(num)
+			if val, found := overrides[res]; found {
+				s[res] = val
+				foundSignals = append(foundSignals, res)
+				continue
+			}
+			if val, found := decodeParam(inp, s); found {
+				s[res] = val
 				foundSignals = append(foundSignals, res)
 				continue
 			}
@@ -85,11 +94,6 @@ func (w wiring) run() signals {
 					foundSignals = append(foundSignals, res)
 					continue
 				}
-			}
-			if val, found := decodeParam(inp, s); found {
-				s[res] = val
-				foundSignals = append(foundSignals, res)
-				continue
 			}
 		}
 		if len(foundSignals) == 0 {
