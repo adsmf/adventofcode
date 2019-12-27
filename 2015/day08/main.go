@@ -25,5 +25,13 @@ func part1() int {
 }
 
 func part2() int {
-	return -1
+	lines := utils.ReadInputLines("input.txt")
+	diff := 0
+	for _, line := range lines {
+		diff -= len(line)
+		line = fmt.Sprintf("%+q", line)
+		diff += len(line)
+	}
+
+	return diff
 }
