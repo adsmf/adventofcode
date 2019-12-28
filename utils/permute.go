@@ -29,3 +29,26 @@ func PermuteInts(input []int) [][]int {
 	generator(len(input), input)
 	return output
 }
+
+func PermuteStrings(input []string) [][]string {
+	output := [][]string{}
+
+	var generator func(int, []string)
+	generator = func(k int, A []string) {
+		if k == 1 {
+			tmp := append(A[0:0], A...)
+			output = append(output, tmp)
+		} else {
+			for i := 0; i < k; i++ {
+				generator(k-1, A)
+				if k%2 == 1 {
+					A[i], A[k-1] = A[k-1], A[i]
+				} else {
+					A[0], A[k-1] = A[k-1], A[0]
+				}
+			}
+		}
+	}
+	generator(len(input), input)
+	return output
+}
