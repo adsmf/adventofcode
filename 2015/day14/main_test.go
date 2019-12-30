@@ -11,7 +11,7 @@ func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 2660
-	//Part 2: -1
+	//Part 2: 1256
 }
 
 func BenchmarkPart1(b *testing.B) {

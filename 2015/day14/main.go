@@ -13,16 +13,53 @@ func main() {
 
 func part1() int {
 	r := loadInput("input.txt")
-	return r.runFor(2503)
+	return r.distanceAfter(2503)
 }
 
 func part2() int {
-	return -1
+	r := loadInput("input.txt")
+	return r.scoreAfter(2503)
 }
 
 type race map[string]reindeerStats
 
-func (r race) runFor(seconds int) int {
+func (r race) scoreAfter(seconds int) int {
+	scores := map[string]int{}
+	for i := 1; i <= seconds; i++ {
+		distances := r.runFor(i)
+		best := 0
+		for _, dist := range distances {
+			if dist > best {
+				best = dist
+			}
+		}
+		for name, dist := range distances {
+			if dist == best {
+				scores[name]++
+			}
+		}
+	}
+	best := 0
+	for _, score := range scores {
+		if score > best {
+			best = score
+		}
+	}
+	return best
+}
+
+func (r race) distanceAfter(seconds int) int {
+	distances := r.runFor(seconds)
+	best := 0
+	for _, dist := range distances {
+		if dist > best {
+			best = dist
+		}
+	}
+	return best
+}
+
+func (r race) runFor(seconds int) map[string]int {
 	distances := map[string]int{}
 
 	for name, stats := range r {
@@ -36,13 +73,7 @@ func (r race) runFor(seconds int) int {
 		distances[name] += remaining * stats.speed
 	}
 
-	best := 0
-	for _, dist := range distances {
-		if dist > best {
-			best = dist
-		}
-	}
-	return best
+	return distances
 }
 
 type reindeerStats struct {
