@@ -36,7 +36,8 @@ func PermuteStrings(input []string) [][]string {
 	var generator func(int, []string)
 	generator = func(k int, A []string) {
 		if k == 1 {
-			tmp := append(A[0:0], A...)
+			tmp := make([]string, len(A))
+			copy(tmp, A)
 			output = append(output, tmp)
 		} else {
 			for i := 0; i < k; i++ {
