@@ -18,7 +18,8 @@ func part1() int {
 }
 
 func part2() int {
-	return -1
+	sizes := loadInput("input.txt")
+	return minCombinations(150, sizes)
 }
 
 func combinations(target int, sizes []int) int {
@@ -39,6 +40,32 @@ func combinations(target int, sizes []int) int {
 	}
 
 	return combs
+}
+
+func minCombinations(target int, sizes []int) int {
+	combs := map[int]int{}
+	minContainers := -1
+
+	for i := 0; i < (1 << len(sizes)); i++ {
+		sum := 0
+		containers := 0
+
+		for idx, val := range sizes {
+			if i&(1<<idx) > 0 {
+				sum += val
+				containers++
+			}
+		}
+
+		if sum == target {
+			combs[containers]++
+			if minContainers == -1 || containers < minContainers {
+				minContainers = containers
+			}
+		}
+	}
+
+	return combs[minContainers]
 }
 
 func loadInput(filename string) []int {
