@@ -15,8 +15,8 @@ func main() {
 func part1() int {
 	inputBytes, _ := ioutil.ReadFile("input.txt")
 	numbers := utils.GetInts(string(inputBytes))
-	for _, num1 := range numbers {
-		for _, num2 := range numbers {
+	for fence1, num1 := range numbers {
+		for _, num2 := range numbers[fence1+1:] {
 			if num1+num2 == 2020 {
 				return num1 * num2
 			}
@@ -28,9 +28,9 @@ func part1() int {
 func part2() int {
 	inputBytes, _ := ioutil.ReadFile("input.txt")
 	numbers := utils.GetInts(string(inputBytes))
-	for _, num1 := range numbers {
-		for _, num2 := range numbers {
-			for _, num3 := range numbers {
+	for fence1, num1 := range numbers {
+		for fence2, num2 := range numbers[fence1+1:] {
+			for _, num3 := range numbers[fence1+fence2+2:] {
 				if num1+num2+num3 == 2020 {
 					return num1 * num2 * num3
 				}
