@@ -10,8 +10,6 @@
         pass: .[2]
     } as $input
     | $input | {
-      inchar: $input.char,
-      pass: $input.pass,
       p1: (
         ($input.pass|split("")|map(select(.==$input.char))|length) as $matches
         | ($input.policy.lower)<=$matches and $matches <= ($input.policy.upper)

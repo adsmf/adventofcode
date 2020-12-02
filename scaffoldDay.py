@@ -3,7 +3,6 @@ import os
 import requests
 import shutil
 import sys
-import webbrowser
 
 def main():
   now = datetime.datetime.now()
