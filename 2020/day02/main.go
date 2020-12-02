@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -60,14 +59,8 @@ func load(filename string) []policySample {
 	samples := []policySample{}
 	lines := utils.ReadInputLines(filename)
 	for _, line := range lines {
-		parts := strings.Split(line, " ")
-		rangeParts := utils.GetInts(parts[0])
-		lineSample := policySample{
-			lower: rangeParts[0],
-			upper: rangeParts[1],
-			char:  rune(parts[1][0]),
-			pass:  parts[2],
-		}
+		lineSample := policySample{}
+		fmt.Sscanf(line, "%d-%d %c: %s", &lineSample.lower, &lineSample.upper, &lineSample.char, &lineSample.pass)
 		samples = append(samples, lineSample)
 	}
 	return samples
