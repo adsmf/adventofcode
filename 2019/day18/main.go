@@ -248,9 +248,9 @@ func (t tile) String() string {
 	case tileTypeWall:
 		return "█"
 	case tileTypeDoor:
-		return string(t.id - 'a' + 'A')
+		return string(rune(t.id - 'a' + 'A'))
 	case tileTypeKey:
-		return string(t.id)
+		return string(rune(t.id))
 	case tileTypeStart:
 		return "s"
 	case tileTypeUnkown:
