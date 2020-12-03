@@ -11,6 +11,11 @@ func main() {
 	fmt.Printf("Part 2: %d\n", part2())
 }
 
+func mainAlt() {
+	fmt.Printf("Part 1: %d\n", part1alt())
+	fmt.Printf("Part 2: %d\n", part2alt())
+}
+
 func part1() int {
 	slopeMap := load("input.txt")
 
@@ -27,6 +32,20 @@ func part2() int {
 	return count
 }
 
+func part2alt() int {
+	return loadAndCalculate(
+		"input.txt",
+		[]point{{1, 1}, {3, 1}, {5, 1}, {7, 1}, {1, 2}},
+	)
+}
+
+func part1alt() int {
+	return loadAndCalculate(
+		"input.txt",
+		[]point{{3, 1}},
+	)
+}
+
 func countRun(right, down int, slopeMap slopeTreeMap) int {
 	x := 0
 	count := 0
@@ -38,6 +57,27 @@ func countRun(right, down int, slopeMap slopeTreeMap) int {
 		}
 	}
 	return count
+}
+
+func loadAndCalculate(filename string, slopes []point) int {
+	lines := utils.ReadInputLines(filename)
+	width := len(lines[0])
+	slopeCounts := make([]int, len(slopes))
+	for y, line := range lines {
+		for slopeIndex, slope := range slopes {
+			if y%slope.y == 0 {
+				checkPos := (slope.x * (y / slope.y)) % width
+				if line[checkPos] == '#' {
+					slopeCounts[slopeIndex]++
+				}
+			}
+		}
+	}
+	total := 1
+	for _, count := range slopeCounts {
+		total *= count
+	}
+	return total
 }
 
 func load(filename string) slopeTreeMap {
