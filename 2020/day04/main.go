@@ -71,13 +71,16 @@ func (p passportData) validatePart1() bool {
 }
 
 var validationRegexes = map[string]*regexp.Regexp{
-	"byr": regexp.MustCompile("^(19[^01][0-9]|200[012])$"),
-	"iyr": regexp.MustCompile("^(201[0-9]|2020)$"),
-	"eyr": regexp.MustCompile("^(202[0-9]|2030)$"),
+	"byr": rex.Anchor(rex.NumberBetween(1920, 2002)),
+	"iyr": rex.Anchor(rex.NumberBetween(2010, 2020)),
+	"eyr": rex.Anchor(rex.NumberBetween(2020, 2030)),
 	"hcl": rex.Anchor(rex.Literal("#"), rex.Times(6, rex.HexChar)),
 	"pid": rex.Anchor(rex.Times(9, rex.Digit)),
 	"ecl": rex.Anchor(rex.AnyLit("amb", "blu", "brn", "gry", "grn", "hzl", "oth")),
-	"hgt": regexp.MustCompile("^(((59|6[0-9]|7[0123456])in)|((1[5678][0-9]|19[0123])cm))$"),
+	"hgt": rex.Anchor(rex.Any(
+		rex.Group(rex.NumberBetween(150, 193), rex.Literal("cm")),
+		rex.Group(rex.NumberBetween(59, 76), rex.Literal("in")),
+	)),
 }
 
 func (p passportData) validatePart2() bool {
