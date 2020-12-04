@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
+	rex "github.com/adsmf/adventofcode/utils/regextools"
 )
 
 func main() {
@@ -73,9 +74,9 @@ var validationRegexes = map[string]*regexp.Regexp{
 	"byr": regexp.MustCompile("^(19[^01][0-9]|200[012])$"),
 	"iyr": regexp.MustCompile("^(201[0-9]|2020)$"),
 	"eyr": regexp.MustCompile("^(202[0-9]|2030)$"),
-	"hcl": regexp.MustCompile("^#[0-9a-f]{6}$"),
-	"pid": regexp.MustCompile("^[0-9]{9}$"),
-	"ecl": regexp.MustCompile("^(amb|blu|brn|gry|grn|hzl|oth)$"),
+	"hcl": rex.Anchor(rex.Literal("#"), rex.Times(6, rex.HexChar)),
+	"pid": rex.Anchor(rex.Times(9, rex.Digit)),
+	"ecl": rex.Anchor(rex.AnyLit("amb", "blu", "brn", "gry", "grn", "hzl", "oth")),
 	"hgt": regexp.MustCompile("^(((59|6[0-9]|7[0123456])in)|((1[5678][0-9]|19[0123])cm))$"),
 }
 
