@@ -9,22 +9,6 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
-}
-
-func part1() int {
-	passes := load("input.txt")
-	max := 0
-	for pass := range passes {
-		if pass > max {
-			max = pass
-		}
-	}
-	return max
-}
-
-func part2() int {
 	passes := load("input.txt")
 	min := 1 << 17
 	max := 0
@@ -36,23 +20,25 @@ func part2() int {
 			min = pass
 		}
 	}
+	part2 := -1
 	for try := min; try < max; try++ {
 		if _, found := passes[try]; !found {
-			return try
+			part2 = try
+			break
 		}
 	}
-	return -1
+
+	fmt.Printf("Part 1: %d\n", max)
+	fmt.Printf("Part 2: %d\n", part2)
 }
 
 func load(filename string) boardingPasses {
 	passes := boardingPasses{}
 	lines := utils.ReadInputLines(filename)
+	mapping := map[rune]rune{'B': '1', 'F': '0', 'R': '1', 'L': '0'}
 	for _, line := range lines {
-		line = strings.ReplaceAll(line, "B", "1")
-		line = strings.ReplaceAll(line, "F", "0")
-		line = strings.ReplaceAll(line, "R", "1")
-		line = strings.ReplaceAll(line, "L", "0")
-		pos, err := strconv.ParseInt(line, 2, 16)
+		number := strings.Map(func(c rune) rune { return mapping[c] }, line)
+		pos, err := strconv.ParseInt(number, 2, 16)
 		if err != nil {
 			panic(err)
 		}
