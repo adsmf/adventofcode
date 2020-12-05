@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
+	"io/ioutil"
 )
 
 var benchmark = false
@@ -18,9 +17,10 @@ func main() {
 }
 
 func loadBitwise(filename string) (int, int) {
-	lines := utils.ReadInputLines(filename)
+	inputBytes, _ := ioutil.ReadFile(filename)
 	min, max, total := 1<<17, 0, 0
-	for _, line := range lines {
+	for cursor := 0; cursor <= len(inputBytes)-11; cursor += 11 {
+		line := inputBytes[cursor : cursor+10]
 		pass := 0
 		for i := 0; i <= 9; i++ {
 			pass |= (int(^line[i]&0x4) >> 2) << (9 - i)
