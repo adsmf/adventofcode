@@ -23,9 +23,8 @@ func loadBitwise(filename string) (int, int) {
 	for _, line := range lines {
 		pass := 0
 		for i := 0; i <= 9; i++ {
-			pass |= (int(line[i]&(4)) >> 2) << (9 - i)
+			pass |= (int(^line[i]&0x4) >> 2) << (9 - i)
 		}
-		pass ^= (1<<10 - 1)
 		total += pass
 		if pass < min {
 			min = pass
