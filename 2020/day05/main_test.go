@@ -15,8 +15,15 @@ func ExampleMain() {
 
 func TestLoaders(t *testing.T) {
 	l1 := loadStringparse("input.txt")
-	l2 := loadBitwise("input.txt")
+	l2, _, _ := loadBitwise("input.txt")
 	assert.EqualValues(t, l1, l2)
+}
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
 }
 
 func BenchmarkStringparse(b *testing.B) {
