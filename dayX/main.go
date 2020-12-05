@@ -4,9 +4,13 @@ import (
 	"fmt"
 )
 
+var benchmark = false
+
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", part1())
+		fmt.Printf("Part 2: %d\n", part2())
+	}
 }
 
 func part1() int {
