@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	passes := load("input.txt")
+	passes := loadBitwise("input.txt")
 	min := 1 << 17
 	max := 0
 	for pass := range passes {
@@ -32,7 +32,7 @@ func main() {
 	fmt.Printf("Part 2: %d\n", part2)
 }
 
-func load(filename string) boardingPasses {
+func loadStringparse(filename string) boardingPasses {
 	passes := boardingPasses{}
 	lines := utils.ReadInputLines(filename)
 	mapping := map[rune]rune{'B': '1', 'F': '0', 'R': '1', 'L': '0'}
@@ -43,6 +43,21 @@ func load(filename string) boardingPasses {
 			panic(err)
 		}
 		passes[int(pos)] = true
+	}
+	return passes
+}
+
+func loadBitwise(filename string) boardingPasses {
+	passes := boardingPasses{}
+	lines := utils.ReadInputLines(filename)
+	for _, line := range lines {
+		pass := 0
+		for i, j := 0, 9; i <= 9; i, j = i+1, j-1 {
+			char := line[i]
+			pass |= (int(char&(4)) >> 2) << j
+		}
+		pass ^= (1<<10 - 1)
+		passes[pass] = true
 	}
 	return passes
 }
