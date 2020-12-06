@@ -21,41 +21,25 @@ func loadAndCalculate(filename string) (int, int) {
 	blocks := strings.Split(string(inputBytes), "\n\n")
 	any, all := 0, 0
 	for _, block := range blocks {
-		groupAny := groupAnswers{}
-		people := []groupAnswers{}
-		for _, line := range strings.Split(block, "\n") {
-			if line == "" {
-				continue
-			}
-			person := groupAnswers{}
+		groups := groupAnswers{}
+		lines := strings.Split(strings.TrimSpace(block), "\n")
+		for _, line := range lines {
 			for _, char := range line {
-				switch {
-				case char >= 'a' && char <= 'z':
-					person[string(char)] = true
-					groupAny[string(char)] = true
-				default:
+				if char >= 'a' && char <= 'z' {
+					groups[string(char)]++
 				}
 			}
-			people = append(people, person)
 		}
-		any += len(groupAny)
+		any += len(groups)
 
-		groupAll := groupAnswers{}
-		for answer := range people[0] {
-			allAnswered := true
-			for _, person := range people {
-				if _, found := person[answer]; !found {
-					allAnswered = false
-					break
-				}
+		for _, count := range groups {
+			if count == len(lines) {
+				all++
 			}
-			if allAnswered {
-				groupAll[answer] = true
-			}
+
 		}
-		all += len(groupAll)
 	}
 	return any, all
 }
 
-type groupAnswers map[string]bool
+type groupAnswers map[string]int
