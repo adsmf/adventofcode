@@ -10,39 +10,29 @@ import (
 var benchmark = false
 
 func main() {
-	p1 := part1("input.txt")
-	p2 := part2("input.txt")
+	graph, reverseGraph := loadFile("input.txt")
+
+	p1 := part1(reverseGraph)
+	p2 := part2(graph)
+
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1(filename string) int {
-	graph := loadFile(filename)
-	reverseGraph := map[string][]string{}
-	for outerType, innerMap := range graph {
-		for innerType := range innerMap {
-			reverseGraph[innerType] = append(reverseGraph[innerType], outerType)
-		}
-	}
+func part1(reverseGraph containeeGraph) int {
 	types := map[string]struct{}{}
-	containTypes := reverseGraph["shiny gold"]
-	for len(containTypes) > 0 {
-		nextTypes := []string{}
+	for containTypes, nextTypes := reverseGraph["shiny gold"], []string{}; len(containTypes) > 0; containTypes, nextTypes = nextTypes, []string{} {
 		for _, cType := range containTypes {
-			if _, found := types[cType]; !found {
-				types[cType] = struct{}{}
-				nextTypes = append(nextTypes, reverseGraph[cType]...)
-			}
+			types[cType] = struct{}{}
+			nextTypes = append(nextTypes, reverseGraph[cType]...)
 		}
-		containTypes = nextTypes
 	}
 	return len(types)
 }
 
-func part2(filename string) int {
-	graph := loadFile(filename)
+func part2(graph containmentGraph) int {
 	contentCounts := map[string]int{}
 	count := countContents(graph, contentCounts, "shiny gold")
 	return count
@@ -50,53 +40,47 @@ func part2(filename string) int {
 }
 
 func countContents(graph containmentGraph, knownCounts map[string]int, target string) int {
-	if count, found := knownCounts[target]; found {
-		return count
+	if _, found := knownCounts[target]; !found {
+		for innerType, innerCount := range graph[target] {
+			knownCounts[target] += innerCount * (countContents(graph, knownCounts, innerType) + 1)
+		}
 	}
-	count := 0
-	for innerType, innerCount := range graph[target] {
-		count += innerCount * (countContents(graph, knownCounts, innerType) + 1)
-	}
-	knownCounts[target] = count
-	return count
+	return knownCounts[target]
 }
 
-func loadFile(filename string) containmentGraph {
+func loadFile(filename string) (containmentGraph, containeeGraph) {
+	forwardGraph := containmentGraph{}
+	reverseGraph := containeeGraph{}
+
 	inputBytes, _ := ioutil.ReadFile(filename)
-	return load(string(inputBytes))
-}
-func load(input string) containmentGraph {
-	graph := containmentGraph{}
-	for _, line := range strings.Split(input, "\n") {
-		if line == "" {
+	for _, line := range strings.Split(string(inputBytes), "\n") {
+		if line == "" || strings.HasSuffix(line, "no other bags.") {
 			continue
 		}
-		sides := strings.SplitN(line, "contain", 2)
-		leftType, _ := parseDef(sides[0])
-		right := strings.TrimSpace(sides[1])
-		if right == "no other bags." {
-			continue
+		specParts := strings.SplitN(line, "contain", 2)
+		container, _ := parseDef(specParts[0])
+		if forwardGraph[container] == nil {
+			forwardGraph[container] = map[string]int{}
 		}
-		if graph[leftType] == nil {
-			graph[leftType] = map[string]int{}
-		}
-		for _, contains := range strings.Split(right, ", ") {
+		for _, contains := range strings.Split(specParts[1], ", ") {
 			cType, cCount := parseDef(contains)
-			graph[leftType][cType] = cCount
+			forwardGraph[container][cType] = cCount
+			reverseGraph[cType] = append(reverseGraph[cType], container)
 		}
 	}
-	return graph
+
+	return forwardGraph, reverseGraph
 }
 
-func parseDef(def string) (string, int) {
-	count := 0
+func parseDef(def string) (desc string, count int) {
 	parts := strings.Split(strings.TrimSpace(def), " ")
 	if len(parts) == 4 {
 		count, _ = strconv.Atoi(parts[0])
 		parts = parts[1:]
 	}
-	desc := strings.Join(parts[0:2], " ")
+	desc = strings.Join(parts[0:2], " ")
 	return desc, count
 }
 
 type containmentGraph map[string]map[string]int
+type containeeGraph map[string][]string

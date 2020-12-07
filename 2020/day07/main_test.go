@@ -7,7 +7,8 @@ import (
 )
 
 func TestPart2Examples(t *testing.T) {
-	assert.Equal(t, 32, part2("example.txt"))
+	graph, _ := loadFile("example.txt")
+	assert.Equal(t, 32, part2(graph))
 }
 
 func ExampleMain() {
@@ -25,13 +26,15 @@ func BenchmarkMain(b *testing.B) {
 }
 
 func BenchmarkPart1(b *testing.B) {
+	_, reverseGraph := loadFile("input.txt")
 	for i := 0; i < b.N; i++ {
-		part1("input.txt")
+		part1(reverseGraph)
 	}
 }
 
 func BenchmarkPart2(b *testing.B) {
+	graph, _ := loadFile("input.txt")
 	for i := 0; i < b.N; i++ {
-		part2("input.txt")
+		part2(graph)
 	}
 }
