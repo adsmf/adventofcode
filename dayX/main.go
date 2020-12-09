@@ -4,8 +4,6 @@ import (
 	"fmt"
 )
 
-var benchmark = false
-
 func main() {
 	p1 := part1()
 	p2 := part2()
@@ -22,3 +20,5 @@ func part1() int {
 func part2() int {
 	return -1
 }
+
+var benchmark = false

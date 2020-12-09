@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: -1
+	//Part 2: -1
+}
+
+func TestAnswers(t *testing.T) {
+}
+
 func TestPart1Examples(t *testing.T) {
 	type testDef struct {
 		// Test structure here
@@ -35,16 +45,6 @@ func TestPart2Examples(t *testing.T) {
 	}
 }
 
-func TestAnswers(t *testing.T) {
-}
-
-func ExampleMain() {
-	main()
-	//Output:
-	//Part 1: -1
-	//Part 2: -1
-}
-
 func BenchmarkMain(b *testing.B) {
 	benchmark = true
 	for i := 0; i < b.N; i++ {
@@ -52,14 +52,14 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
-func BenchmarkPart1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part1()
-	}
-}
+// func BenchmarkPart1(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		part1()
+// 	}
+// }
 
-func BenchmarkPart2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part2()
-	}
-}
+// func BenchmarkPart2(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		part2()
+// 	}
+// }
