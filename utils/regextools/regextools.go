@@ -24,6 +24,9 @@ func Join(expressions ...*regexp.Regexp) *regexp.Regexp {
 func Group(expressions ...*regexp.Regexp) *regexp.Regexp {
 	return Match("(?:" + Join(expressions...).String() + ")")
 }
+func Capture(expressions ...*regexp.Regexp) *regexp.Regexp {
+	return Match("(" + Join(expressions...).String() + ")")
+}
 func Anchor(expressions ...*regexp.Regexp) *regexp.Regexp {
 	return Match("^" + Group(expressions...).String() + "$")
 }
@@ -104,3 +107,4 @@ func TimesBetween(minReps, maxReps int, expressions ...*regexp.Regexp) *regexp.R
 // Character groups
 var Digit = Match("[0-9]")
 var HexChar = Match("[0-9a-f]")
+var Anything = Match(".")
