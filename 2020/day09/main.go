@@ -1,0 +1,78 @@
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+
+	"github.com/adsmf/adventofcode/utils"
+)
+
+var benchmark = false
+
+func main() {
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
+}
+
+func part1() int {
+	n := 25
+	input, _ := ioutil.ReadFile("input.txt")
+	lastN := map[int]int{}
+	numbers := utils.GetInts(string(input))
+	for index, number := range numbers {
+		if index < n {
+			lastN[number]++
+			continue
+		}
+		valid := false
+		for opt := range lastN {
+			if _, found := lastN[number-opt]; found {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return number
+		}
+
+		lastN[number]++
+		oldIndex := numbers[index-n]
+		lastN[oldIndex]--
+		if lastN[oldIndex] <= 0 {
+			delete(lastN, oldIndex)
+		}
+	}
+	return -1
+}
+
+func part2() int {
+	target := part1()
+
+	input, _ := ioutil.ReadFile("input.txt")
+	numbers := utils.GetInts(string(input))
+
+	for checkLen := 2; checkLen < len(numbers); checkLen++ {
+		for i := 0; i < len(numbers)-checkLen; i++ {
+			checkRange := numbers[i : i+checkLen]
+			sum := 0
+			min, max := utils.MaxInt, 0
+			for _, num := range checkRange {
+				sum += num
+				if min > num {
+					min = num
+				}
+				if max < num {
+					max = num
+				}
+			}
+			if sum == target {
+				return min + max
+			}
+		}
+	}
+	return -1
+}
