@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import os
 import requests
@@ -7,15 +8,22 @@ import sys
 def main():
   now = datetime.datetime.now()
 
-  if now.month != 12:
-    sys.exit("Wrong month")
+  parser = argparse.ArgumentParser(description='Script to setup the advent of code problem.')
+  parser.add_argument('day', type=int, help='the day of the problem you want setup', default=now.day, nargs='?')
+  parser.add_argument('year', type=int, help='the year of the problem you want setup', default=now.year, nargs='?')
+  args = parser.parse_args()
   
-  year = now.year
-  day = now.day
-  
-  if day>25:
-    sys.exit("Come back next year")
-  
+  year = args.year
+  day = args.day
+
+  if year > now.year or year < 2015:
+    sys.exit("Invalid year {}".format(year))
+  if day > 25 or day < 0:
+    sys.exit("Invalid day {}".format(day))
+  if year == now.year and ((now.month < 12) or (now.day < day)):
+    sys.exit("Cannot predict the future ({}-12-{})".format(year,day))
+
+
   basePath = os.path.dirname(os.path.realpath(__file__))
   todayPath = os.path.join(basePath,str(year),"day{:02d}".format(day))
   templatePath = os.path.join(basePath,"dayX")
