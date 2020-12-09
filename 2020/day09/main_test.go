@@ -9,6 +9,7 @@ func ExampleMain() {
 	//Output:
 	// Part 1: 1492208709
 	// Part 2: 238243506
+	// Part 2 alt: 238243506
 }
 
 func BenchmarkMain(b *testing.B) {
@@ -27,5 +28,11 @@ func BenchmarkPart1(b *testing.B) {
 func BenchmarkPart2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		part2()
+	}
+}
+
+func BenchmarkPart2alt(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		part2alt()
 	}
 }
