@@ -26,13 +26,17 @@ func BenchmarkPart1(b *testing.B) {
 }
 
 func BenchmarkPart2(b *testing.B) {
+	p1 := part1()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		part2()
+		part2(p1)
 	}
 }
 
 func BenchmarkPart2alt(b *testing.B) {
+	p1 := part1()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		part2alt()
+		part2alt(p1)
 	}
 }

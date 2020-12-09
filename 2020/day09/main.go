@@ -11,8 +11,8 @@ var benchmark = false
 
 func main() {
 	p1 := part1()
-	p2 := part2()
-	p2alt := part2alt()
+	p2 := part2(p1)
+	p2alt := part2alt(p1)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
@@ -51,8 +51,8 @@ func part1() int {
 	return -1
 }
 
-func part2() int {
-	target := part1()
+func part2(target int) int {
+	// target := part1()
 
 	input, _ := ioutil.ReadFile("input.txt")
 	numbers := utils.GetInts(string(input))
@@ -79,15 +79,13 @@ func part2() int {
 	return -1
 }
 
-func part2alt() int {
-	target := part1()
-
+func part2alt(target int) int {
 	input, _ := ioutil.ReadFile("input.txt")
 	numbers := utils.GetInts(string(input))
 
-	sums := map[int]int{
-		2: numbers[0],
-	}
+	maxSearch := 18
+	minSearch := 2
+	sums := map[int]int{}
 	for index, number := range numbers {
 		for rangeLen, rangeSum := range sums {
 			if rangeSum == target {
@@ -104,10 +102,7 @@ func part2alt() int {
 				return min + max
 			}
 		}
-		for i := index + 1; i >= 2; i-- {
-			if _, found := sums[i]; !found {
-				sums[i] = sums[i-1]
-			}
+		for i := maxSearch; i >= minSearch; i-- {
 			sums[i] += number
 			if index-i >= 0 {
 				sums[i] -= numbers[index-i]
