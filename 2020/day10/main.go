@@ -41,9 +41,9 @@ func part2(adapters []int) int {
 		}
 	}
 	deviceJolts := max + 3
+	adapterMap[deviceJolts] = true
 
 	cache := map[string]int{}
-	adapterMap[deviceJolts] = true
 
 	return search(0, deviceJolts, adapterMap, cache)
 }
@@ -56,13 +56,11 @@ func search(jolt, deviceJolts int, adapters map[int]bool, cache map[string]int) 
 	for diff := 1; diff <= 3; diff++ {
 		if adapters[jolt+diff] {
 			key := fmt.Sprintf("%d,%d", jolt, diff)
-			if cached, found := cache[key]; found {
-				count += cached
-			} else {
+			if _, found := cache[key]; !found {
 				subCount := search(jolt+diff, deviceJolts, adapters, cache)
 				cache[key] = subCount
-				count += subCount
 			}
+			count += cache[key]
 		}
 	}
 	return count
