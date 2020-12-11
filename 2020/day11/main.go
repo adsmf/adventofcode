@@ -112,13 +112,14 @@ func (a area) countSight(index int) int {
 			if x == 0 && y == 0 {
 				continue
 			}
-			for i := 1; i < 99; i++ {
-				checkY := indY + y*i
-				checkX := indX + x*i
-				if checkX < 0 || checkX >= a.width || checkY < 0 || checkY >= a.height {
+			for checkX, checkY := indX+x, indY+y; ; checkX, checkY = checkX+x, checkY+y {
+				if checkX < 0 || checkX >= a.width {
 					break
 				}
-				checkIndex := index + x*i + y*i*a.width
+				checkIndex := checkX + checkY*a.width
+				if checkIndex < 0 || checkIndex >= len(a.grid) {
+					break
+				}
 				if a.grid[checkIndex] != tileEmptyFloor {
 					if a.grid[checkIndex] == tileOccupiedSeat {
 						count++
@@ -134,15 +135,10 @@ func (a area) countSight(index int) int {
 type floorTileType byte
 
 const (
-	tileOutside      floorTileType = 0
 	tileEmptyFloor   floorTileType = '.'
 	tileEmptySeat    floorTileType = 'L'
 	tileOccupiedSeat floorTileType = '#'
 )
-
-type pos struct {
-	x, y int
-}
 
 func load(filename string) area {
 	inputBytes, _ := ioutil.ReadFile(filename)
