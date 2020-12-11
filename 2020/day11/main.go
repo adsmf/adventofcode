@@ -17,16 +17,13 @@ func main() {
 
 func seatLife(floorplan area, part2rules bool) int {
 	iteration := 0
-	states := map[string]int{}
-	states[floorplan.save()]++
+	var changed bool
 	for {
-		floorplan = floorplan.next(part2rules)
-		state := floorplan.save()
-		iteration++
-		if _, found := states[state]; found {
+		floorplan, changed = floorplan.next(part2rules)
+		if !changed {
 			return floorplan.countOccupied()
 		}
-		states[state]++
+		iteration++
 	}
 }
 
@@ -36,12 +33,13 @@ type area struct {
 	width  int
 }
 
-func (a area) next(part2rules bool) area {
+func (a area) next(part2rules bool) (area, bool) {
 	next := area{
 		grid:   map[pos]floorTileType{},
 		width:  a.width,
 		height: a.height,
 	}
+	changes := false
 	for loc, tile := range a.grid {
 		if tile == tileEmptyFloor {
 			next.grid[loc] = tileEmptyFloor
@@ -59,13 +57,15 @@ func (a area) next(part2rules bool) area {
 		switch {
 		case tile == tileEmptySeat && occupied == 0:
 			next.grid[loc] = tileOccupiedSeat
+			changes = true
 		case tile == tileOccupiedSeat && occupied >= tolerance:
 			next.grid[loc] = tileEmptySeat
+			changes = true
 		default:
 			next.grid[loc] = tile
 		}
 	}
-	return next
+	return next, changes
 }
 
 func (a area) save() string {
