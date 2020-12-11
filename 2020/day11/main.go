@@ -44,27 +44,22 @@ func (a area) next(part2rules bool) area {
 	}
 	for loc, tile := range a.grid {
 		if tile == tileEmptyFloor {
+			next.grid[loc] = tileEmptyFloor
 			continue
 		}
-		occupiedAdjacent := 0
+		occupied := 0
 		var tolerance int
-		var surroundings []pos
 		if part2rules {
-			surroundings = loc.sight(a)
+			occupied = loc.countSight(a)
 			tolerance = 5
 		} else {
-			surroundings = loc.adjacent()
+			occupied = loc.countAdjacent(a)
 			tolerance = 4
 		}
-		for _, surLoc := range surroundings {
-			if a.grid[surLoc] == tileOccupiedSeat {
-				occupiedAdjacent++
-			}
-		}
 		switch {
-		case tile == tileEmptySeat && occupiedAdjacent == 0:
+		case tile == tileEmptySeat && occupied == 0:
 			next.grid[loc] = tileOccupiedSeat
-		case tile == tileOccupiedSeat && occupiedAdjacent >= tolerance:
+		case tile == tileOccupiedSeat && occupied >= tolerance:
 			next.grid[loc] = tileEmptySeat
 		default:
 			next.grid[loc] = tile
@@ -74,21 +69,14 @@ func (a area) next(part2rules bool) area {
 }
 
 func (a area) save() string {
-	state := ""
+	state := make([]byte, 0, a.height*(a.width+1))
 	for y := 0; y <= a.height; y++ {
 		for x := 0; x <= a.width; x++ {
-			switch a.grid[pos{x, y}] {
-			case tileEmptyFloor:
-				state += "."
-			case tileOccupiedSeat:
-				state += "#"
-			case tileEmptySeat:
-				state += "L"
-			}
+			state = append(state, byte(a.grid[pos{x, y}]))
 		}
-		state += "\n"
+		state = append(state, '\n')
 	}
-	return state
+	return string(state)
 }
 
 func (a area) countOccupied() int {
@@ -114,33 +102,36 @@ func (a *area) fixSize() {
 	}
 }
 
-type floorTileType int
+type floorTileType byte
 
 const (
-	tileEmptyFloor floorTileType = iota
-	tileEmptySeat
-	tileOccupiedSeat
+	tileOutside      floorTileType = 0
+	tileEmptyFloor   floorTileType = '.'
+	tileEmptySeat    floorTileType = 'L'
+	tileOccupiedSeat floorTileType = '#'
 )
 
 type pos struct {
 	x, y int
 }
 
-func (p pos) adjacent() []pos {
-	surroundings := []pos{}
+func (p pos) countAdjacent(floorplan area) int {
+	count := 0
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			if x == 0 && y == 0 {
 				continue
 			}
-			surroundings = append(surroundings, pos{p.x + x, p.y + y})
+			if floorplan.grid[pos{p.x + x, p.y + y}] == tileOccupiedSeat {
+				count++
+			}
 		}
 	}
-	return surroundings
+	return count
 }
 
-func (p pos) sight(floorplan area) []pos {
-	surroundings := []pos{}
+func (p pos) countSight(floorplan area) int {
+	count := 0
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			if x == 0 && y == 0 {
@@ -148,17 +139,19 @@ func (p pos) sight(floorplan area) []pos {
 			}
 			for i := 1; i < 99; i++ {
 				tryPos := pos{p.x + x*i, p.y + y*i}
-				if tryPos.x < 0 || tryPos.y < 0 || tryPos.x > floorplan.width || tryPos.y > floorplan.height {
+				if floorplan.grid[tryPos] == tileOutside {
 					break
 				}
 				if floorplan.grid[tryPos] != tileEmptyFloor {
-					surroundings = append(surroundings, tryPos)
+					if floorplan.grid[tryPos] == tileOccupiedSeat {
+						count++
+					}
 					break
 				}
 			}
 		}
 	}
-	return surroundings
+	return count
 }
 
 func load(filename string) area {
@@ -168,15 +161,10 @@ func load(filename string) area {
 		grid: map[pos]floorTileType{},
 	}
 	for _, char := range inputBytes {
-		switch char {
-		case '.':
-			floorplan.grid[pos{x, y}] = tileEmptyFloor
-			x++
-		case 'L':
-			floorplan.grid[pos{x, y}] = tileEmptySeat
-			x++
-		case '#':
-			floorplan.grid[pos{x, y}] = tileOccupiedSeat
+		tile := floorTileType(char)
+		switch tile {
+		case tileEmptyFloor, tileEmptySeat, tileOccupiedSeat:
+			floorplan.grid[pos{x, y}] = tile
 			x++
 		case '\n':
 			x = 0
