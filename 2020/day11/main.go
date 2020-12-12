@@ -35,9 +35,11 @@ type area struct {
 	width  int
 }
 
+var areaBuffer1, areaBuffer2 areaGrid
+
 func (a area) next(part2rules bool) (area, bool) {
 	next := area{
-		grid:   make(areaGrid, len(a.grid)),
+		grid:   areaBuffer1,
 		width:  a.width,
 		height: a.height,
 	}
@@ -72,6 +74,7 @@ func (a area) next(part2rules bool) (area, bool) {
 
 		}
 	}
+	areaBuffer1, areaBuffer2 = areaBuffer2, areaBuffer1
 	return next, changes
 }
 
@@ -160,6 +163,8 @@ func load(filename string) area {
 	}
 	floorplan.width = len(inputBytes)/height - 1
 	floorplan.height = height
+	areaBuffer1 = make(areaGrid, len(floorplan.grid))
+	areaBuffer2 = make(areaGrid, len(floorplan.grid))
 	return floorplan
 }
 
