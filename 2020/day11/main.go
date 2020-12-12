@@ -42,29 +42,34 @@ func (a area) next(part2rules bool) (area, bool) {
 		height: a.height,
 	}
 	changes := false
-	for loc, tile := range a.grid {
-		if tile == tileEmptyFloor {
-			next.grid[loc] = tileEmptyFloor
-			continue
-		}
-		occupied := 0
-		var tolerance int
-		if part2rules {
-			occupied = a.countSight(loc)
-			tolerance = 5
-		} else {
-			occupied = a.countAdjacent(loc)
-			tolerance = 4
-		}
-		switch {
-		case tile == tileEmptySeat && occupied == 0:
-			next.grid[loc] = tileOccupiedSeat
-			changes = true
-		case tile == tileOccupiedSeat && occupied >= tolerance:
-			next.grid[loc] = tileEmptySeat
-			changes = true
-		default:
-			next.grid[loc] = tile
+	for y := 0; y < a.height; y++ {
+		for x := 0; x < a.width; x++ {
+			loc := x + y*a.width
+			tile := a.grid[loc]
+			if tile == tileEmptyFloor {
+				next.grid[loc] = tileEmptyFloor
+				continue
+			}
+			occupied := 0
+			var tolerance int
+			if part2rules {
+				occupied = a.countSight(x, y)
+				tolerance = 5
+			} else {
+				occupied = a.countAdjacent(x, y)
+				tolerance = 4
+			}
+			switch {
+			case tile == tileEmptySeat && occupied == 0:
+				next.grid[loc] = tileOccupiedSeat
+				changes = true
+			case tile == tileOccupiedSeat && occupied >= tolerance:
+				next.grid[loc] = tileEmptySeat
+				changes = true
+			default:
+				next.grid[loc] = tile
+			}
+
 		}
 	}
 	return next, changes
@@ -80,58 +85,55 @@ func (a area) countOccupied() int {
 	return count
 }
 
-func (a area) countAdjacent(index int) int {
+func (a area) countAdjacent(x, y int) int {
 	count := 0
-	indX := index % a.width
-	for x := -1; x <= 1; x++ {
-		for y := -1; y <= 1; y++ {
-			if x == 0 && y == 0 {
-				continue
-			}
-			checkX := indX + x
+	for _, dir := range directions {
+		checkX := x + dir.x
+		if checkX < 0 || checkX >= a.width {
+			continue
+		}
+		checkY := y + dir.y
+		checkIndex := checkX + checkY*a.width
+		if checkIndex < 0 || checkIndex >= len(a.grid) {
+			continue
+		}
+		if a.grid[checkIndex] == tileOccupiedSeat {
+			count++
+		}
+	}
+	return count
+}
+
+func (a area) countSight(x, y int) int {
+	count := 0
+	for _, dir := range directions {
+		for checkX, checkY := x+dir.x, y+dir.y; ; checkX, checkY = checkX+dir.x, checkY+dir.y {
 			if checkX < 0 || checkX >= a.width {
-				continue
+				break
 			}
-			checkIndex := index + x + y*a.width
-			if checkIndex < 0 || checkIndex >= len(a.grid) {
-				continue
+			index := checkX + checkY*a.width
+			if index < 0 || index >= len(a.grid) {
+				break
 			}
-			if a.grid[checkIndex] == tileOccupiedSeat {
-				count++
+			tile := a.grid[index]
+			if tile != tileEmptyFloor {
+				if tile == tileOccupiedSeat {
+					count++
+				}
+				break
 			}
 		}
 	}
 	return count
 }
 
-func (a area) countSight(index int) int {
-	count := 0
-	indX := index % a.width
-	indY := (index - indX) / a.width
-	for x := -1; x <= 1; x++ {
-		for y := -1; y <= 1; y++ {
-			if x == 0 && y == 0 {
-				continue
-			}
-			for checkX, checkY := indX+x, indY+y; ; checkX, checkY = checkX+x, checkY+y {
-				if checkX < 0 || checkX >= a.width {
-					break
-				}
-				checkIndex := checkX + checkY*a.width
-				if checkIndex < 0 || checkIndex >= len(a.grid) {
-					break
-				}
-				if a.grid[checkIndex] != tileEmptyFloor {
-					if a.grid[checkIndex] == tileOccupiedSeat {
-						count++
-					}
-					break
-				}
-			}
-		}
-	}
-	return count
+var directions []vector = []vector{
+	{-1, -1}, {-1, 0}, {-1, 1},
+	{0, -1}, {0, 1},
+	{1, -1}, {1, 0}, {1, 1},
 }
+
+type vector struct{ x, y int }
 
 type floorTileType byte
 
@@ -143,29 +145,21 @@ const (
 
 func load(filename string) area {
 	inputBytes, _ := ioutil.ReadFile(filename)
-	x, y := 0, 0
 	floorplan := area{
 		grid: make(areaGrid, 0, len(inputBytes)),
 	}
-	maxX := 0
-	maxY := 0
+	height := 0
 	for _, char := range inputBytes {
 		tile := floorTileType(char)
 		switch tile {
 		case tileEmptyFloor, tileEmptySeat, tileOccupiedSeat:
 			floorplan.grid = append(floorplan.grid, tile)
-			x++
-			if x > maxX {
-				maxX = x
-			}
 		case '\n':
-			x = 0
-			y++
-			maxY = y
+			height++
 		}
 	}
-	floorplan.width = maxX
-	floorplan.height = maxY
+	floorplan.width = len(inputBytes)/height - 1
+	floorplan.height = height
 	return floorplan
 }
 
