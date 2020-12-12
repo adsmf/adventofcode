@@ -83,18 +83,19 @@ func (a area) countOccupied() int {
 func (a area) countAdjacent(index int) int {
 	count := 0
 	indX := index % a.width
-	indY := (index - indX) / a.width
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			if x == 0 && y == 0 {
 				continue
 			}
-			checkY := indY + y
 			checkX := indX + x
-			if checkX < 0 || checkX >= a.width || checkY < 0 || checkY >= a.height {
+			if checkX < 0 || checkX >= a.width {
 				continue
 			}
 			checkIndex := index + x + y*a.width
+			if checkIndex < 0 || checkIndex >= len(a.grid) {
+				continue
+			}
 			if a.grid[checkIndex] == tileOccupiedSeat {
 				count++
 			}
