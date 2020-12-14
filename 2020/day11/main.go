@@ -36,6 +36,8 @@ type area struct {
 }
 
 var areaBuffer1, areaBuffer2 areaGrid
+var seatAdjacency = [][]int{}
+var seatLinesOfSight = [][]int{}
 
 func (a area) next(part2rules bool) (area, bool) {
 	next := area{
@@ -44,34 +46,30 @@ func (a area) next(part2rules bool) (area, bool) {
 		height: a.height,
 	}
 	changes := false
-	for y := 0; y < a.height; y++ {
-		for x := 0; x < a.width; x++ {
-			loc := x + y*a.width
-			tile := a.grid[loc]
-			if tile == tileEmptyFloor {
-				next.grid[loc] = tileEmptyFloor
-				continue
-			}
-			occupied := 0
-			var tolerance int
-			if part2rules {
-				occupied = a.countSight(x, y)
-				tolerance = 5
-			} else {
-				occupied = a.countAdjacent(x, y)
-				tolerance = 4
-			}
-			switch {
-			case tile == tileEmptySeat && occupied == 0:
-				next.grid[loc] = tileOccupiedSeat
-				changes = true
-			case tile == tileOccupiedSeat && occupied >= tolerance:
-				next.grid[loc] = tileEmptySeat
-				changes = true
-			default:
-				next.grid[loc] = tile
-			}
-
+	for loc := 0; loc < a.height*a.width; loc++ {
+		tile := a.grid[loc]
+		if tile == tileEmptyFloor {
+			next.grid[loc] = tileEmptyFloor
+			continue
+		}
+		occupied := 0
+		var tolerance int
+		if part2rules {
+			occupied = a.countSeats(seatLinesOfSight, loc)
+			tolerance = 5
+		} else {
+			occupied = a.countSeats(seatAdjacency, loc)
+			tolerance = 4
+		}
+		switch {
+		case tile == tileEmptySeat && occupied == 0:
+			next.grid[loc] = tileOccupiedSeat
+			changes = true
+		case tile == tileOccupiedSeat && occupied >= tolerance:
+			next.grid[loc] = tileEmptySeat
+			changes = true
+		default:
+			next.grid[loc] = tile
 		}
 	}
 	areaBuffer1, areaBuffer2 = areaBuffer2, areaBuffer1
@@ -88,46 +86,45 @@ func (a area) countOccupied() int {
 	return count
 }
 
-func (a area) countAdjacent(x, y int) int {
+func (a area) countSeats(seatDirLokup [][]int, pos int) int {
 	count := 0
-	for _, dir := range directions {
-		checkX := x + dir.x
-		if checkX < 0 || checkX >= a.width {
-			continue
-		}
-		checkY := y + dir.y
-		checkIndex := checkX + checkY*a.width
-		if checkIndex < 0 || checkIndex >= len(a.grid) {
-			continue
-		}
-		if a.grid[checkIndex] == tileOccupiedSeat {
+	for _, index := range seatDirLokup[pos] {
+		if a.grid[index] == tileOccupiedSeat {
 			count++
 		}
 	}
 	return count
 }
 
-func (a area) countSight(x, y int) int {
-	count := 0
-	for _, dir := range directions {
-		for checkX, checkY := x+dir.x, y+dir.y; ; checkX, checkY = checkX+dir.x, checkY+dir.y {
-			if checkX < 0 || checkX >= a.width {
-				break
-			}
-			index := checkX + checkY*a.width
-			if index < 0 || index >= len(a.grid) {
-				break
-			}
-			tile := a.grid[index]
-			if tile != tileEmptyFloor {
-				if tile == tileOccupiedSeat {
-					count++
+func (a area) genSeatLookups() {
+	seatLinesOfSight = make([][]int, a.height*a.width)
+	seatAdjacency = make([][]int, a.height*a.width)
+	for y := 0; y < a.height; y++ {
+		for x := 0; x < a.width; x++ {
+			pos := x + y*a.width
+			seatLinesOfSight[pos] = make([]int, 0, 8)
+			seatAdjacency[pos] = make([]int, 0, 8)
+			for _, dir := range directions {
+				for checkX, checkY, adjacent := x+dir.x, y+dir.y, true; ; checkX, checkY, adjacent = checkX+dir.x, checkY+dir.y, false {
+					if checkX < 0 || checkX >= a.width {
+						break
+					}
+					index := checkX + checkY*a.width
+					if index < 0 || index >= len(a.grid) {
+						break
+					}
+					tile := a.grid[index]
+					if tile != tileEmptyFloor {
+						seatLinesOfSight[pos] = append(seatLinesOfSight[pos], index)
+						if adjacent {
+							seatAdjacency[pos] = append(seatAdjacency[pos], index)
+						}
+						break
+					}
 				}
-				break
 			}
 		}
 	}
-	return count
 }
 
 var directions []vector = []vector{
@@ -163,6 +160,7 @@ func load(filename string) area {
 	}
 	floorplan.width = len(inputBytes)/height - 1
 	floorplan.height = height
+	floorplan.genSeatLookups()
 	areaBuffer1 = make(areaGrid, len(floorplan.grid))
 	areaBuffer2 = make(areaGrid, len(floorplan.grid))
 	return floorplan
