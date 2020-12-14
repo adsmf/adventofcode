@@ -8,37 +8,24 @@ import (
 )
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	commands := load("input.txt")
+	p1 := part1(commands)
+	p2 := part2(commands)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
+func part1(commands []command) int {
 	memory := map[int]int{}
-	mask := ""
-
-	for _, line := range utils.ReadInputLines("input.txt") {
-		if strings.HasPrefix(line, "mask") {
-			mask = strings.TrimPrefix(line, "mask = ")
-			continue
-		}
-		ints := utils.GetInts(line)
-		addr, value := ints[0], ints[1]
-
-		memory[addr] = applyMask(mask, value)
+	for _, cmd := range commands {
+		memory[cmd.address] = applyValueMask(cmd.mask, cmd.value)
 	}
-
-	sum := 0
-	for _, value := range memory {
-		sum += value
-	}
-	return sum
+	return sum(memory)
 }
 
-func applyMask(mask string, value int) int {
+func applyValueMask(mask string, value int) int {
 	setMask := 0
 	unsetMask := 0
 
@@ -57,25 +44,14 @@ func applyMask(mask string, value int) int {
 	return value
 }
 
-func part2() int {
-	memory := map[int]int{}
-	mask := ""
+func part2(commands []command) int {
+	memory := make(map[int]int, 100000)
 
-	for _, line := range utils.ReadInputLines("input.txt") {
-		if strings.HasPrefix(line, "mask") {
-			mask = strings.TrimPrefix(line, "mask = ")
-			continue
-		}
-		ints := utils.GetInts(line)
-		addr, value := ints[0], ints[1]
-		writeAddresses(memory, mask, addr, value, 0)
+	for _, cmd := range commands {
+		writeAddresses(memory, cmd.mask, cmd.address, cmd.value, 0)
 	}
 
-	sum := 0
-	for _, value := range memory {
-		sum += value
-	}
-	return sum
+	return sum(memory)
 }
 
 func writeAddresses(memory map[int]int, mask string, addr int, value, index int) {
@@ -95,6 +71,40 @@ func writeAddresses(memory map[int]int, mask string, addr int, value, index int)
 		addr1 := addr | 1<<(35-index)
 		writeAddresses(memory, mask, addr1, value, index+1)
 	}
+}
+
+func sum(memory map[int]int) int {
+	sum := 0
+	count := 0
+	for _, value := range memory {
+		sum += value
+		count++
+	}
+	return sum
+}
+
+func load(filename string) []command {
+	commands := []command{}
+	mask := ""
+	for _, line := range utils.ReadInputLines("input.txt") {
+		if strings.HasPrefix(line, "mask") {
+			mask = strings.TrimPrefix(line, "mask = ")
+			continue
+		}
+		ints := utils.GetInts(line)
+		commands = append(commands, command{
+			mask:    mask,
+			address: ints[0],
+			value:   ints[1],
+		})
+	}
+	return commands
+}
+
+type command struct {
+	mask    string
+	address int
+	value   int
 }
 
 var benchmark = false
