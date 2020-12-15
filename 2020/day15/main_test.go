@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleMain() {
@@ -10,6 +13,28 @@ func ExampleMain() {
 	//Output:
 	//Part 1: 866
 	//Part 2: 1437692
+}
+
+func TestExamples(t *testing.T) {
+	type testDef struct {
+		input  string
+		turns  int
+		expect int
+	}
+	tests := []testDef{
+		{"0,3,6", 4, 0},
+		{"0,3,6", 5, 3},
+		{"0,3,6", 6, 3},
+		{"0,3,6", 7, 1},
+		{"0,3,6", 8, 0},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%s-Turn%d", test.input, test.turns), func(t *testing.T) {
+			t.Logf("Test def:\n %v", test)
+			result := play(test.input, test.turns)
+			assert.Equal(t, test.expect, result)
+		})
+	}
 }
 
 func BenchmarkMain(b *testing.B) {

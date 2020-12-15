@@ -19,31 +19,21 @@ func main() {
 
 func play(input string, dinnerTime int) int {
 	numbers := utils.GetInts(input)
-	spoken := spokenData{}
+	spoken := map[int]int{}
 
 	for turn, num := range numbers {
-		spoken[num] = []int{turn + 1}
+		spoken[num] = turn + 1
 	}
-	prevNumber := numbers[len(numbers)-1]
-	for turn := len(numbers) + 1; ; turn++ {
-		var nextNum int
-		if lastSpoken, found := spoken[prevNumber]; found {
-			if len(lastSpoken) >= 2 {
-				nextNum = lastSpoken[len(lastSpoken)-1] - lastSpoken[len(lastSpoken)-2]
-			} else {
-				nextNum = 0
-			}
-		} else {
-			nextNum = 0
+	lastSpoken := numbers[len(numbers)-1]
+	for turn := len(numbers) + 1; turn <= dinnerTime; turn++ {
+		speak := 0
+		if previous, found := spoken[lastSpoken]; found {
+			speak = turn - previous - 1
 		}
-		if turn == dinnerTime {
-			return nextNum
-		}
-		spoken[nextNum] = append(spoken[nextNum], turn)
-		prevNumber = nextNum
+		spoken[lastSpoken] = turn - 1
+		lastSpoken = speak
 	}
+	return lastSpoken
 }
-
-type spokenData map[int][]int
 
 var benchmark = false
