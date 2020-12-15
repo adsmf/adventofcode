@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/adsmf/adventofcode/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,8 @@ func TestExamples(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s-Turn%d", test.input, test.turns), func(t *testing.T) {
 			t.Logf("Test def:\n %v", test)
-			result := play(test.input, test.turns)
+			numbers := utils.GetInts(test.input)
+			result := play(numbers, test.turns)
 			assert.Equal(t, test.expect, result)
 		})
 	}
@@ -46,16 +48,18 @@ func BenchmarkMain(b *testing.B) {
 
 func BenchmarkPart1(b *testing.B) {
 	input, _ := ioutil.ReadFile("input.txt")
+	numbers := utils.GetInts(string(input))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		play(string(input), 2020)
+		play(numbers, 2020)
 	}
 }
 
 func BenchmarkPart2(b *testing.B) {
 	input, _ := ioutil.ReadFile("input.txt")
+	numbers := utils.GetInts(string(input))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		play(string(input), 30000000)
+		play(numbers, 30000000)
 	}
 }

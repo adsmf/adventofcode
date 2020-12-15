@@ -9,16 +9,16 @@ import (
 
 func main() {
 	input, _ := ioutil.ReadFile("input.txt")
-	p1 := play(string(input), 2020)
-	p2 := play(string(input), 30000000)
+	numbers := utils.GetInts(string(input))
+	p1 := play(numbers, 2020)
+	p2 := play(numbers, 30000000)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func play(input string, dinnerTime int) int {
-	numbers := utils.GetInts(input)
+func play(numbers []int, dinnerTime int) int {
 	spoken := make([]int, dinnerTime+len(numbers))
 
 	for turn, num := range numbers {
