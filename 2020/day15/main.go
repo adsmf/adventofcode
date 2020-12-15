@@ -19,7 +19,7 @@ func main() {
 
 func play(input string, dinnerTime int) int {
 	numbers := utils.GetInts(input)
-	spoken := map[int]int{}
+	spoken := make([]int, dinnerTime+len(numbers))
 
 	for turn, num := range numbers {
 		spoken[num] = turn + 1
@@ -27,7 +27,7 @@ func play(input string, dinnerTime int) int {
 	lastSpoken := numbers[len(numbers)-1]
 	for turn := len(numbers) + 1; turn <= dinnerTime; turn++ {
 		speak := 0
-		if previous, found := spoken[lastSpoken]; found {
+		if previous := spoken[lastSpoken]; previous != 0 {
 			speak = turn - previous - 1
 		}
 		spoken[lastSpoken] = turn - 1
