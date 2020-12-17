@@ -6,47 +6,27 @@ import (
 )
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	initial := loadInitial("input.txt")
+	p1 := part1(initial)
+	p2 := part2(initial)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	dim := loadInitial("input.txt")
+func part1(dim dimension) int {
 	for i := 0; i < 6; i++ {
 		dim = dim.next(false)
 	}
 	return len(dim)
 }
 
-func part2() int {
-	dim := loadInitial("input.txt")
+func part2(dim dimension) int {
 	for i := 0; i < 6; i++ {
 		dim = dim.next(true)
 	}
 	return len(dim)
-}
-
-func loadInitial(filename string) dimension {
-	inputBytes, _ := ioutil.ReadFile(filename)
-	dim := dimension{}
-	x, y := 0, 0
-	for _, char := range inputBytes {
-		switch char {
-		case '#':
-			dim[point{x, y, 0, 0}] = true
-			x++
-		case '.':
-			x++
-		case '\n':
-			x = 0
-			y++
-		}
-	}
-	return dim
 }
 
 type dimension map[point]bool
@@ -91,6 +71,25 @@ func (p point) neighbours(hyper bool) []point {
 		}
 	}
 	return points
+}
+
+func loadInitial(filename string) dimension {
+	inputBytes, _ := ioutil.ReadFile(filename)
+	dim := dimension{}
+	x, y := 0, 0
+	for _, char := range inputBytes {
+		switch char {
+		case '#':
+			dim[point{x, y, 0, 0}] = true
+			x++
+		case '.':
+			x++
+		case '\n':
+			x = 0
+			y++
+		}
+	}
+	return dim
 }
 
 var benchmark = false

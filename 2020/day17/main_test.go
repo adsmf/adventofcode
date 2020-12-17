@@ -19,13 +19,17 @@ func BenchmarkMain(b *testing.B) {
 }
 
 func BenchmarkPart1(b *testing.B) {
+	initial := loadInitial("input.txt")
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		part1()
+		part1(initial)
 	}
 }
 
 func BenchmarkPart2(b *testing.B) {
+	initial := loadInitial("input.txt")
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		part2()
+		part2(initial)
 	}
 }
