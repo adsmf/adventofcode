@@ -33,8 +33,8 @@ type dimension map[point]bool
 type dimensionCount map[point]int
 
 func (d dimension) next(hyper bool) dimension {
-	next := dimension{}
-	counts := dimensionCount{}
+	next := make(dimension, len(d))
+	counts := make(dimensionCount, len(d))
 	for pos := range d {
 		neighbours := pos.neighbours(hyper)
 		for _, neighbour := range neighbours {
@@ -53,11 +53,14 @@ type point struct{ x, y, z, w int }
 
 func (p point) neighbours(hyper bool) []point {
 	minW, maxW := 0, 0
+	numPoints := 26
 	if hyper {
 		minW = -1
 		maxW = 1
+		numPoints = 80
 	}
-	points := []point{}
+
+	points := make([]point, 0, numPoints)
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			for z := -1; z <= 1; z++ {
