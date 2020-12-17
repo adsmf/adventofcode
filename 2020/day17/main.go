@@ -16,15 +16,17 @@ func main() {
 }
 
 func part1(dim dimension) int {
+	offsets := point{}.neighbours(false)
 	for i := 0; i < 6; i++ {
-		dim = dim.next(false)
+		dim = dim.next(false, offsets)
 	}
 	return len(dim)
 }
 
 func part2(dim dimension) int {
+	offsets := point{}.neighbours(true)
 	for i := 0; i < 6; i++ {
-		dim = dim.next(true)
+		dim = dim.next(true, offsets)
 	}
 	return len(dim)
 }
@@ -32,12 +34,12 @@ func part2(dim dimension) int {
 type dimension map[point]bool
 type dimensionCount map[point]int
 
-func (d dimension) next(hyper bool) dimension {
+func (d dimension) next(hyper bool, offsets []point) dimension {
 	next := make(dimension, len(d))
 	counts := make(dimensionCount, len(d))
 	for pos := range d {
-		neighbours := pos.neighbours(hyper)
-		for _, neighbour := range neighbours {
+		for _, offset := range offsets {
+			neighbour := point{pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, pos.w + offset.w}
 			counts[neighbour]++
 		}
 	}
