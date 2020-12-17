@@ -19,7 +19,7 @@ func part1() int {
 	for i := 0; i < 6; i++ {
 		dim = dim.next(false)
 	}
-	return dim.countActive()
+	return len(dim)
 }
 
 func part2() int {
@@ -27,7 +27,7 @@ func part2() int {
 	for i := 0; i < 6; i++ {
 		dim = dim.next(true)
 	}
-	return dim.countActive()
+	return len(dim)
 }
 
 func loadInitial(filename string) dimension {
@@ -52,82 +52,21 @@ func loadInitial(filename string) dimension {
 type dimension map[point]bool
 type dimensionCount map[point]int
 
-func (d dimension) countActive() int {
-	count := 0
-	for _, val := range d {
-		if val {
-			count++
-		}
-	}
-	return count
-}
-
 func (d dimension) next(hyper bool) dimension {
 	next := dimension{}
-	min, max := d.bounds()
-
 	counts := dimensionCount{}
-	for x := min.x - 1; x <= max.x+1; x++ {
-		for y := min.y - 1; y <= max.y+1; y++ {
-			for z := min.z - 1; z <= max.z+1; z++ {
-				for w := min.w - 1; w <= max.w+1; w++ {
-					pos := point{x, y, z, w}
-					if d[pos] {
-						neighbours := pos.neighbours(hyper)
-						for _, neighbour := range neighbours {
-							counts[neighbour]++
-						}
-					}
-				}
-			}
-		}
-	}
-
-	for x := min.x - 1; x <= max.x+1; x++ {
-		for y := min.y - 1; y <= max.y+1; y++ {
-			for z := min.z - 1; z <= max.z+1; z++ {
-				for w := min.w - 1; w <= max.w+1; w++ {
-					pos := point{x, y, z, w}
-					if (counts[pos] == 3) || (d[pos] && counts[pos] == 2) {
-						next[pos] = true
-					}
-				}
-			}
-		}
-	}
-
-	return next
-}
-
-func (d dimension) bounds() (point, point) {
-	min, max := point{}, point{}
 	for pos := range d {
-		if pos.x < min.x {
-			min.x = pos.x
-		}
-		if pos.x > max.x {
-			max.x = pos.x
-		}
-		if pos.y < min.y {
-			min.y = pos.y
-		}
-		if pos.y > max.y {
-			max.y = pos.y
-		}
-		if pos.z < min.z {
-			min.z = pos.z
-		}
-		if pos.z > max.z {
-			max.z = pos.z
-		}
-		if pos.w < min.w {
-			min.w = pos.w
-		}
-		if pos.w > max.w {
-			max.w = pos.w
+		neighbours := pos.neighbours(hyper)
+		for _, neighbour := range neighbours {
+			counts[neighbour]++
 		}
 	}
-	return min, max
+	for pos, count := range counts {
+		if (count == 3) || (d[pos] && count == 2) {
+			next[pos] = true
+		}
+	}
+	return next
 }
 
 type point struct{ x, y, z, w int }
