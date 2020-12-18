@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"go/token"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,10 +18,7 @@ func TestAnswers(t *testing.T) {
 }
 
 func TestPart1Examples(t *testing.T) {
-	precedence = map[token.Token]int{
-		token.ADD: 1,
-		token.MUL: 1,
-	}
+	precedence = equalPrecedence
 	type testDef struct {
 		expression string
 		value      int
@@ -43,10 +39,7 @@ func TestPart1Examples(t *testing.T) {
 }
 
 func TestPart2Examples(t *testing.T) {
-	precedence = map[token.Token]int{
-		token.ADD: 2,
-		token.MUL: 1,
-	}
+	precedence = highAddPrecedence
 	type testDef struct {
 		expression string
 		value      int

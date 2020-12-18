@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"go/scanner"
-	"go/token"
-	"strconv"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -20,7 +17,7 @@ func main() {
 }
 
 func part1(expressions []string) int {
-	precedence = map[token.Token]int{token.ADD: 1, token.MUL: 1}
+	precedence = equalPrecedence
 	sum := 0
 	for _, line := range expressions {
 		sum += calculate([]byte(line))
@@ -29,7 +26,7 @@ func part1(expressions []string) int {
 }
 
 func part2(expressions []string) int {
-	precedence = map[token.Token]int{token.ADD: 2, token.MUL: 1}
+	precedence = highAddPrecedence
 	sum := 0
 	for _, line := range expressions {
 		sum += calculate([]byte(line))
@@ -37,61 +34,48 @@ func part2(expressions []string) int {
 	return sum
 }
 
-var precedence map[token.Token]int
-
 func calculate(input []byte) int {
-	var s scanner.Scanner
-
-	fset := token.NewFileSet()
-	file := fset.AddFile("", fset.Base(), len(input))
-
-	s.Init(file, input, nil, scanner.ScanComments)
-
-	rpn := make([]rpnEntry, 0, 50)
-	opStack := make([]token.Token, 0, 50)
-	for {
-		_, tok, literal := s.Scan()
-		if tok == token.EOF {
-			break
-		}
-		switch tok {
-		case token.INT:
-			value, _ := strconv.Atoi(literal)
-			rpn = append(rpn, rpnEntry{value: value})
-		case token.MUL, token.ADD:
-			for len(opStack) > 0 && precedence[opStack[len(opStack)-1]] >= precedence[tok] {
-				var popped token.Token
+	rpn := make([]token, 0, 50)
+	opStack := make([]tokenType, 0, 50)
+	tokens := tokenize(input)
+	for _, tok := range tokens {
+		switch tok.token {
+		case tokenMultiply, tokenAdd:
+			for len(opStack) > 0 && precedence[opStack[len(opStack)-1]] >= precedence[tok.token] {
+				var popped tokenType
 				popped, opStack = opStack[len(opStack)-1], opStack[:len(opStack)-1]
-				rpn = append(rpn, rpnEntry{token: popped})
+				rpn = append(rpn, token{token: popped})
 			}
-			opStack = append(opStack, tok)
-		case token.LPAREN:
-			opStack = append(opStack, tok)
-		case token.RPAREN:
+			opStack = append(opStack, tok.token)
+		case tokenLeftParen:
+			opStack = append(opStack, tok.token)
+		case tokenRightParen:
 			for len(opStack) > 0 {
-				var popped token.Token
+				var popped tokenType
 				popped, opStack = opStack[len(opStack)-1], opStack[:len(opStack)-1]
-				if popped == token.LPAREN {
+				if popped == tokenLeftParen {
 					break
 				}
-				rpn = append(rpn, rpnEntry{token: popped})
+				rpn = append(rpn, token{token: popped})
 			}
+		case tokenTypeLiteral:
+			rpn = append(rpn, tok)
 		}
 	}
 	for len(opStack) > 0 {
-		rpn, opStack = append(rpn, rpnEntry{token: opStack[len(opStack)-1]}), opStack[:len(opStack)-1]
+		rpn, opStack = append(rpn, token{token: opStack[len(opStack)-1]}), opStack[:len(opStack)-1]
 	}
 
 	return evaluateRPN(rpn)
 }
 
-func evaluateRPN(tokens []rpnEntry) int {
+func evaluateRPN(tokens []token) int {
 	stack := make([]int, 0, 50)
 	for _, v := range tokens {
 		switch v.token {
-		case token.ADD:
+		case tokenAdd:
 			stack = append(stack[:len(stack)-2], stack[len(stack)-2]+stack[len(stack)-1])
-		case token.MUL:
+		case tokenMultiply:
 			stack = append(stack[:len(stack)-2], stack[len(stack)-2]*stack[len(stack)-1])
 		default:
 			stack = append(stack, v.value)
@@ -100,9 +84,53 @@ func evaluateRPN(tokens []rpnEntry) int {
 	return stack[0]
 }
 
-type rpnEntry struct {
-	value int
-	token token.Token
+func tokenize(input []byte) []token {
+	tokens := make([]token, 0, 50)
+	acc, hasLiteral := 0, false
+	for _, char := range input {
+		if char >= '0' && char <= '9' {
+			hasLiteral = true
+			acc = acc*10 + int(char-'0')
+			continue
+		}
+		if hasLiteral {
+			tokens = append(tokens, token{value: acc})
+			hasLiteral, acc = false, 0
+		}
+		switch char {
+		case '(':
+			tokens = append(tokens, token{token: tokenLeftParen})
+		case ')':
+			tokens = append(tokens, token{token: tokenRightParen})
+		case '+':
+			tokens = append(tokens, token{token: tokenAdd})
+		case '*':
+			tokens = append(tokens, token{token: tokenMultiply})
+		}
+	}
+	if hasLiteral {
+		tokens = append(tokens, token{value: acc})
+	}
+	return tokens
 }
+
+var precedence map[tokenType]int
+var equalPrecedence = map[tokenType]int{tokenAdd: 1, tokenMultiply: 1}
+var highAddPrecedence = map[tokenType]int{tokenAdd: 2, tokenMultiply: 1}
+
+type token struct {
+	value int
+	token tokenType
+}
+
+type tokenType int
+
+const (
+	tokenTypeLiteral tokenType = iota
+	tokenAdd
+	tokenMultiply
+	tokenLeftParen
+	tokenRightParen
+)
 
 var benchmark = false
