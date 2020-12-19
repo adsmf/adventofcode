@@ -19,31 +19,32 @@ func main() {
 }
 func count(rules ruleSpecs, messages []string) (int, int) {
 	rule42 := rules.get(42)
-
 	valid1, valid2 := 0, 0
 	for _, message := range messages {
-		translated := ""
+		m42, m31 := 0, 0
+		valid := true
 		for i := 0; i < len(message); i += 8 {
 			part := message[i : i+8]
 			if _, found := rule42[part]; found {
-				translated += "1"
+				if m31 > 0 {
+					valid = false
+					break
+				}
+				m42++
 			} else {
-				translated += "0"
+				if m42 == 0 {
+					valid = false
+					break
+				}
+				m31++
 			}
 		}
-		if translated == "110" {
-			valid1++
-			valid2++
+		if !valid || m42 <= m31 || m31 == 0 {
 			continue
 		}
-		for strings.Contains(translated, "1100") {
-			translated = strings.ReplaceAll(translated, "1100", "10")
-		}
-		for strings.Contains(translated, "1110") {
-			translated = strings.ReplaceAll(translated, "1110", "110")
-		}
-		if translated == "110" {
-			valid2++
+		valid2++
+		if m42 == 2 && m31 == 1 {
+			valid1++
 		}
 	}
 	return valid1, valid2
@@ -52,7 +53,7 @@ func count(rules ruleSpecs, messages []string) (int, int) {
 func load(filename string) (ruleSpecs, []string) {
 	inputBytes, _ := ioutil.ReadFile(filename)
 	blocks := strings.Split(string(inputBytes), "\n\n")
-	messages := strings.Split(strings.TrimSpace(blocks[1]), "\n")
+	messages := strings.Split(blocks[1], "\n")
 	rulesRaw := strings.Split(blocks[0], "\n")
 	rules := make(ruleSpecs, len(rulesRaw))
 	for _, rule := range rulesRaw {
