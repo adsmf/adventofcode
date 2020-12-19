@@ -58,13 +58,11 @@ func part2(rules ruleSpecs, messages []string) int {
 }
 
 func load(filename string) (ruleSpecs, []string) {
-
-	rules := ruleSpecs{}
-
 	inputBytes, _ := ioutil.ReadFile(filename)
 	blocks := strings.Split(string(inputBytes), "\n\n")
 	messages := strings.Split(strings.TrimSpace(blocks[1]), "\n")
 	rulesRaw := strings.Split(blocks[0], "\n")
+	rules := make(ruleSpecs, len(rulesRaw))
 	for _, rule := range rulesRaw {
 		specSides := strings.Split(rule, ": ")
 		ruleNum, _ := strconv.Atoi(specSides[0])
@@ -80,7 +78,7 @@ func load(filename string) (ruleSpecs, []string) {
 type ruleSpecs map[int]*ruleSpec
 
 func (r ruleSpecs) genRegex() {
-	ruleRequires := map[int][]int{}
+	ruleRequires := make(map[int][]int, len(r))
 	for ruleID, spec := range r {
 		if spec.raw[0] == '"' {
 			r[ruleID].rawRegex = strings.Trim(spec.raw, "\"")
@@ -102,9 +100,8 @@ func (r ruleSpecs) genRegex() {
 				continue
 			}
 			regexStringMap := map[string]bool{}
-			options := strings.Split(r[ruleID].raw, " | ")
-			for _, option := range options {
-				parts := utils.GetInts(option)
+			for _, subRegexes := range strings.Split(r[ruleID].raw, " | ") {
+				parts := utils.GetInts(subRegexes)
 				regexString := ""
 				for _, requiredRule := range parts {
 					regexString += r[requiredRule].rawRegex
