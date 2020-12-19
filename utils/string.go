@@ -3,7 +3,7 @@ package utils
 import "strconv"
 
 func GetInts(input string) []int {
-	ints := []int{}
+	ints := make([]int, 0, len(input)/2)
 	part := ""
 
 	for _, char := range input + "\n" {
