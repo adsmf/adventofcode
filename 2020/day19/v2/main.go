@@ -11,54 +11,42 @@ import (
 
 func main() {
 	rules, messages := load("input.txt")
-	p1 := part1(rules, messages)
-	p2 := part2(rules, messages)
+	p1, p2 := count(rules, messages)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
-
-func part1(rules ruleSpecs, messages []string) int {
-	rule0 := rules.get(0)
-	countValid := 0
-	for _, message := range messages {
-		if _, found := rule0[message]; found {
-			countValid++
-		}
-	}
-	return countValid
-}
-
-func part2(rules ruleSpecs, messages []string) int {
+func count(rules ruleSpecs, messages []string) (int, int) {
 	rule42 := rules.get(42)
-	rule31 := rules.get(31)
 
-	countValid := 0
+	valid1, valid2 := 0, 0
 	for _, message := range messages {
 		translated := ""
 		for i := 0; i < len(message); i += 8 {
 			part := message[i : i+8]
 			if _, found := rule42[part]; found {
 				translated += "1"
-			} else if _, found := rule31[part]; found {
+			} else {
 				translated += "0"
 			}
+		}
+		if translated == "110" {
+			valid1++
+			valid2++
+			continue
 		}
 		for strings.Contains(translated, "1100") {
 			translated = strings.ReplaceAll(translated, "1100", "10")
 		}
-		if !strings.Contains(translated, "11") {
-			continue
+		for strings.Contains(translated, "1110") {
+			translated = strings.ReplaceAll(translated, "1110", "110")
 		}
-		for strings.Contains(translated, "11") {
-			translated = strings.ReplaceAll(translated, "11", "1")
-		}
-		if translated == "10" {
-			countValid++
+		if translated == "110" {
+			valid2++
 		}
 	}
-	return countValid
+	return valid1, valid2
 }
 
 func load(filename string) (ruleSpecs, []string) {
