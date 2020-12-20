@@ -79,7 +79,7 @@ func stitchTiles(tiles tileset, order []int, rotations []orientation, tilesPerRo
 			for y := 0; y < 8; y++ {
 				rowPixels := tile.row(y+1, tileRotation)
 				for x := 0; x < 8; x++ {
-					if rowPixels[x+1] == '#' {
+					if rowPixels&(1<<8>>x) > 0 {
 						image[point{imX + x, imY + y}] = true
 					}
 				}
@@ -191,52 +191,50 @@ type tir struct {
 	rotation    orientation
 }
 
-var knownRows = map[tir]string{}
-var knownCols = map[tir]string{}
+var knownRows = map[tir]int{}
+var knownCols = map[tir]int{}
 
 type imageTile struct {
 	id     int
 	pixels map[orientedPoint]bool
 }
 
-func (t imageTile) row(rowNum int, rot orientation) string {
+func (t imageTile) row(rowNum int, rot orientation) int {
 	if edge, found := knownRows[tir{t.id, rowNum, rot}]; found {
 		return edge
 	}
-	row := make([]byte, 0, 10)
+	row := 0
 	start, step := 0, 1
 	if (rot & flipX) > 0 {
 		start, step = 9, -1
 	}
 	for x := start; x < 10 && x >= 0; x += step {
+		row <<= 1
 		if t.pixels[orientedPoint{x, rowNum, rot % orientMax}] {
-			row = append(row, '#')
-		} else {
-			row = append(row, '.')
+			row++
 		}
 	}
-	knownRows[tir{t.id, rowNum, rot}] = string(row)
-	return string(row)
+	knownRows[tir{t.id, rowNum, rot}] = row
+	return row
 }
 
-func (t imageTile) col(colNum int, rot orientation) string {
+func (t imageTile) col(colNum int, rot orientation) int {
 	if edge, found := knownCols[tir{t.id, colNum, rot}]; found {
 		return edge
 	}
-	row := make([]byte, 10)
+	row := 0
 	useCol := colNum
 	if (rot & flipX) > 0 {
 		useCol = 9 - useCol
 	}
 	for y := 0; y < 10; y++ {
+		row <<= 1
 		if t.pixels[orientedPoint{useCol, y, rot % orientMax}] {
-			row[y] = '#'
-		} else {
-			row[y] = '.'
+			row++
 		}
 	}
-	knownCols[tir{t.id, colNum, rot}] = string(row)
-	return string(row)
+	knownCols[tir{t.id, colNum, rot}] = row
+	return row
 }
 
 type orientation int
