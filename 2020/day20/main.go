@@ -17,59 +17,24 @@ func main() {
 
 func solve() (int, int) {
 	tiles := load("input.txt")
-	goodHorizontal := map[tilePair]bool{}
-	goodVertical := map[tilePair]bool{}
-	for tile1 := range tiles {
-		for tile2 := range tiles {
-			for o1 := orient0; o1 < flippingOrientMax; o1++ {
-				for o2 := orient0; o2 < flippingOrientMax; o2++ {
-					if tiles[tile1].row(9, o1) == tiles[tile2].row(0, o2) {
-						pair := tilePair{
-							tile1, tile2,
-							o1, o2,
-						}
-						goodVertical[pair] = true
-					}
-					if tiles[tile1].col(9, o1) == tiles[tile2].col(0, o2) {
-						pair := tilePair{
-							tile1, tile2,
-							o1, o2,
-						}
-						goodHorizontal[pair] = true
-					}
-				}
-			}
-		}
-	}
-	tileIDs := make([]int, 0, len(tiles))
-	for id := range tiles {
-		tileIDs = append(tileIDs, id)
-	}
+
 	tilesPerRow := int(math.Sqrt(float64(len(tiles))))
 
-	order, rotations, _ := tryArrangement(tiles, tilesPerRow, []int{}, tileIDs, []orientation{}, goodHorizontal, goodVertical)
+	order, rotations := align(tiles, tilesPerRow)
 
-	cornerMultiple := order[0]
-	cornerMultiple *= order[tilesPerRow-1]
-	cornerMultiple *= order[len(tiles)-1]
-	cornerMultiple *= order[len(tiles)-tilesPerRow]
+	cornerMultiple := order[0] *
+		order[tilesPerRow-1] *
+		order[len(tiles)-1] *
+		order[len(tiles)-tilesPerRow]
 
-	image := map[point]bool{}
-	for tileRow := 0; tileRow < len(order)/tilesPerRow; tileRow++ {
-		for tileColOffset := 0; tileColOffset < tilesPerRow; tileColOffset++ {
-			imX, imY := tileColOffset*8, tileRow*8
-			tile := tiles[order[tileRow*tilesPerRow+tileColOffset]]
-			tileRotation := rotations[tileRow*tilesPerRow+tileColOffset]
-			for y := 0; y < 8; y++ {
-				rowPixels := tile.row(y+1, tileRotation)
-				for x := 0; x < 8; x++ {
-					if rowPixels[x+1] == '#' {
-						image[point{imX + x, imY + y}] = true
-					}
-				}
-			}
-		}
-	}
+	image := stitchTiles(tiles, order, rotations, tilesPerRow)
+
+	nonMonsterTiles := banishMonsters(image, tilesPerRow)
+
+	return cornerMultiple, nonMonsterTiles
+}
+
+func banishMonsters(image map[point]bool, tilesPerRow int) int {
 	for rotation := orient0; rotation < flippingOrientMax; rotation++ {
 		numMonsters := 0
 		inMonster := map[point]bool{}
@@ -98,12 +63,30 @@ func solve() (int, int) {
 					count++
 				}
 			}
-
-			return cornerMultiple, count
+			return count
 		}
 	}
+	panic("No monsters found")
+}
 
-	panic("Could not solve!")
+func stitchTiles(tiles tileset, order []int, rotations []orientation, tilesPerRow int) map[point]bool {
+	image := map[point]bool{}
+	for tileRow := 0; tileRow < len(order)/tilesPerRow; tileRow++ {
+		for tileColOffset := 0; tileColOffset < tilesPerRow; tileColOffset++ {
+			imX, imY := tileColOffset*8, tileRow*8
+			tile := tiles[order[tileRow*tilesPerRow+tileColOffset]]
+			tileRotation := rotations[tileRow*tilesPerRow+tileColOffset]
+			for y := 0; y < 8; y++ {
+				rowPixels := tile.row(y+1, tileRotation)
+				for x := 0; x < 8; x++ {
+					if rowPixels[x+1] == '#' {
+						image[point{imX + x, imY + y}] = true
+					}
+				}
+			}
+		}
+	}
+	return image
 }
 
 //                     #
@@ -143,12 +126,19 @@ func rotatedMonster(rot orientation) map[point]bool {
 	return rotated
 }
 
-type tilePair struct {
-	t1, t2 int
-	o1, o2 orientation
+func align(tiles tileset, tilesPerRow int) ([]int, []orientation) {
+	tileIDs := make([]int, 0, len(tiles))
+	for id := range tiles {
+		tileIDs = append(tileIDs, id)
+	}
+	order, rotations, valid := tryArrangement(tiles, tilesPerRow, []int{}, tileIDs, []orientation{})
+	if !valid {
+		panic("No solution")
+	}
+	return order, rotations
 }
 
-func tryArrangement(tiles tileset, tilesPerRow int, order, remaining []int, rotations []orientation, goodHorizontal, goodVertical map[tilePair]bool) ([]int, []orientation, bool) {
+func tryArrangement(tiles tileset, tilesPerRow int, order, remaining []int, rotations []orientation) ([]int, []orientation, bool) {
 	if len(order) > 1 {
 		curTileIndex := len(order) - 1
 		curTileX := curTileIndex % tilesPerRow
@@ -157,14 +147,15 @@ func tryArrangement(tiles tileset, tilesPerRow int, order, remaining []int, rota
 		if curTileY > 0 {
 			aboveIndex := curTileIndex - tilesPerRow
 			aboveTile := tiles[order[aboveIndex]]
-			if !goodVertical[tilePair{aboveTile.id, curTile.id, rotations[aboveIndex], rotations[curTileIndex]}] {
+			if aboveTile.row(9, rotations[aboveIndex]) != curTile.row(0, rotations[curTileIndex]) {
 				return nil, nil, false
 			}
 		}
 		if curTileX > 0 {
 			leftIndex := curTileIndex - 1
 			leftTile := tiles[order[leftIndex]]
-			if !goodHorizontal[tilePair{leftTile.id, curTile.id, rotations[leftIndex], rotations[curTileIndex]}] {
+
+			if leftTile.col(9, rotations[leftIndex]) != curTile.col(0, rotations[curTileIndex]) {
 				return nil, nil, false
 			}
 		}
@@ -182,7 +173,7 @@ func tryArrangement(tiles tileset, tilesPerRow int, order, remaining []int, rota
 				nextOrientations := make([]orientation, len(rotations), len(rotations)+1)
 				copy(nextOrientations, rotations)
 				nextOrientations = append(nextOrientations, orientation(rot))
-				finalOrder, finalRotations, valid := tryArrangement(tiles, tilesPerRow, newOrder, newRemaining, nextOrientations, goodHorizontal, goodVertical)
+				finalOrder, finalRotations, valid := tryArrangement(tiles, tilesPerRow, newOrder, newRemaining, nextOrientations)
 				if valid {
 					return finalOrder, finalRotations, true
 				}
@@ -195,13 +186,13 @@ func tryArrangement(tiles tileset, tilesPerRow int, order, remaining []int, rota
 
 type tileset map[int]*imageTile
 
-type tro struct {
-	tile, row   int
-	orientation orientation
-	vertical    bool
+type tir struct {
+	tile, index int
+	rotation    orientation
 }
 
-var knownEdges = map[tro]string{}
+var knownRows = map[tir]string{}
+var knownCols = map[tir]string{}
 
 type imageTile struct {
 	id     int
@@ -209,7 +200,7 @@ type imageTile struct {
 }
 
 func (t imageTile) row(rowNum int, rot orientation) string {
-	if edge, found := knownEdges[tro{t.id, rowNum, rot, false}]; found {
+	if edge, found := knownRows[tir{t.id, rowNum, rot}]; found {
 		return edge
 	}
 	row := make([]byte, 0, 10)
@@ -224,27 +215,27 @@ func (t imageTile) row(rowNum int, rot orientation) string {
 			row = append(row, '.')
 		}
 	}
-	knownEdges[tro{t.id, rowNum, rot, false}] = string(row)
+	knownRows[tir{t.id, rowNum, rot}] = string(row)
 	return string(row)
 }
 
 func (t imageTile) col(colNum int, rot orientation) string {
-	if edge, found := knownEdges[tro{t.id, colNum, rot, true}]; found {
+	if edge, found := knownCols[tir{t.id, colNum, rot}]; found {
 		return edge
 	}
-	row := make([]byte, 0, 10)
+	row := make([]byte, 10)
 	useCol := colNum
 	if (rot & flipX) > 0 {
 		useCol = 9 - useCol
 	}
 	for y := 0; y < 10; y++ {
 		if t.pixels[orientedPoint{useCol, y, rot % orientMax}] {
-			row = append(row, '#')
+			row[y] = '#'
 		} else {
-			row = append(row, '.')
+			row[y] = '.'
 		}
 	}
-	knownEdges[tro{t.id, colNum, rot, true}] = string(row)
+	knownCols[tir{t.id, colNum, rot}] = string(row)
 	return string(row)
 }
 
