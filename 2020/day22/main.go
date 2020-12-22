@@ -19,43 +19,17 @@ func main() {
 
 func part1() int {
 	hands := load("input.txt")
-	for len(hands[0]) > 0 && len(hands[1]) > 0 {
-		playRound(hands)
-	}
-	var winningHand playerHand
-	if len(hands[0]) > 0 {
-		winningHand = hands[0]
-	} else {
-		winningHand = hands[1]
-	}
-	return scoreHand(winningHand)
-}
-
-func scoreHand(hand playerHand) int {
-	score := 0
-	for value, i := len(hand), 0; i < len(hand); value, i = value-1, i+1 {
-		score += value * hand[i]
-	}
-	return score
-}
-
-func playRound(hands gameState) {
-	if hands[0][0] > hands[1][0] {
-		hands[0], hands[1] = append(hands[0][1:], hands[0][0], hands[1][0]), hands[1][1:]
-	} else {
-		hands[1], hands[0] = append(hands[1][1:], hands[1][0], hands[0][0]), hands[0][1:]
-	}
+	winner := playGame(hands, false)
+	return scoreHand(hands[winner])
 }
 
 func part2() int {
 	hands := load("input.txt")
-
-	winner := playRecursiveGame(hands)
-
+	winner := playGame(hands, true)
 	return scoreHand(hands[winner])
 }
 
-func playRecursiveGame(hands gameState) int {
+func playGame(hands gameState, recursive bool) int {
 	resursiveStates := map[scoreKey]bool{}
 	var p1card, p2card int
 	for {
@@ -72,13 +46,13 @@ func playRecursiveGame(hands gameState) int {
 		p1card, hands[0] = hands[0][0], hands[0][1:]
 		p2card, hands[1] = hands[1][0], hands[1][1:]
 
-		if p1card <= len(hands[0]) && p2card <= len(hands[1]) {
+		if recursive && p1card <= len(hands[0]) && p2card <= len(hands[1]) {
 			subDeck := gameState{
 				append(playerHand{}, hands[0][:p1card]...),
 				append(playerHand{}, hands[1][:p2card]...),
 			}
 
-			winner := playRecursiveGame(subDeck)
+			winner := playGame(subDeck, true)
 			if winner == 0 {
 				hands[0] = append(hands[0], p1card, p2card)
 			} else {
@@ -92,6 +66,14 @@ func playRecursiveGame(hands gameState) int {
 			}
 		}
 	}
+}
+
+func scoreHand(hand playerHand) int {
+	score := 0
+	for value, i := len(hand), 0; i < len(hand); value, i = value-1, i+1 {
+		score += value * hand[i]
+	}
+	return score
 }
 
 type gameState []playerHand
