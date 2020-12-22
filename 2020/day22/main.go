@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
+	"github.com/adsmf/adventofcode/utils/hashing/murmur3"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func part2() int {
 }
 
 func playGame(hands gameState, recursive bool) int {
-	resursiveStates := map[stateHashString]struct{}{}
+	resursiveStates := map[stateHash]struct{}{}
 	var p1card, p2card byte
 	for {
 		hash := hands.hash()
@@ -80,10 +81,12 @@ func scoreHand(hand playerHand) int {
 
 type gameState []playerHand
 
-type stateHashString string
+type stateHash uint64
 
-func (g gameState) hash() stateHashString {
-	return stateHashString(g[0]) + "|" + stateHashString(g[1])
+var hasher = murmur3.NewMurmer3_32(0)
+
+func (g gameState) hash() stateHash {
+	return stateHash(hasher.HashBytes(g[0]))<<32 | stateHash(hasher.HashBytes(g[1]))
 }
 
 type playerHand []byte
