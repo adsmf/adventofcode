@@ -30,13 +30,14 @@ func part2() int {
 }
 
 func playGame(hands gameState, recursive bool) int {
-	resursiveStates := map[scoreKey]bool{}
+	resursiveStates := map[scoreKey]struct{}{}
 	var p1card, p2card int
 	for {
-		if _, found := resursiveStates[hands.hash()]; found {
+		hash := hands.hash()
+		if _, found := resursiveStates[hash]; found {
 			return 0
 		}
-		resursiveStates[hands.hash()] = true
+		resursiveStates[hash] = struct{}{}
 		if len(hands[0]) == 0 {
 			return 1
 		}
@@ -69,9 +70,10 @@ func playGame(hands gameState, recursive bool) int {
 }
 
 func scoreHand(hand playerHand) int {
-	score := 0
-	for value, i := len(hand), 0; i < len(hand); value, i = value-1, i+1 {
-		score += value * hand[i]
+	score, value := 0, len(hand)
+	for _, card := range hand {
+		score += value * card
+		value--
 	}
 	return score
 }

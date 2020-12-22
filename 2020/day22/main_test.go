@@ -32,24 +32,18 @@ func BenchmarkPart2(b *testing.B) {
 }
 
 func BenchmarkStringKey(b *testing.B) {
-	gameState := gameState{
-		playerHand{1, 2, 3, 4, 5, 6, 7, 8, 9},
-		playerHand{21, 22, 23, 24, 25, 26, 27, 28, 29},
-	}
+	hands := load("input.txt")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fmt.Sprint(gameState)
+		fmt.Sprint(hands)
 	}
 }
 
 func BenchmarkScore(b *testing.B) {
-	gameState := gameState{
-		playerHand{1, 2, 3, 4, 5, 6, 7, 8, 9},
-		playerHand{21, 22, 23, 24, 25, 26, 27, 28, 29},
-	}
+	hands := load("input.txt")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		scoreHand(gameState[0])
-		scoreHand(gameState[1])
+		scoreHand(hands[0])
+		scoreHand(hands[1])
 	}
 }
