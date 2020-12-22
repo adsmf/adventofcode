@@ -56,7 +56,7 @@ func part2() int {
 }
 
 func playRecursiveGame(hands gameState) int {
-	resursiveStates := map[string]bool{}
+	resursiveStates := map[scoreKey]bool{}
 	var p1card, p2card int
 	for {
 		if _, found := resursiveStates[hands.hash()]; found {
@@ -96,7 +96,13 @@ func playRecursiveGame(hands gameState) int {
 
 type gameState []playerHand
 
-func (g gameState) hash() string { return fmt.Sprintf("%v", g) }
+func (g gameState) hash() scoreKey {
+	return scoreKey{scoreHand(g[0]), scoreHand(g[1])}
+}
+
+type scoreKey struct {
+	p1score, p2score int
+}
 
 type playerHand []int
 
