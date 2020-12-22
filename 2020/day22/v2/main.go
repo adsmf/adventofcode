@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -33,7 +34,7 @@ func playGame(hands gameState, recursive bool) int {
 	resursiveStates := map[stateHashString]struct{}{}
 	var p1card, p2card byte
 	for {
-		hash := hands.hash()
+		hash := hands.hashCombine()
 		if _, found := resursiveStates[hash]; found {
 			return 0
 		}
@@ -80,10 +81,46 @@ func scoreHand(hand playerHand) int {
 
 type gameState []playerHand
 
+type stateHashInt struct {
+	p1score, p2score int
+}
+
 type stateHashString string
 
-func (g gameState) hash() stateHashString {
+func (g gameState) hashScore() stateHashInt {
+	return stateHashInt{scoreHand(g[0]), scoreHand(g[1])}
+}
+
+func (g gameState) hashSprint() stateHashString {
+	return stateHashString(fmt.Sprint(g))
+}
+
+func (g gameState) hashCombine() stateHashString {
 	return stateHashString(g[0]) + "|" + stateHashString(g[1])
+}
+
+func (g gameState) hashFromByteSlice() stateHashString {
+	hashBytes := make([]byte, 0, 1+len(g[0])+len(g[1]))
+	for _, card := range g[0] {
+		hashBytes = append(hashBytes, byte(card))
+	}
+	hashBytes = append(hashBytes, byte(0))
+	for _, card := range g[1] {
+		hashBytes = append(hashBytes, byte(card))
+	}
+	return stateHashString(hashBytes)
+}
+
+func (g gameState) hashByteBuffer() stateHashString {
+	var buf bytes.Buffer
+	for _, card := range g[0] {
+		buf.WriteByte(byte(card))
+	}
+	buf.WriteByte(0)
+	for _, card := range g[1] {
+		buf.WriteByte(byte(card))
+	}
+	return stateHashString(buf.String())
 }
 
 type playerHand []byte
