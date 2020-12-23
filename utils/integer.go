@@ -1,5 +1,10 @@
 package utils
 
+import (
+	"fmt"
+	"strconv"
+)
+
 func GreatestCommonDivisorInt(a, b int) int {
 	for b != 0 {
 		t := b
@@ -27,4 +32,12 @@ func LowestCommonMultipleInt(integers ...int) int {
 	}
 
 	return result
+}
+
+func MustInt(input string) int {
+	val, err := strconv.Atoi(input)
+	if err != nil {
+		panic(fmt.Errorf("Error converting %s to int: %w", input, err))
+	}
+	return val
 }
