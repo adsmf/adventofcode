@@ -17,7 +17,7 @@ func main() {
 }
 
 func part1() string {
-	cups := newGameFromString(d23input)
+	cups := newBigGameFromString(d23input, len(d23input))
 	for i := 0; i < 100; i++ {
 		cups.iterate()
 	}
@@ -25,7 +25,7 @@ func part1() string {
 }
 
 func part2() int {
-	cups := newBigGameFromString(d23input)
+	cups := newBigGameFromString(d23input, 1000000)
 	for i := 0; i < 10000000; i++ {
 		cups.iterate()
 	}
@@ -41,9 +41,9 @@ type game struct {
 	positions map[int]*ring.Ring
 }
 
-func newGameFromString(start string) game {
+func newBigGameFromString(start string, numCups int) game {
 	g := game{
-		cups:      ring.New(len(start)),
+		cups:      ring.New(numCups),
 		positions: map[int]*ring.Ring{},
 	}
 
@@ -56,26 +56,7 @@ func newGameFromString(start string) game {
 		}
 		g.cups = g.cups.Next()
 	}
-
-	return g
-}
-
-func newBigGameFromString(start string) game {
-	g := game{
-		cups:      ring.New(1000000),
-		positions: map[int]*ring.Ring{},
-	}
-
-	for _, char := range start {
-		num := int(char - '0')
-		g.cups.Value = num
-		g.positions[num] = g.cups
-		if num == 1 {
-			g.from1 = g.cups
-		}
-		g.cups = g.cups.Next()
-	}
-	for next := 10; next <= 1000000; next++ {
+	for next := 10; next <= numCups; next++ {
 		g.cups.Value = next
 		g.positions[next] = g.cups
 		g.cups = g.cups.Next()
@@ -93,18 +74,18 @@ func (g *game) after1() string {
 }
 
 func (g *game) iterate() {
-	cur := g.cups.Value
+	target := g.cups.Value.(int)
 	pick := g.cups.Unlink(3)
-	target := cur.(int)
+	target--
 	for {
 		contains := false
-		target--
 		if target < 1 {
 			target += g.cups.Len() + 3 // Because we picked 3 out
 		}
 		pick.Do(func(i interface{}) {
 			if i == target {
 				contains = true
+				target--
 			}
 		})
 		if !contains {
