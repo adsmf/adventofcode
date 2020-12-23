@@ -17,40 +17,40 @@ func main() {
 }
 
 func part1() string {
-	cups := newBigGameFromString(d23input, len(d23input))
+	game := newGame(d23input, len(d23input))
 	for i := 0; i < 100; i++ {
-		cups.iterate()
+		game.iterate()
 	}
-	return cups.after1()
+	return game.after1()
 }
 
 func part2() int {
-	cups := newBigGameFromString(d23input, 1000000)
+	game := newGame(d23input, 1000000)
 	for i := 0; i < 10000000; i++ {
-		cups.iterate()
+		game.iterate()
 	}
-	n1 := cups.from1.Next()
+	n1 := game.from1.Next()
 	n2 := n1.Next()
 
 	return n1.Value.(int) * n2.Value.(int)
 }
 
-type game struct {
+type gameData struct {
 	cups      *ring.Ring
 	from1     *ring.Ring
-	positions map[int]*ring.Ring
+	positions []*ring.Ring
 }
 
-func newBigGameFromString(start string, numCups int) game {
-	g := game{
+func newGame(start string, numCups int) gameData {
+	g := gameData{
 		cups:      ring.New(numCups),
-		positions: map[int]*ring.Ring{},
+		positions: make([]*ring.Ring, numCups),
 	}
 
 	for _, char := range start {
 		num := int(char - '0')
 		g.cups.Value = num
-		g.positions[num] = g.cups
+		g.positions[num-1] = g.cups
 		if num == 1 {
 			g.from1 = g.cups
 		}
@@ -58,14 +58,14 @@ func newBigGameFromString(start string, numCups int) game {
 	}
 	for next := 10; next <= numCups; next++ {
 		g.cups.Value = next
-		g.positions[next] = g.cups
+		g.positions[next-1] = g.cups
 		g.cups = g.cups.Next()
 	}
 
 	return g
 }
 
-func (g *game) after1() string {
+func (g *gameData) after1() string {
 	aft := ""
 	g.from1.Do(func(i interface{}) {
 		aft += fmt.Sprintf("%c", i.(int)+'0')
@@ -73,7 +73,7 @@ func (g *game) after1() string {
 	return aft[1:]
 }
 
-func (g *game) iterate() {
+func (g *gameData) iterate() {
 	target := g.cups.Value.(int)
 	pick := g.cups.Unlink(3)
 	target--
@@ -92,7 +92,7 @@ func (g *game) iterate() {
 			break
 		}
 	}
-	insertPos := g.positions[target]
+	insertPos := g.positions[target-1]
 	insertPos.Link(pick)
 	g.cups = g.cups.Next()
 }
