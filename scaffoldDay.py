@@ -15,6 +15,8 @@ def main():
   
   year = args.year
   day = args.day
+  if year >15 and year <99:
+    year +=2000
 
   if year > now.year or year < 2015:
     sys.exit("Invalid year {}".format(year))
