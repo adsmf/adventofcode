@@ -2,21 +2,20 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {
-	p1, tiles := processInstructions("input.txt")
-	p2 := tileLife(tiles)
+	p1, tiles := layTiles("input.txt")
+	p2 := tileLife(tiles, 100)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func processInstructions(filename string) (int, lobbyFloor) {
+func layTiles(filename string) (int, lobbyFloor) {
 	tiles := lobbyFloor{}
 	directions := load(filename)
 	for _, line := range directions {
@@ -35,15 +34,11 @@ func processInstructions(filename string) (int, lobbyFloor) {
 	return count, tiles
 }
 
-func tileLife(tiles lobbyFloor) int {
-	lastCount := 0
-	for day := 1; day <= 100; day++ {
-		lastCount = 0
-		startCount := 0
+func tileLife(tiles lobbyFloor, days int) int {
+	for day := 0; day < days; day++ {
 		tileCounts := lobbyFloorCount{}
 		for pos, val := range tiles {
 			if val {
-				startCount++
 				for dir := dirStart; dir < directionMax; dir++ {
 					tileCounts[pos.move(dir)]++
 				}
@@ -53,12 +48,11 @@ func tileLife(tiles lobbyFloor) int {
 		for pos, count := range tileCounts {
 			if count == 2 || (count == 1 && tiles[pos]) {
 				next[pos] = true
-				lastCount++
 			}
 		}
 		tiles = next
 	}
-	return lastCount
+	return len(tiles)
 }
 
 type lobbyFloor map[point]bool
@@ -91,7 +85,6 @@ func (d direction) String() string {
 	return directionStrings[d]
 }
 
-var directionMatcher = regexp.MustCompile(`e|se|sw|w|nw|ne`)
 var directionLookup = map[string]direction{"e": dirE, "se": dirSE, "sw": dirSW, "w": dirW, "nw": dirNW, "ne": dirNE}
 var directionStrings = map[direction]string{dirE: "e", dirSE: "se", dirSW: "sw", dirW: "w", dirNW: "nw", dirNE: "ne"}
 var directionVectors = map[direction]point{dirE: {2, 0}, dirSE: {1, 1}, dirSW: {-1, 1}, dirW: {-2, 0}, dirNW: {-1, -1}, dirNE: {1, -1}}
@@ -100,9 +93,18 @@ func load(filename string) [][]direction {
 	directions := [][]direction{}
 	for _, line := range utils.ReadInputLines(filename) {
 		lineDirections := []direction{}
-		matches := directionMatcher.FindAllString(line, -1)
-		for _, dir := range matches {
-			lineDirections = append(lineDirections, directionLookup[dir])
+		for len(line) > 0 {
+			if len(line) == 1 {
+				lineDirections = append(lineDirections, directionLookup[line])
+				break
+			}
+			if dir, match := directionLookup[line[0:2]]; match {
+				lineDirections = append(lineDirections, dir)
+				line = line[2:]
+			} else if dir, match := directionLookup[line[0:1]]; match {
+				lineDirections = append(lineDirections, dir)
+				line = line[1:]
+			}
 		}
 		directions = append(directions, lineDirections)
 	}

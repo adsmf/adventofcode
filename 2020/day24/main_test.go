@@ -20,14 +20,14 @@ func BenchmarkMain(b *testing.B) {
 
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		processInstructions("input.txt")
+		layTiles("input.txt")
 	}
 }
 
 func BenchmarkPart2(b *testing.B) {
-	_, tiles := processInstructions("input.txt")
+	_, tiles := layTiles("input.txt")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tileLife(tiles)
+		tileLife(tiles, 100)
 	}
 }
