@@ -17,6 +17,20 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
+func BenchmarkFindLoop(b *testing.B) {
+	doorPublic := 19452773
+	for i := 0; i < b.N; i++ {
+		findLoop(doorPublic)
+	}
+}
+
+func BenchmarkFindLoopBSGS(b *testing.B) {
+	doorPublic := 19452773
+	for i := 0; i < b.N; i++ {
+		findLoopBSGS(doorPublic)
+	}
+}
+
 func BenchmarkGenKey(b *testing.B) {
 	cPub, dLoop := 12232269, 5882067
 	for i := 0; i < b.N; i++ {
