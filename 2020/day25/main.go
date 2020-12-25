@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -18,7 +19,7 @@ func part1() int {
 	cardPubKey := utils.MustInt(keys[0])
 	doorPubKey := utils.MustInt(keys[1])
 	doorLoop := secret(doorPubKey)
-	return genKey(cardPubKey, doorLoop)
+	return genKeyBig(cardPubKey, doorLoop)
 }
 
 func secret(public int) int {
@@ -30,6 +31,14 @@ func secret(public int) int {
 			return loopSize
 		}
 	}
+}
+
+func genKeyBig(public, private int) int {
+	return int(new(big.Int).Exp(
+		big.NewInt(int64(public)),
+		big.NewInt(int64(private)),
+		big.NewInt(20201227),
+	).Int64())
 }
 
 func genKey(public, private int) int {
