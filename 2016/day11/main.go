@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
@@ -40,11 +39,12 @@ func part2() int {
 }
 
 func allToFourth(initialState facilityState) (int, bool) {
-	initialHash := initialState.String()
-	seenStates := map[string]int{initialHash: 0}
-	openStates := map[string]facilityState{initialHash: initialState}
+	genIndices(initialState)
+	initialHash := initialState.hashIndexed()
+	seenStates := map[int]int{initialHash: 0}
+	openStates := map[int]facilityState{initialHash: initialState}
 	for turn := 0; ; turn++ {
-		nextOpenStates := map[string]facilityState{}
+		nextOpenStates := map[int]facilityState{}
 		for _, state := range openStates {
 			done := true
 			for _, floor := range state.rtgs {
@@ -63,7 +63,7 @@ func allToFourth(initialState facilityState) (int, bool) {
 				return turn, true
 			}
 			for _, nextState := range state.next() {
-				hash := nextState.String()
+				hash := nextState.hashIndexed()
 				if _, found := seenStates[hash]; !found {
 					seenStates[hash] = turn
 					nextOpenStates[hash] = nextState
@@ -170,56 +170,26 @@ func (f facilityState) clone() facilityState {
 	return clone
 }
 
-func (f facilityState) String() string {
-	rtgFloors := make([][]string, 5)
-	chipFloors := make([][]string, 5)
+func (f facilityState) hashIndexed() int {
+	hash := f.elevatorFloor * 10000000000
 	for rtg, floor := range f.rtgs {
-		if rtgFloors[floor] == nil {
-			rtgFloors[floor] = []string{rtg}
-			continue
-		}
-		rtgFloors[floor] = append(rtgFloors[floor], rtg)
+		hash += (indices[rtg] * 10 * floor)
 	}
-
 	for chip, floor := range f.chips {
-		if chipFloors[floor] == nil {
-			chipFloors[floor] = []string{chip}
-			continue
-		}
-		chipFloors[floor] = append(chipFloors[floor], chip)
+		hash += (indices[chip] * 10 * floor) * 100000
 	}
-
-	sb := &strings.Builder{}
-	fmt.Fprintf(sb, "E:%d", f.elevatorFloor)
-	sb.WriteString(" r{")
-	for floor := 1; floor <= 4; floor++ {
-		rtgs := rtgFloors[floor]
-		sort.Strings(rtgs)
-		fmt.Fprintf(sb, "%d:{", floor)
-		sb.WriteString(strings.Join(rtgs, ","))
-		sb.WriteString("}")
-	}
-	sb.WriteString("} c{")
-	for floor := 1; floor <= 4; floor++ {
-		chips := chipFloors[floor]
-		sort.Strings(chips)
-		fmt.Fprintf(sb, "%d:{", floor)
-		sb.WriteString(strings.Join(chips, ","))
-		sb.WriteString("}")
-	}
-	sb.WriteString("}")
-	return sb.String()
+	return hash
 }
 
-func (f facilityState) score() int {
-	score := 0
-	for _, floor := range f.rtgs {
-		score += floor
+var indices = map[string]int{}
+
+func genIndices(state facilityState) {
+	idx := 1
+	indices = map[string]int{}
+	for rtg := range state.rtgs {
+		indices[rtg] = idx
+		idx++
 	}
-	for _, floor := range f.chips {
-		score += floor
-	}
-	return score
 }
 
 func (f facilityState) valid() bool {
