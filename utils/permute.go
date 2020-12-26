@@ -53,3 +53,20 @@ func PermuteStrings(input []string) [][]string {
 	generator(len(input), input)
 	return output
 }
+
+func IterateCombinations(numElements, choose int, iter func([]int)) {
+	s := make([]int, choose)
+	last := choose - 1
+	var call func(int, int)
+	call = func(i, next int) {
+		for j := next; j < numElements; j++ {
+			s[i] = j
+			if i == last {
+				iter(s)
+			} else {
+				call(i+1, j+1)
+			}
+		}
+	}
+	call(0, 0)
+}
