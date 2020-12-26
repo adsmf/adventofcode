@@ -40,11 +40,11 @@ func part2() int {
 
 func allToFourth(initialState facilityState) (int, bool) {
 	genIndices(initialState)
-	initialHash := initialState.hashIndexed()
-	seenStates := map[int]int{initialHash: 0}
-	openStates := map[int]facilityState{initialHash: initialState}
-	for turn := 0; ; turn++ {
-		nextOpenStates := map[int]facilityState{}
+	initialHash := initialState.hash()
+	seenStates := map[facilityHash]int{initialHash: 0}
+	openStates := map[facilityHash]facilityState{initialHash: initialState}
+	for turn := 0; turn < 60; turn++ {
+		nextOpenStates := make(map[facilityHash]facilityState, len(openStates))
 		for _, state := range openStates {
 			done := true
 			for _, floor := range state.rtgs {
@@ -63,7 +63,7 @@ func allToFourth(initialState facilityState) (int, bool) {
 				return turn, true
 			}
 			for _, nextState := range state.next() {
-				hash := nextState.hashIndexed()
+				hash := nextState.hash()
 				if _, found := seenStates[hash]; !found {
 					seenStates[hash] = turn
 					nextOpenStates[hash] = nextState
@@ -71,10 +71,13 @@ func allToFourth(initialState facilityState) (int, bool) {
 			}
 		}
 		openStates = nextOpenStates
+		// fmt.Println(turn, "->", len(openStates))
 		if len(openStates) == 0 {
 			return turn, false
 		}
 	}
+	fmt.Println(len(openStates))
+	return -1, false
 }
 
 type facilityState struct {
@@ -170,14 +173,22 @@ func (f facilityState) clone() facilityState {
 	return clone
 }
 
-func (f facilityState) hashIndexed() int {
-	hash := f.elevatorFloor * 10000000000
+type facilityHash uint64
+
+func (f facilityState) hash() facilityHash {
+	offset := len(indices) + 2
+	hash := facilityHash(0)
 	for rtg, floor := range f.rtgs {
-		hash += (indices[rtg] * 10 * floor)
+		itemHash := facilityHash(floor-1) << (indices[rtg] * 2)
+		hash |= itemHash
 	}
+	hash <<= offset * 2
 	for chip, floor := range f.chips {
-		hash += (indices[chip] * 10 * floor) * 100000
+		itemHash := facilityHash(floor-1) << (indices[chip] * 2)
+		hash |= itemHash
 	}
+	hash <<= 2
+	hash += facilityHash(f.elevatorFloor - 1)
 	return hash
 }
 
