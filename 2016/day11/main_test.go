@@ -16,7 +16,6 @@ func ExampleMain() {
 
 func TestHash(t *testing.T) {
 	states := map[facilityHash]facilityState{}
-	indices = map[string]int{"e1": 0, "e2": 1}
 	for elevator := 1; elevator <= 4; elevator++ {
 		for e1r := 1; e1r <= 4; e1r++ {
 			for e1c := 1; e1c <= 4; e1c++ {
@@ -24,8 +23,8 @@ func TestHash(t *testing.T) {
 					for e2c := 1; e2c <= 4; e2c++ {
 						state := facilityState{
 							elevatorFloor: elevator,
-							rtgs:          map[string]int{"e1": e1r, "e2": e2r},
-							chips:         map[string]int{"e1": e1c, "e2": e2c},
+							rtgs:          []int{e1r, e2r},
+							chips:         []int{e1c, e2c},
 						}
 						hash := state.hash()
 						if prev, found := states[hash]; found {

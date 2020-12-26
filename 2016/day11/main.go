@@ -27,10 +27,8 @@ func part1() int {
 
 func part2() int {
 	state := load("input.txt")
-	state.chips["elerium"] = 1
-	state.chips["dilithium"] = 1
-	state.rtgs["elerium"] = 1
-	state.rtgs["dilithium"] = 1
+	state.rtgs = append(state.rtgs, 1, 1)   // 2 new rtgs on floor 1
+	state.chips = append(state.chips, 1, 1) // 2 corresponding chips on floor 1
 	turns, solved := allToFourth(state)
 	if !solved {
 		fmt.Println("UNSOLVED")
@@ -39,7 +37,6 @@ func part2() int {
 }
 
 func allToFourth(initialState facilityState) (int, bool) {
-	genIndices(initialState)
 	initialHash := initialState.hash()
 	seenStates := map[facilityHash]int{initialHash: 0}
 	openStates := map[facilityHash]facilityState{initialHash: initialState}
@@ -82,14 +79,14 @@ func allToFourth(initialState facilityState) (int, bool) {
 
 type facilityState struct {
 	elevatorFloor int
-	rtgs          map[string]int
-	chips         map[string]int
+	rtgs          []int
+	chips         []int
 }
 
 func (f facilityState) next() []facilityState {
 	nextStates := []facilityState{}
-	rtgsOnFloor := []string{}
-	chipsOnFloor := []string{}
+	rtgsOnFloor := []int{}
+	chipsOnFloor := []int{}
 	for rtg, floor := range f.rtgs {
 		if floor == f.elevatorFloor {
 			rtgsOnFloor = append(rtgsOnFloor, rtg)
@@ -108,12 +105,12 @@ func (f facilityState) next() []facilityState {
 		elevatorDirections = append(elevatorDirections, 1)
 	}
 	for moveRTGs := 0; moveRTGs <= len(rtgsOnFloor) && moveRTGs <= 2; moveRTGs++ {
-		rtgCombs := [][]string{}
+		rtgCombs := [][]int{}
 		if moveRTGs == 0 {
-			rtgCombs = append(rtgCombs, []string{})
+			rtgCombs = append(rtgCombs, []int{})
 		} else {
 			utils.IterateCombinations(len(rtgsOnFloor), moveRTGs, func(iter []int) {
-				choice := []string{}
+				choice := []int{}
 				for _, i := range iter {
 					choice = append(choice, rtgsOnFloor[i])
 				}
@@ -124,12 +121,12 @@ func (f facilityState) next() []facilityState {
 			if moveChips+moveRTGs == 0 {
 				continue
 			}
-			chipCombs := [][]string{}
+			chipCombs := [][]int{}
 			if moveChips == 0 {
-				chipCombs = append(chipCombs, []string{})
+				chipCombs = append(chipCombs, []int{})
 			} else {
 				utils.IterateCombinations(len(chipsOnFloor), moveChips, func(iter []int) {
-					choice := []string{}
+					choice := []int{}
 					for _, i := range iter {
 						choice = append(choice, chipsOnFloor[i])
 					}
@@ -161,46 +158,31 @@ func (f facilityState) next() []facilityState {
 func (f facilityState) clone() facilityState {
 	clone := facilityState{
 		elevatorFloor: f.elevatorFloor,
-		rtgs:          make(map[string]int, len(f.rtgs)),
-		chips:         make(map[string]int, len(f.chips)),
+		rtgs:          make([]int, len(f.rtgs)),
+		chips:         make([]int, len(f.chips)),
 	}
-	for rtg, floor := range f.rtgs {
-		clone.rtgs[rtg] = floor
-	}
-	for chip, floor := range f.chips {
-		clone.chips[chip] = floor
-	}
+	copy(clone.rtgs, f.rtgs)
+	copy(clone.chips, f.chips)
 	return clone
 }
 
 type facilityHash uint64
 
 func (f facilityState) hash() facilityHash {
-	offset := len(indices) + 2
 	hash := facilityHash(0)
 	for rtg, floor := range f.rtgs {
-		itemHash := facilityHash(floor-1) << (indices[rtg] * 2)
+		itemHash := facilityHash(floor-1) << (rtg * 2)
 		hash |= itemHash
 	}
+	offset := len(f.chips) + 2
 	hash <<= offset * 2
 	for chip, floor := range f.chips {
-		itemHash := facilityHash(floor-1) << (indices[chip] * 2)
+		itemHash := facilityHash(floor-1) << (chip * 2)
 		hash |= itemHash
 	}
 	hash <<= 2
 	hash += facilityHash(f.elevatorFloor - 1)
 	return hash
-}
-
-var indices = map[string]int{}
-
-func genIndices(state facilityState) {
-	idx := 1
-	indices = map[string]int{}
-	for rtg := range state.rtgs {
-		indices[rtg] = idx
-		idx++
-	}
 }
 
 func (f facilityState) valid() bool {
@@ -219,10 +201,11 @@ func (f facilityState) valid() bool {
 func load(filename string) facilityState {
 	facility := facilityState{
 		elevatorFloor: 1,
-		rtgs:          map[string]int{},
-		chips:         map[string]int{},
+		rtgs:          make([]int, 10),
+		chips:         make([]int, 10),
 	}
 	lines := utils.ReadInputLines(filename)
+	elements := map[string]int{}
 	for floor := 1; floor < 4; floor++ {
 		line := lines[floor-1]
 		parts := strings.Split(line, "contains")
@@ -234,14 +217,23 @@ func load(filename string) facilityState {
 		for _, content := range contents {
 			content = content[2:]
 			parts := strings.Split(content, " ")
+			elementID := 0
+			if id, found := elements[parts[0]]; found {
+				elementID = id
+			} else {
+				elementID = len(elements)
+				elements[parts[0]] = elementID
+			}
 			switch parts[1] {
 			case "generator":
-				facility.rtgs[parts[0]] = floor
+				facility.rtgs[elementID] = floor
 			case "microchip":
-				facility.chips[parts[0]] = floor
+				facility.chips[elementID] = floor
 			}
 		}
 	}
+	facility.rtgs = facility.rtgs[:len(elements)]
+	facility.chips = facility.chips[:len(elements)]
 	return facility
 }
 
