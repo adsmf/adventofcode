@@ -9,15 +9,14 @@ import (
 )
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := findRoute()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
+func findRoute() (int, int) {
 	duct := load("input.txt")
 	duct.simplify()
 	dists := duct.dists()
@@ -25,39 +24,22 @@ func part1() int {
 	for _, item := range duct.targets {
 		items = append(items, int(item))
 	}
-	bestDist := utils.MaxInt
+	bestNoReturn := utils.MaxInt
+	bestWithReturn := utils.MaxInt
 	for _, perm := range utils.PermuteInts(items) {
 		dist := dists['0'][byte(perm[0])]
 		for i := 0; i < len(perm)-1; i++ {
 			dist += dists[byte(perm[i])][byte(perm[i+1])]
 		}
-		if dist < bestDist {
-			bestDist = dist
+		if dist < bestNoReturn {
+			bestNoReturn = dist
+		}
+		dist += dists[byte(perm[len(items)-1])]['0']
+		if dist < bestWithReturn {
+			bestWithReturn = dist
 		}
 	}
-	return bestDist
-}
-
-func part2() int {
-	duct := load("input.txt")
-	duct.simplify()
-	dists := duct.dists()
-	items := []int{}
-	for _, item := range duct.targets {
-		items = append(items, int(item))
-	}
-	bestDist := utils.MaxInt
-	for _, perm := range utils.PermuteInts(items) {
-		dist := dists['0'][byte(perm[0])]
-		for i := 0; i < len(perm)-1; i++ {
-			dist += dists[byte(perm[i])][byte(perm[i+1])]
-		}
-		dist += dists['0'][byte(perm[len(items)-1])]
-		if dist < bestDist {
-			bestDist = dist
-		}
-	}
-	return bestDist
+	return bestNoReturn, bestWithReturn
 }
 
 type tileType byte
