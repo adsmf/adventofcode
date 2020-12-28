@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/adsmf/adventofcode/utils"
-	"github.com/adsmf/adventofcode/utils/hashing/murmur3"
 )
 
 func main() {
@@ -39,20 +38,23 @@ func part2() int {
 			maxY = pos.y
 		}
 	}
+	gridSize := (maxX + 1) * (maxY + 1)
 	gridState := simpleGridData{
-		grid:   map[point]nodeState{},
-		maxPos: point{maxX, maxY},
+		grid:   make([]nodeState, gridSize),
+		width:  maxX + 1,
+		height: maxY + 1,
 	}
 	dataPos := point{maxX, 0}
 	for pos, data := range fullGrid {
+		ind := pos.x + pos.y*gridState.width
 		if pos == dataPos {
-			gridState.grid[pos] = stateTarget
-			gridState.targetPos = pos
+			gridState.grid[ind] = stateTarget
+			gridState.targetIndex = ind
 		} else if pos == gapPos {
-			gridState.grid[pos] = stateEmpty
-			gridState.gapPos = pos
+			gridState.grid[ind] = stateEmpty
+			gridState.gapIndex = ind
 		} else if data.used <= gapSize {
-			gridState.grid[pos] = stateOccupied
+			gridState.grid[ind] = stateOccupied
 		}
 	}
 
@@ -60,20 +62,13 @@ func part2() int {
 	openStates := map[simpleGridHash]simpleGridData{initialHash: gridState}
 	previousStates := map[simpleGridHash]bool{initialHash: true}
 
-	// fmt.Println(gridState)
-
-	finalTargetPos := point{0, 0}
+	finalTargetPos := 0
 
 	for turn := 0; len(openStates) > 0; turn++ {
 		nextOpenStates := map[simpleGridHash]simpleGridData{}
-		bestDist := 99999
 		for _, state := range openStates {
-			if state.targetPos == finalTargetPos {
+			if state.targetIndex == finalTargetPos {
 				return turn
-			}
-			dist := state.targetPos.x + state.targetPos.y
-			if dist < bestDist {
-				bestDist = dist
 			}
 			for _, next := range state.next() {
 				hash := next.hash()
@@ -86,13 +81,12 @@ func part2() int {
 		}
 
 		openStates = nextOpenStates
-		fmt.Println(len(openStates), bestDist)
 	}
 
 	return -1
 }
 
-type nodeState int
+type nodeState = byte
 
 const (
 	stateUnavailable nodeState = iota
@@ -101,40 +95,36 @@ const (
 	stateTarget
 )
 
-type simpleGridHash uint32
-
 type simpleGridData struct {
-	grid      map[point]nodeState
-	targetPos point
-	gapPos    point
-	maxPos    point
+	grid          []nodeState
+	targetIndex   int
+	gapIndex      int
+	width, height int
 }
-
-var hasher = murmur3.NewMurmer3_32(0)
 
 var dirs = []point{{0, 1}, {0, -1}, {1, 0}, {-1, 0}}
 
 func (g simpleGridData) next() []simpleGridData {
 	nextStates := []simpleGridData{}
-	gap := g.gapPos
+	gapInd := g.gapIndex
 	for _, dir := range dirs {
-		nX, nY := gap.x+dir.x, gap.y+dir.y
-		nP := point{nX, nY}
-		if _, found := g.grid[nP]; !found {
+		nInd := gapInd + dir.y*g.width + dir.x
+		if nInd < 0 || nInd >= len(g.grid) {
 			continue
 		}
+		if g.grid[nInd] == stateUnavailable {
+			continue
+		}
+		if (nInd/g.width - gapInd/g.width) != dir.y {
+			continue
+		}
+
 		nextState := g.copy()
-		nextState.grid[gap] = g.grid[nP]
-		nextState.grid[nP] = g.grid[gap]
-		nextState.gapPos = nP
-		if nP == g.targetPos {
-			nextState.targetPos = gap
-		}
-		if nextState.grid[nextState.targetPos] != stateTarget {
-			panic("Missed target")
-		}
-		if nextState.grid[nextState.gapPos] != stateEmpty {
-			panic("Mind the gap")
+		nextState.grid[gapInd] = g.grid[nInd]
+		nextState.grid[nInd] = g.grid[gapInd]
+		nextState.gapIndex = nInd
+		if nInd == g.targetIndex {
+			nextState.targetIndex = gapInd
 		}
 		nextStates = append(nextStates, nextState)
 	}
@@ -142,30 +132,21 @@ func (g simpleGridData) next() []simpleGridData {
 }
 
 func (g simpleGridData) copy() simpleGridData {
-	copy := simpleGridData{
-		grid:      make(map[point]nodeState, len(g.grid)),
-		targetPos: g.targetPos,
-		gapPos:    g.gapPos,
-		maxPos:    g.maxPos,
+	clone := simpleGridData{
+		grid:        make([]nodeState, len(g.grid)),
+		targetIndex: g.targetIndex,
+		gapIndex:    g.gapIndex,
+		width:       g.width,
+		height:      g.height,
 	}
-	for pos, state := range g.grid {
-		copy.grid[pos] = state
-	}
-	return copy
+	copy(clone.grid, g.grid)
+	return clone
 }
 
+type simpleGridHash string
+
 func (g simpleGridData) hash() simpleGridHash {
-	hashData := make([]byte, (g.maxPos.x+1)*(g.maxPos.y)+2)
-	hashData[0] = byte(g.targetPos.x)<<4 + byte(g.targetPos.y)
-	hashData[1] = byte(g.gapPos.x)<<4 + byte(g.gapPos.y)
-	for y := 0; y < g.maxPos.y; y++ {
-		for x := 0; x < g.maxPos.x; x++ {
-			pos := point{x, y}
-			index := y*(g.maxPos.x+1) + x + 2
-			hashData[index] = byte(g.grid[pos])
-		}
-	}
-	return simpleGridHash(hasher.HashBytes(hashData))
+	return simpleGridHash(g.grid)
 }
 
 type fullGridData map[point]nodeData
