@@ -21,74 +21,39 @@ func main() {
 func part1() int {
 	zero := &entry{0, nil}
 	zero.next = zero
-	buf := buffer{1, zero}
-	cur := buf
+	cur := zero
 	for i := 1; i <= 2017; i++ {
-		cur = cur.move(input)
-		cur = cur.insertAndSelect(i)
+		moves := input % i
+		for m := 0; m < moves; m++ {
+			cur = cur.next
+		}
+		new := &entry{
+			value: i,
+			next:  cur.next,
+		}
+		cur.next = new
+		cur = new
 	}
-	return cur.next().value()
+	return cur.next.value
 }
 
 func part2() int {
-	zero := &entry{0, nil}
-	zero.next = zero
-	buf := buffer{1, zero}
-	cur := buf
+	after0 := 1
+	pos := 0
 	for i := 1; i <= 50000000; i++ {
-		if i%500000 == 0 {
-			fmt.Printf("%3d%%", i/500000)
+		pos += input
+		pos %= i
+		if pos == 0 {
+			after0 = i
 		}
-		cur = cur.move(input)
-		cur = cur.insertAndSelect(i)
+		pos++
 	}
-	return zero.next.value
-}
-
-type buffer struct {
-	size    int
-	current *entry
-}
-
-func (b buffer) insertAndSelect(ordinal int) buffer {
-	newEntry := &entry{
-		value: ordinal,
-		next:  b.current.next,
-	}
-	b.current.next = newEntry
-	b.current = newEntry
-	b.size++
-	return b
-}
-
-func (b buffer) move(num int) buffer {
-	return buffer{
-		size:    b.size,
-		current: b.current.move(num % b.size),
-	}
-}
-func (b buffer) next() buffer {
-	return buffer{
-		size:    b.size,
-		current: b.current.next,
-	}
-}
-
-func (b buffer) value() int {
-	return b.current.value
+	return after0
 }
 
 type entry struct {
 	value int
 	next  *entry
-}
-
-func (e *entry) move(num int) *entry {
-	cur := e
-	for i := 0; i < num; i++ {
-		cur = cur.next
-	}
-	return cur
 }
 
 var benchmark = false
