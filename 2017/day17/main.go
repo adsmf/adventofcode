@@ -5,8 +5,7 @@ import (
 )
 
 const (
-	input        = 356
-	exampleInput = 3
+	input = 356
 )
 
 func main() {
