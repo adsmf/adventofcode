@@ -8,7 +8,7 @@ func ExampleMain() {
 	main()
 	//Output:
 	//Part 1: 5637
-	//Part 2: -1
+	//Part 2: 969
 }
 
 func BenchmarkMain(b *testing.B) {
