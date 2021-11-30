@@ -1,6 +1,9 @@
 package utils
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 func GetInts(input string) []int {
 	ints := make([]int, 0, len(input)/2)
@@ -23,4 +26,8 @@ func GetInts(input string) []int {
 		}
 	}
 	return ints
+}
+
+func GetLines(input string) []string {
+	return strings.Split(strings.TrimSpace(input), "\n")
 }

@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 )
 
 // ReadInputLines returnes all lines within a file, after trimming start and end whitespace
@@ -13,8 +12,5 @@ func ReadInputLines(filename string) []string {
 		fmt.Print(err)
 		return []string{}
 	}
-	fileString := string(fileBytes)
-	lines := strings.Split(strings.TrimSpace(fileString), "\n")
-
-	return lines
+	return GetLines(string(fileBytes))
 }
