@@ -3,8 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -21,13 +19,16 @@ func main() {
 }
 
 func getDepths() []int {
-	depths := []int{}
-	last := 0
-	for i := 0; i < len(input); i++ {
-		if input[i] == '\n' {
-			depths = append(depths, utils.MustInt(input[last:i]))
-			last = i + 1
+	depths := make([]int, 0, len(input)/4)
+	accumulator := 0
+	for _, ch := range input {
+		if ch == '\n' {
+			depths = append(depths, accumulator)
+			accumulator = 0
+			continue
 		}
+		accumulator *= 10
+		accumulator += int(ch - '0')
 	}
 	return depths
 }
