@@ -34,19 +34,11 @@ func getDepths() []int {
 }
 
 func findIncreases(windowSize int, depths []int) int {
-	lastSum := 0
 	increases := 0
-	for i := 0; i < len(depths); i++ {
-		depth := depths[i]
-		if i < windowSize {
-			lastSum += depth
-			continue
-		}
-		sum := lastSum + depth - depths[i-windowSize]
-		if sum > lastSum {
+	for i := windowSize; i < len(depths); i++ {
+		if depths[i] > depths[i-windowSize] {
 			increases++
 		}
-		lastSum = sum
 	}
 	return increases
 }
