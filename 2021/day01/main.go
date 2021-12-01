@@ -9,13 +9,33 @@ import (
 var input string
 
 func main() {
-	depths := getDepths()
-	p1 := findIncreases(1, depths)
-	p2 := findIncreases(3, depths)
+	p1, p2 := findIncreasesSinglePass()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
+}
+
+func findIncreasesSinglePass() (int, int) {
+	inc1, inc2 := 0, 0
+	accumulator := 0
+	w1, w2, w3 := 99999, 99999, 99999
+	for _, ch := range input {
+		switch {
+		case ch >= '0' && ch <= '9':
+			accumulator = accumulator*10 + int(ch-'0')
+		default:
+			if accumulator > w1 {
+				inc1++
+			}
+			if accumulator > w3 {
+				inc2++
+			}
+			w1, w2, w3 = accumulator, w1, w2
+			accumulator = 0
+		}
+	}
+	return inc1, inc2
 }
 
 func getDepths() []int {

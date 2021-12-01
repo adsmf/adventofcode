@@ -18,7 +18,7 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
-func BenchmarkFindIncreases(b *testing.B) {
+func BenchmarkFindIncreasesMultiPass(b *testing.B) {
 	depths := getDepths()
 	b.Run("part1", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
