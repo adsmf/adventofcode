@@ -24,7 +24,7 @@ func findIncreasesSinglePass() (int, int) {
 		switch {
 		case ch >= '0' && ch <= '9':
 			accumulator = accumulator*10 + int(ch-'0')
-		default:
+		case ch == '\n':
 			if accumulator > w1 {
 				inc1++
 			}
@@ -37,6 +37,8 @@ func findIncreasesSinglePass() (int, int) {
 	}
 	return inc1, inc2
 }
+
+// Obsolete implementation follows - present for benchmark comparison
 
 func getDepths() []int {
 	depths := make([]int, 0, len(input)/4)
