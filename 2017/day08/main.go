@@ -48,7 +48,6 @@ func run() (int, int) {
 			maxReg = registers[reg]
 		}
 	}
-	fmt.Println(registers)
 	max := 0
 	for _, val := range registers {
 		if val > max {

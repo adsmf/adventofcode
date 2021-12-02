@@ -127,8 +127,13 @@ func checkCrashed(curCart *cart, carts []*cart) bool {
 
 func loadData(filename string) (gridType, []*cart) {
 	lines := utils.ReadInputLines(filename)
-	gridWidth := len(lines[0])
 	gridHeight := len(lines)
+	gridWidth := 0
+	for _, line := range lines {
+		if len(line) > gridWidth {
+			gridWidth = len(line)
+		}
+	}
 	grid := makeGrid(gridWidth, gridHeight)
 	carts := []*cart{}
 

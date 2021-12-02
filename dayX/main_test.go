@@ -8,8 +8,8 @@ import (
 func ExampleMain() {
 	main()
 	//Output:
-	//Part 1: -2
-	//Part 2: -2
+	//Part 1: -1
+	//Part 2: -1
 }
 
 func TestAnswers(t *testing.T) {

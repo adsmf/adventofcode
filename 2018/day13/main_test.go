@@ -139,23 +139,3 @@ func TestP2ExampleAnswer(t *testing.T) {
 	pos := fmt.Sprintf("%d,%d", x, y)
 	assert.Equal(t, "6,4", pos)
 }
-
-func TestMKHillCrashLog(t *testing.T) {
-	_, _, crashes := part2("input.txt")
-	expectedCrashes := []string{
-		"74,87",
-		"89,53",
-		"86,90",
-		"117,59",
-		"66,55",
-		"78,29",
-		"55,52",
-		"29,76",
-	}
-	for idx, crash := range crashes {
-		t.Run(fmt.Sprintf("Crash %d", idx), func(t *testing.T) {
-			crashPos := fmt.Sprintf("%d,%d", crash[0], crash[1])
-			assert.Equal(t, expectedCrashes[idx], crashPos)
-		})
-	}
-}
