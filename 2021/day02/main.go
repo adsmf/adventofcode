@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
@@ -12,45 +13,31 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := followRoute()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	pos := position{}
+func followRoute() (int, int) {
+	x := 0
+	depthP1 := 0
+	depthP2 := 0
 	for _, line := range utils.GetLines(input) {
 		parts := strings.Split(line, " ")
+		val, _ := strconv.Atoi(parts[1])
 		switch parts[0] {
 		case "forward":
-			pos.x += utils.MustInt(parts[1])
+			x += val
+			depthP2 += val * depthP1
 		case "down":
-			pos.depth += utils.MustInt(parts[1])
+			depthP1 += val
 		case "up":
-			pos.depth -= utils.MustInt(parts[1])
+			depthP1 -= val
 		}
 	}
-	return pos.x * pos.depth
-}
-
-func part2() int {
-	pos := position{}
-	for _, line := range utils.GetLines(input) {
-		parts := strings.Split(line, " ")
-		switch parts[0] {
-		case "forward":
-			pos.x += utils.MustInt(parts[1])
-			pos.depth += utils.MustInt(parts[1]) * pos.aim
-		case "down":
-			pos.aim += utils.MustInt(parts[1])
-		case "up":
-			pos.aim -= utils.MustInt(parts[1])
-		}
-	}
-	return pos.x * pos.depth
+	return x * depthP1, x * depthP2
 }
 
 type position struct {
