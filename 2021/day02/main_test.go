@@ -17,3 +17,16 @@ func BenchmarkMain(b *testing.B) {
 		main()
 	}
 }
+
+func BenchmarkMethods(b *testing.B) {
+	b.Run("Initial", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			followRouteInitial()
+		}
+	})
+	b.Run("Fast", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			followRouteFast()
+		}
+	})
+}
