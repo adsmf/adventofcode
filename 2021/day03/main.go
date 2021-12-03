@@ -41,22 +41,21 @@ func part1(values []int, bitlen int) int {
 }
 
 func part2(values []int, bitlen int) int {
-	o2, co2 := 0, 0
 	generator := append([]int{}, values...)
 	for pos := bitlen - 1; pos >= 0; pos-- {
 		generator = filter(generator, pos, true)
 		if len(generator) == 1 {
-			o2 = generator[0]
+			break
 		}
 	}
 	scrubber := append([]int{}, values...)
 	for pos := bitlen - 1; pos >= 0; pos-- {
 		scrubber = filter(scrubber, pos, false)
 		if len(scrubber) == 1 {
-			co2 = scrubber[0]
+			break
 		}
 	}
-	return o2 * co2
+	return generator[0] * scrubber[0]
 }
 
 func filter(values []int, pos int, mostCommon bool) []int {
@@ -82,13 +81,21 @@ func filter(values []int, pos int, mostCommon bool) []int {
 }
 
 func parseInputInts() ([]int, int) {
-	lines := utils.GetLines(input)
-	values := make([]int, 0, len(lines))
-	for _, line := range lines {
-		val, _ := strconv.ParseUint(line, 2, 16)
-		values = append(values, int(val))
+	bitlen := 0
+	for ; ; bitlen++ {
+		if input[bitlen] == '\n' {
+			break
+		}
 	}
-	bitlen := len(lines[0])
+	values := make([]int, 0, len(input)/(bitlen+1))
+	for i := 0; i < len(input); i += (bitlen + 1) {
+		val := 0
+
+		for pos := 0; pos < bitlen; pos++ {
+			val |= int(input[i+pos]-'0') << (bitlen - pos - 1)
+		}
+		values = append(values, val)
+	}
 	return values, bitlen
 }
 
