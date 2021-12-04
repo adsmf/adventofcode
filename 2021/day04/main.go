@@ -27,9 +27,6 @@ func getScores(draws []int, boards []bingoBoard) (int, int) {
 	winners := make(set, len(boards))
 	for draw, num := range draws {
 		for boardNum, winSets := range allWinSets {
-			if winners[boardNum] {
-				continue
-			}
 			for _, winSet := range winSets {
 				if winSet[num] {
 					delete(winSet, num)
@@ -43,6 +40,7 @@ func getScores(draws []int, boards []bingoBoard) (int, int) {
 						lastBoard = boards[boardNum]
 						lastDrawNum = draw
 					}
+					allWinSets[boardNum] = []set{}
 					break
 				}
 			}
@@ -68,7 +66,7 @@ func generateWinSets(boards []bingoBoard) [][]set {
 		}
 		for x := 0; x < 5; x++ {
 			for y := 0; y < 5; y++ {
-				num := board[point{x, y}]
+				num := board[point(x, y)]
 				sets[boardID][x][num] = true
 				sets[boardID][5+y][num] = true
 			}
@@ -87,10 +85,10 @@ func loadInput() ([]int, []bingoBoard) {
 
 	boards := make([]bingoBoard, 0, len(boardStrings))
 	for _, boardString := range boardStrings {
-		board := bingoBoard{}
+		board := make(bingoBoard, 25)
 		for row, line := range strings.Split(boardString, "\n") {
 			for col, number := range utils.GetInts(line) {
-				board[point{row, col}] = number
+				board[point(row, col)] = number
 			}
 		}
 		boards = append(boards, board)
@@ -99,9 +97,13 @@ func loadInput() ([]int, []bingoBoard) {
 	return draws, boards
 }
 
+func point(x, y int) int {
+	return int(x*5 + y)
+}
+
 type set map[int]bool
-type point struct{ x, y int }
-type bingoBoard map[point]int
+
+type bingoBoard []int
 
 func (b bingoBoard) unmarkedAfter(draws []int) int {
 	drawn := make(set, len(draws))
