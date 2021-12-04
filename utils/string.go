@@ -1,28 +1,33 @@
 package utils
 
 import (
-	"strconv"
 	"strings"
 )
 
 func GetInts(input string) []int {
 	ints := make([]int, 0, len(input)/2)
-	part := ""
+
+	accumulator := 0
+	negative := false
+	started := false
 
 	for _, char := range input + "\n" {
 		switch {
-		case char == '-' && part == "":
-			part = "-"
+		case !started && char == '-':
+			negative = true
 		case char >= '0' && char <= '9':
-			part += string(char)
+			accumulator = accumulator*10 + int(char-'0')
+			started = true
 		default:
-			if part != "" {
-				newInt, err := strconv.Atoi(part)
-				if err == nil {
-					ints = append(ints, newInt)
+			if started {
+				if negative {
+					accumulator *= -1
 				}
-				part = ""
+				ints = append(ints, accumulator)
+				accumulator = 0
+				started = false
 			}
+			negative = false
 		}
 	}
 	return ints
