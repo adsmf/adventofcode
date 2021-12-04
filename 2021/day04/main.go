@@ -21,27 +21,33 @@ func main() {
 }
 
 func getScores(draws []int, boards []bingoBoard) (int, int) {
-	allWinSets := generateWinSets(boards)
+	allWinSets, boardLookup := generateWinSets(draws, boards)
 	winningBoard, lastBoard := bingoBoard{}, bingoBoard{}
 	winningDrawNum, lastDrawNum := -1, -1
 	winners := make(set, len(boards))
 	for draw, num := range draws {
-		for boardNum, winSets := range allWinSets {
+		for boardNum := range boardLookup[num] {
+			winSets := allWinSets[boardNum]
+			toFind := 2
 			for _, winSet := range winSets {
 				if winSet[num] {
 					delete(winSet, num)
-				}
-				if len(winSet) == 0 {
-					winners[boardNum] = true
-					if len(winners) == 1 {
-						winningBoard = boards[boardNum]
-						winningDrawNum = draw
-					} else if len(winners) == len(boards) {
-						lastBoard = boards[boardNum]
-						lastDrawNum = draw
+					if len(winSet) == 0 {
+						winners[boardNum] = true
+						if len(winners) == 1 {
+							winningBoard = boards[boardNum]
+							winningDrawNum = draw
+						} else if len(winners) == len(boards) {
+							lastBoard = boards[boardNum]
+							lastDrawNum = draw
+						}
+						allWinSets[boardNum] = []set{}
+						break
 					}
-					allWinSets[boardNum] = []set{}
-					break
+					toFind--
+					if toFind == 0 {
+						break
+					}
 				}
 			}
 			if len(winners) == len(boards) {
@@ -57,8 +63,12 @@ func getScores(draws []int, boards []bingoBoard) (int, int) {
 	return winnerBoardScore * draws[winningDrawNum], lastBoardScore * draws[lastDrawNum]
 }
 
-func generateWinSets(boards []bingoBoard) [][]set {
+func generateWinSets(draws []int, boards []bingoBoard) ([][]set, map[int]set) {
 	sets := make([][]set, len(boards))
+	boardLookup := make(map[int]set, len(draws))
+	for _, draw := range draws {
+		boardLookup[draw] = make(set, len(boards))
+	}
 	for boardID, board := range boards {
 		sets[boardID] = make([]set, 10)
 		for i := 0; i < 10; i++ {
@@ -67,12 +77,14 @@ func generateWinSets(boards []bingoBoard) [][]set {
 		for x := 0; x < 5; x++ {
 			for y := 0; y < 5; y++ {
 				num := board[point(x, y)]
+				offset := 5 + y
+				boardLookup[num][boardID] = true
 				sets[boardID][x][num] = true
-				sets[boardID][5+y][num] = true
+				sets[boardID][offset][num] = true
 			}
 		}
 	}
-	return sets
+	return sets, boardLookup
 }
 
 func loadInput() ([]int, []bingoBoard) {
