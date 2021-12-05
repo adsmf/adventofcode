@@ -4,6 +4,7 @@ import os
 import requests
 import shutil
 import sys
+import time
 
 def main():
   now = datetime.datetime.now()
@@ -77,6 +78,7 @@ def getInput(year,day,savePath):
             inputFile.write(chunk)
       return 
     print("Failed to fetch input",result,file=sys.stderr)
+    time.sleep(1)
 
 
 if __name__ == "__main__":
