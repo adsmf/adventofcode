@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
@@ -13,50 +12,62 @@ import (
 var input string
 
 func main() {
-	g1, g2 := loadInput()
-	p1 := count(g1)
-	p2 := count(g2)
+	p1, p2 := loadInput()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func count(g grid) int {
-	total := 0
-	for _, count := range g {
-		if count >= 2 {
-			total++
-		}
-	}
-	return total
-}
-
-func loadInput() (grid, grid) {
-	g1 := grid{}
-	g2 := grid{}
+func loadInput() (int, int) {
+	g1, g2 := grid{}, grid{}
+	p1, p2 := grid{}, grid{}
 	for _, line := range strings.Split(strings.TrimSpace(input), "\n") {
 		ints := utils.GetInts(line)
 		x1, y1 := ints[0], ints[1]
 		x2, y2 := ints[2], ints[3]
 		dX, dY := x2-x1, y2-y1
 
-		count := int(math.Max(math.Abs(float64(dX)), math.Abs(float64(dY))))
+		count := max(abs(dX), abs(dY))
 		dX /= count
 		dY /= count
 		incG1 := dX == 0 || dY == 0
 
 		for i, x, y := 0, x1, y1; i <= count; i, x, y = i+1, x+dX, y+dY {
+			pos := pointHash((x&0xffff)<<16 | (y & 0xffff))
 			if incG1 {
-				g1[point{x, y}]++
+				if g1[pos] {
+					p1[pos] = true
+				} else {
+					g1[pos] = true
+				}
 			}
-			g2[point{x, y}]++
+			if g2[pos] {
+				p2[pos] = true
+			} else {
+				g2[pos] = true
+			}
 		}
 	}
-	return g1, g2
+
+	return len(p1), len(p2)
 }
 
-type grid map[point]int
-type point struct{ x, y int }
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+type grid map[pointHash]bool
+type pointHash uint32
 
 var benchmark = false
