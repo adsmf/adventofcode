@@ -13,3 +13,8 @@
 
 /.vscode
 /session.cookie
+.DS_Store
+cpu.prof
+
+/benchmarks/results
+/benchmarks/benchmarks.md

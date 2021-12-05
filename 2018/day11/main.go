@@ -4,12 +4,15 @@ import "fmt"
 
 func main() {
 	serial := 3613
-	level, x, y := bestForSerial(serial, 3)
-	fmt.Printf("Best pos (%d,%d) with level %d\n", x, y, level)
+	_, x, y := bestForSerial(serial, 3)
+	p1 := fmt.Sprintf("%d,%d", x, y)
 
-	level, x, y, size := bestGrid(serial)
-	fmt.Printf("Best pos (%d,%d,%d) with level %d\n", x, y, size, level)
-
+	_, x, y, size := bestGrid(serial)
+	p2 := fmt.Sprintf("%d,%d,%d", x, y, size)
+	if !benchmark {
+		fmt.Println("Part 1:", p1)
+		fmt.Println("Part 2:", p2)
+	}
 }
 
 func calcLevel(serial, x, y int) int {
@@ -98,3 +101,5 @@ func bestGrid(serial int) (int, int, int, int) {
 	}
 	return bestLevel, bestX, bestY, bestSize
 }
+
+var benchmark = false

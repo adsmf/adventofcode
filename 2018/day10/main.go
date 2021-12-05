@@ -24,8 +24,12 @@ func main() {
 			bestAreaTick = tick
 		}
 	}
-	showStars(bestPos)
-	fmt.Printf("Would take: %d\n", bestAreaTick)
+	p1 := showStars(bestPos)
+	if !benchmark {
+		fmt.Println("Part 1:")
+		fmt.Println(p1)
+		fmt.Println("Part 2:", bestAreaTick)
+	}
 }
 
 func getStarPos(stars []star, tick int) ([]vector, int, int) {
@@ -60,22 +64,29 @@ func getStarPos(stars []star, tick int) ([]vector, int, int) {
 	return curPositions, width, height
 }
 
-func showStars(positions []vector) {
+func showStars(positions []vector) string {
+	minX := utils.MaxInt
+	minY := utils.MaxInt
 	maxX := 0
 	maxY := 0
 	for _, pos := range positions {
 		if pos.x > maxX {
 			maxX = pos.x
 		}
+		if pos.x < minX {
+			minX = pos.x
+		}
 		if pos.y > maxY {
 			maxY = pos.y
 		}
+		if pos.y < minY {
+			minY = pos.y
+		}
 	}
-	fmt.Printf("Showing stars (%d x %d)\n", maxX, maxY)
 	grid := make([][]string, maxY+1)
-	for row := 0; row <= maxY; row++ {
+	for row := minY; row <= maxY; row++ {
 		grid[row] = make([]string, maxX+1)
-		for col := 0; col <= maxX; col++ {
+		for col := minX; col <= maxX; col++ {
 			grid[row][col] = " "
 		}
 	}
@@ -87,10 +98,11 @@ func showStars(positions []vector) {
 		}
 	}
 
-	for row := 0; row <= maxY; row++ {
-		fmt.Println(strings.Join(grid[row], ""))
+	output := strings.Builder{}
+	for row := minY; row <= maxY; row++ {
+		output.WriteString(strings.TrimSpace(strings.Join(grid[row], "")) + "\n")
 	}
-
+	return output.String()
 }
 
 func parseLines(lines []string) []star {
@@ -121,3 +133,5 @@ type vector struct {
 	x int
 	y int
 }
+
+var benchmark = false

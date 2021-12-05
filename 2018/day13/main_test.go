@@ -7,6 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 74,87
+	//Part 2: 29,74
+}
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}
+
 func TestP1Example(t *testing.T) {
 	cartPositions := [][]cart{
 		[]cart{

@@ -17,10 +17,12 @@ func main() {
 	}
 	root, _ := processEntries(dataEntries)
 	total := sumMeta(root)
-	fmt.Printf("Total: %d\n", total)
 	value := calcValue(root)
 
-	fmt.Printf("Value: %d\n", value)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", total)
+		fmt.Printf("Part 2: %d\n", value)
+	}
 }
 
 func calcValue(node Node) int {
@@ -85,3 +87,5 @@ type Header struct {
 	NumChildren int
 	NumMetadata int
 }
+
+var benchmark = false

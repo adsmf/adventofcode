@@ -11,14 +11,17 @@ import (
 func main() {
 	lines := utils.ReadInputLines("input.txt")
 	logbook := genLogbook(lines)
-	fmt.Print("PART 1\n======\n")
-	part1(logbook)
-	fmt.Print("\nPART 2\n======\n")
-	part2(logbook)
+	// fmt.Print("PART 1\n======\n")
+	p1 := part1(logbook)
+	// fmt.Print("\nPART 2\n======\n")
+	p2 := part2(logbook)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
-func part1(logbook logbook) {
-	// fmt.Printf("Logbook: %+v\n", logbook.entries[0])
+func part1(logbook logbook) int {
 	guardsSleepTime := make(map[int]int)
 	for id, entry := range logbook.entries {
 		if entry.awake {
@@ -27,7 +30,6 @@ func part1(logbook logbook) {
 			guardsSleepTime[entry.guard] += timediff
 		}
 	}
-	// fmt.Printf("Sleep times: %+v\n", guardsSleepTime)
 	sleepyGuard := 0
 	sleepyGuardTime := 0
 	for id, time := range guardsSleepTime {
@@ -36,7 +38,6 @@ func part1(logbook logbook) {
 			sleepyGuard = id
 		}
 	}
-	fmt.Printf("Sleepy guard is %d with %d mins asleep\n", sleepyGuard, sleepyGuardTime)
 	sleepyMinutes := make(map[int]int)
 	for id, entry := range logbook.entries {
 		if entry.guard == sleepyGuard {
@@ -56,12 +57,10 @@ func part1(logbook logbook) {
 			sleepyMinuteDays = days
 		}
 	}
-	fmt.Printf("Guard is most sleepy at %d (%d days)\n", sleepyMinute, sleepyMinuteDays)
-
-	fmt.Printf("Part 1 answer: %d\n", sleepyGuard*sleepyMinute)
+	return sleepyGuard * sleepyMinute
 }
 
-func part2(logbook logbook) {
+func part2(logbook logbook) int {
 	guardsSleepMinutes := make(map[int]map[int]int)
 	for id, entry := range logbook.entries {
 		if entry.awake {
@@ -86,8 +85,7 @@ func part2(logbook logbook) {
 			}
 		}
 	}
-	fmt.Printf("Most sleepy minute is %d by %d (%d asleep)\n", sleepyMinute, sleepyGuard, sleepyDays)
-	fmt.Printf("Part 2 answer is %d * %d = %d", sleepyGuard, sleepyMinute, sleepyGuard*sleepyMinute)
+	return sleepyGuard * sleepyMinute
 }
 
 func genLogbook(lines []string) logbook {
@@ -141,3 +139,5 @@ type status struct {
 	guard  int
 	awake  bool
 }
+
+var benchmark = false

@@ -6,8 +6,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", playMarbles(486, 70833))
-	fmt.Printf("Part 2: %d\n", playMarbles(486, 7083300))
+	p1 := playMarbles(486, 70833)
+	p2 := playMarbles(486, 7083300)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func playMarbles(players, marbles int) int {
@@ -24,9 +28,6 @@ func playMarbles(players, marbles int) int {
 			playerScores[curPlayer] += nextMarble
 			removeOffset := getOffsetCCW(circle, 7, circleOffset)
 			circleOffset = removeOffset.Next()
-			if circleOffset == nil {
-				circleOffset = circle.Front()
-			}
 			playerScores[curPlayer] += (removeOffset.Value).(int)
 			circle.Remove(removeOffset)
 			continue
@@ -63,3 +64,5 @@ func getOffsetCCW(circle *list.List, targetOffset int, curPos *list.Element) *li
 	}
 	return curPos
 }
+
+var benchmark = false

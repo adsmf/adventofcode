@@ -14,8 +14,12 @@ func main() {
 	fab := makeFabric()
 	fab = landgrab(fab, claims)
 
-	part1(fab)
-	part2(claims, fab)
+	p1 := part1(fab)
+	p2 := part2(claims, fab)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 type claim struct {
@@ -80,7 +84,7 @@ func landgrab(fab fabric, claims []claim) fabric {
 	return fab
 }
 
-func part1(fab fabric) {
+func part1(fab fabric) int {
 	contested := 0
 	for _, fabricRow := range fab {
 		for _, claims := range fabricRow {
@@ -89,10 +93,10 @@ func part1(fab fabric) {
 			}
 		}
 	}
-	fmt.Printf("Contested squares: %d\n", contested)
+	return contested
 }
 
-func part2(claims []claim, fab fabric) {
+func part2(claims []claim, fab fabric) int {
 	for _, claim := range claims {
 		undisputed := true
 		for col := claim.Position.X; col < claim.Position.X+claim.Size.Width; col++ {
@@ -107,8 +111,10 @@ func part2(claims []claim, fab fabric) {
 			}
 		}
 		if undisputed {
-			fmt.Printf("Claim undisputed: %+v\n", claim)
-			break
+			return claim.ID
 		}
 	}
+	return -1
 }
+
+var benchmark = false

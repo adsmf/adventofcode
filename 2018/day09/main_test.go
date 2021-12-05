@@ -13,6 +13,20 @@ type game struct {
 	expectedScore int
 }
 
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 373597
+	//Part 2: 2954067253
+}
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}
+
 func TestExampleGames(t *testing.T) {
 	// Examples given:
 	//   10 players; last marble is worth 1618 points: high score is 8317

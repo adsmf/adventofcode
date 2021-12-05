@@ -46,9 +46,10 @@ func runSim(potString string, mapping []bool, ticks int) int {
 	values := []int{}
 	for tick := 0; tick < ticks; tick++ {
 		// Swap buffers
-		potsTemp := potsCurrent
-		potsCurrent = potsNext
-		potsNext = potsTemp
+		// potsTemp := potsCurrent
+		// potsCurrent = potsNext
+		// potsNext = potsTemp
+		potsCurrent, potsNext = potsNext, potsCurrent
 
 		// Pad stuff
 		firstValue := potsCurrent.Front().Value.(potState).value

@@ -34,16 +34,18 @@ func main() {
 		}
 		requirements = append(requirements, req)
 	}
-	fmt.Printf("Part 1\n======\n")
-	part1(allSteps, requirements)
+	p1 := part1(allSteps, requirements)
 	for _, step := range allSteps {
 		step.ready = false
 	}
-	fmt.Printf("\nPart 2\n======\n")
-	part2(allSteps, requirements)
+	p2 := part2(allSteps, requirements)
+	if !benchmark {
+		fmt.Println("Part 1:", p1)
+		fmt.Println("Part 2:", p2)
+	}
 }
 
-func part1(allSteps map[string]*step, requirements []requirement) {
+func part1(allSteps map[string]*step, requirements []requirement) string {
 	stepSequence := ""
 	unreadySteps := make(map[string]bool)
 	for id := range allSteps {
@@ -71,10 +73,10 @@ func part1(allSteps map[string]*step, requirements []requirement) {
 			delete(unreadySteps, nextStepID)
 		}
 	}
-	fmt.Printf("Sequence: %s\n", stepSequence)
+	return stepSequence
 }
 
-func part2(allSteps map[string]*step, requirements []requirement) {
+func part2(allSteps map[string]*step, requirements []requirement) int {
 	numWorkers := 5
 	baseTime := 60
 	stepSequence := ""
@@ -139,7 +141,7 @@ func part2(allSteps map[string]*step, requirements []requirement) {
 			break
 		}
 	}
-	fmt.Printf("Time taken: %d (seq: %s)\n", tick, stepSequence)
+	return tick
 }
 
 type requirement struct {
@@ -157,3 +159,5 @@ type worker struct {
 	task      string
 	busyUntil int
 }
+
+var benchmark = false

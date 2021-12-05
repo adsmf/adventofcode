@@ -11,6 +11,13 @@ func ExampleMain() {
 	//Part 2: 306
 }
 
+func BenchmarkMain(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		part1()
+		part2()
+	}
+}
+
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		part1()

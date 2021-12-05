@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"sort"
-
-	"github.com/adsmf/adventofcode/utils"
+	"strings"
 )
 
 func main() {
-	part1("input.txt")
-	part2("input.txt")
+	x, y, _ := part1("input.txt")
+	p1 := fmt.Sprintf("%d,%d", x, y)
+	x, y, _ = part2("input.txt")
+	p2 := fmt.Sprintf("%d,%d", x, y)
+	if !benchmark {
+		fmt.Println("Part 1:", p1)
+		fmt.Println("Part 2:", p2)
+	}
 }
 
 func part1(filename string) (int, int, int) {
@@ -23,7 +29,6 @@ func part1(filename string) (int, int, int) {
 			break
 		}
 	}
-	fmt.Printf("First crash: %d,%d during tick %d\n", crashes[0][0], crashes[0][1], curTick)
 	return crashes[0][0], crashes[0][1], curTick
 }
 func part2(filename string) (int, int, [][]int) {
@@ -34,17 +39,11 @@ func part2(filename string) (int, int, [][]int) {
 		curTick++
 		var newCrashes [][]int
 		newCrashes, carts = tick(grid, carts)
-		if curTick == 114 {
-			for _, cart := range carts {
-				fmt.Printf("%d,%d\n", cart.x, cart.y)
-			}
-		}
 		crashes = append(crashes, newCrashes...)
 		if len(carts) == 1 {
 			break
 		}
 	}
-	fmt.Printf("Last cart: %d,%d after tick %d\n", carts[0].x, carts[0].y, curTick)
 	return carts[0].x, carts[0].y, crashes
 }
 
@@ -126,7 +125,11 @@ func checkCrashed(curCart *cart, carts []*cart) bool {
 }
 
 func loadData(filename string) (gridType, []*cart) {
-	lines := utils.ReadInputLines(filename)
+	inputBytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	lines := strings.Split(string(inputBytes), "\n")
 	gridHeight := len(lines)
 	gridWidth := 0
 	for _, line := range lines {
@@ -325,3 +328,5 @@ func (cs cartSorter) Swap(i, j int) {
 func (cs cartSorter) Less(i, j int) bool {
 	return cs.carts[i].y < cs.carts[j].y || (cs.carts[i].y == cs.carts[j].y && cs.carts[i].x < cs.carts[j].x)
 }
+
+var benchmark = false

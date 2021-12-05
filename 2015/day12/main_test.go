@@ -13,6 +13,12 @@ func ExampleMain() {
 	//Part 1: 111754
 	//Part 2: 65402
 }
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}
 
 func BenchmarkPart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {

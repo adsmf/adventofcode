@@ -10,6 +10,14 @@ import (
 )
 
 func main() {
+	p1, p2 := solve()
+	if !benchmark {
+		fmt.Println("Part 1:", p1)
+		fmt.Println("Part 2:", p2)
+	}
+}
+
+func solve() (int, int) {
 	lines := utils.ReadInputLines("input.txt")
 	points := make([]point, 0)
 	maxX := 0
@@ -30,17 +38,16 @@ func main() {
 	maxX++
 	maxY++
 
-	fmt.Printf("Part 1\n======\n")
-	part1(points, maxX, maxY)
-	fmt.Printf("\nPart 2\n======\n")
-	part2(points, maxX, maxY, 10000)
+	p1 := part1(points, maxX, maxY)
+	p2 := part2(points, maxX, maxY, 10000)
+	return p1, p2
 }
 
 type point struct {
 	x, y int
 }
 
-func part1(points []point, maxX, maxY int) {
+func part1(points []point, maxX, maxY int) int {
 	numClosest := closestPointGraph(points, maxX, maxY)
 	bestCount := 0
 	for _, count := range numClosest {
@@ -48,10 +55,10 @@ func part1(points []point, maxX, maxY int) {
 			bestCount = count
 		}
 	}
-	fmt.Printf("Best count: %d\n", bestCount)
+	return bestCount
 }
 
-func part2(points []point, maxX, maxY, maxDistance int) {
+func part2(points []point, maxX, maxY, maxDistance int) int {
 	numValid := 0
 	for x := 0; x <= maxX; x++ {
 		for y := 0; y <= maxY; y++ {
@@ -60,7 +67,7 @@ func part2(points []point, maxX, maxY, maxDistance int) {
 			}
 		}
 	}
-	fmt.Printf("Region size: %d\n", numValid)
+	return numValid
 }
 
 func closestPointGraph(points []point, maxX, maxY int) map[point]int {
@@ -111,3 +118,5 @@ func totalDistance(target point, points []point) int {
 func distance(a, b point) int {
 	return int(math.Abs(float64(a.x-b.x))) + int(math.Abs(float64(a.y-b.y)))
 }
+
+var benchmark = false

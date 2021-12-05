@@ -7,11 +7,15 @@ import (
 )
 
 func main() {
-	part1()
-	part2()
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %s\n", p2)
+	}
 }
 
-func part1() {
+func part1() int {
 	lines := utils.ReadInputLines("input.txt")
 	twoTimes := []string{}
 	threeTimes := []string{}
@@ -37,10 +41,10 @@ func part1() {
 		}
 	}
 	checksum := len(twoTimes) * len(threeTimes)
-	fmt.Printf("Part 1 - Checksum: %d * %d = %d\n", len(twoTimes), len(threeTimes), checksum)
+	return checksum
 }
 
-func part2() {
+func part2() string {
 	lines := utils.ReadInputLines("input.txt")
 	for i, a := range lines {
 		for j, b := range lines {
@@ -49,10 +53,11 @@ func part2() {
 			}
 			dist, common := distance(a, b)
 			if dist == 1 {
-				fmt.Printf("Distance %s %s = %d (common: %s)\n", a, b, dist, common)
+				return common
 			}
 		}
 	}
+	return "????"
 }
 
 func distance(a, b string) (int, string) {
@@ -68,3 +73,5 @@ func distance(a, b string) (int, string) {
 
 	return len(differences), common
 }
+
+var benchmark = false

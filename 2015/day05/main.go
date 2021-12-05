@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -95,3 +100,5 @@ func niceString2(input string) bool {
 	}
 	return rule1 && rule2
 }
+
+var benchmark = false

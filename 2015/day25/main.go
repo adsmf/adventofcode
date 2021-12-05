@@ -8,9 +8,11 @@ var benchmark = false
 
 func main() {
 	row, col := 2947, 3029
+	p1 := part1(20151125, col, row)
+	p2 := part2()
 	if !benchmark {
-		fmt.Printf("Part 1: %d\n", part1(20151125, col, row))
-		fmt.Printf("Part 2: %d\n", part2())
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 

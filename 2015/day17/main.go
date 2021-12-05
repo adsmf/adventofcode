@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/adsmf/adventofcode/utils"
 	"io/ioutil"
 	"sort"
+
+	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
-
 func part1() int {
 	sizes := loadInput("input.txt")
 	return combinations(150, sizes)
@@ -77,3 +81,5 @@ func loadInput(filename string) []int {
 	sort.Ints(sizes)
 	return sizes
 }
+
+var benchmark = false
