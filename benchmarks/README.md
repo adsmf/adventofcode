@@ -7,7 +7,7 @@ Day 2 | 390 µs | 175 µs | 47 µs | 76 ms | - | 3 ms | 1 µs
 Day 3 | 1 ms | 507 µs | <1 µs | 45 ms | - | 83 µs | 48 µs
 Day 4 | 2237 ms | 22 ms | 1 ms | 745 µs | - | 927 µs | 691 µs
 Day 5 | 2 ms | 15759 ms | 70 ms | 111 ms | - | 27 µs | 2 ms
-Day 6 | 5734 ms | 183 µs | 11 ms | 37 ms | - | 1 ms | 3 µs
+Day 6 | 5734 ms | 183 µs | 11 ms | 37 ms | - | 1 ms | 2 µs
 Day 7 | 22 ms | 5 ms | 2 ms | 3 ms | - | 1 ms | -
 Day 8 | 181 µs | 130 µs | 2 ms | 680 µs | - | 1 ms | -
 Day 9 | 19 ms | 5 ms | 82 µs | 649 ms | - | 819 µs | -

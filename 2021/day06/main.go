@@ -20,22 +20,18 @@ func main() {
 
 func runSim() (int, int) {
 	fish := utils.GetInts(input)
-	fishCounts := make([]int, 9)
+	fishCounts := make([]int, 9, 256+9)
 	for _, f := range fish {
 		fishCounts[f]++
 	}
-	nextDay := make([]int, 9)
 	p1 := 0
 	for day := 0; day < 256; day++ {
 		if day == 80 {
 			p1 = sum(fishCounts)
 		}
-		for i := 1; i < 9; i++ {
-			nextDay[i-1] = fishCounts[i]
-		}
+		nextDay := append(fishCounts[1:], fishCounts[0])
 		nextDay[6] += fishCounts[0]
-		nextDay[8] = fishCounts[0]
-		fishCounts, nextDay = nextDay, fishCounts
+		fishCounts = nextDay
 	}
 	return p1, sum(fishCounts)
 }
