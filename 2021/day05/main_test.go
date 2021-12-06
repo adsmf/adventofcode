@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleMain() {
@@ -19,10 +21,28 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
+func TestAlternatives(t *testing.T) {
+	expectedP1 := 6687
+	expectedP2 := 19851
+	type sim = func() (int, int)
+	methods := map[string]sim{
+		"loadInputMap":   loadInputMap,
+		"loadInputSlice": loadInputSlice,
+		"loadInputArray": loadInputArray,
+	}
+	for name, fn := range methods {
+		t.Run(name, func(t *testing.T) {
+			p1, p2 := fn()
+			assert.Equal(t, expectedP1, p1)
+			assert.Equal(t, expectedP2, p2)
+		})
+	}
+}
+
 func BenchmarkGrids(b *testing.B) {
 	b.Run("map", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			loadInput()
+			loadInputMap()
 		}
 	})
 	b.Run("slice", func(b *testing.B) {

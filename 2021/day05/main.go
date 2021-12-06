@@ -97,8 +97,8 @@ func loadInputSlice() (int, int) {
 	return p1, p2
 }
 
-// Initial solution
-func loadInput() (int, int) {
+// Initial solution using map
+func loadInputMap() (int, int) {
 	g1, g2 := grid{}, grid{}
 	p1, p2 := grid{}, grid{}
 	for _, line := range strings.Split(strings.TrimSpace(input), "\n") {
@@ -149,7 +149,7 @@ func max(a, b int) int {
 type grid map[pointHash]bool
 type pointHash uint32
 
-type sliceGrid []int
-type arrayGrid [1000 * 1000]int
+type sliceGrid []uint8
+type arrayGrid [1000 * 1000]uint8
 
 var benchmark = false
