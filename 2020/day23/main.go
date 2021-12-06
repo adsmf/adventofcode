@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/ring"
 	"fmt"
 )
 
@@ -29,72 +28,80 @@ func part2() int {
 	for i := 0; i < 10000000; i++ {
 		game.iterate()
 	}
-	n1 := game.from1.Next()
-	n2 := n1.Next()
-
-	return n1.Value.(int) * n2.Value.(int)
+	n1 := game.cups[1]
+	n2 := game.cups[n1]
+	return n1 * n2
 }
 
 type gameData struct {
-	cups      *ring.Ring
-	from1     *ring.Ring
-	positions []*ring.Ring
+	cups []int
+	cur  int
+	max  int
 }
 
 func newGame(start string, numCups int) gameData {
+	first := int(start[0] - '0')
 	g := gameData{
-		cups:      ring.New(numCups),
-		positions: make([]*ring.Ring, numCups),
+		cups: make([]int, numCups+1),
+		cur:  first,
+		max:  numCups,
 	}
 
-	for _, char := range start {
-		num := int(char - '0')
-		g.cups.Value = num
-		g.positions[num-1] = g.cups
-		if num == 1 {
-			g.from1 = g.cups
+	prev := first
+	for i := 1; i < len(start); i++ {
+		cur := int(start[i] - '0')
+		g.cups[prev] = cur
+		prev = cur
+	}
+	if numCups >= 10 {
+		for i := 10; i <= numCups; i++ {
+			g.cups[prev] = i
+			prev = i
 		}
-		g.cups = g.cups.Next()
+		prev = numCups
 	}
-	for next := 10; next <= numCups; next++ {
-		g.cups.Value = next
-		g.positions[next-1] = g.cups
-		g.cups = g.cups.Next()
-	}
-
+	g.cups[prev] = first
 	return g
 }
 
 func (g *gameData) after1() string {
-	aft := ""
-	g.from1.Do(func(i interface{}) {
-		aft += fmt.Sprintf("%c", i.(int)+'0')
-	})
-	return aft[1:]
+	res := make([]byte, len(g.cups)-1)
+
+	lookup := 1
+	for i := 0; i < len(g.cups)-1; i++ {
+		next := g.cups[lookup]
+		res[i] = byte(next + '0')
+		lookup = next
+	}
+	return string(res[:len(res)-1])
 }
 
 func (g *gameData) iterate() {
-	target := g.cups.Value.(int)
-	pick := g.cups.Unlink(3)
-	target--
-	for {
-		contains := false
+	// Cut
+	n1 := g.cups[g.cur]
+	n2 := g.cups[n1]
+	n3 := g.cups[n2]
+	g.cups[g.cur] = g.cups[n3]
+
+	// Search
+	target := g.cur - 1
+	if target < 1 {
+		target += g.max
+	}
+	for target == n1 || target == n2 || target == n3 {
+		target--
 		if target < 1 {
-			target += g.cups.Len() + 3 // Because we picked 3 out
-		}
-		pick.Do(func(i interface{}) {
-			if i == target {
-				contains = true
-				target--
-			}
-		})
-		if !contains {
-			break
+			target += g.max
 		}
 	}
-	insertPos := g.positions[target-1]
-	insertPos.Link(pick)
-	g.cups = g.cups.Next()
+
+	// Insert
+	targetNext := g.cups[target]
+	g.cups[target] = n1
+	g.cups[n3] = targetNext
+
+	// Move on
+	g.cur = g.cups[g.cur]
 }
 
 var benchmark = false
