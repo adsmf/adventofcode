@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hako/durafmt"
 )
 
 //go:embed results
@@ -43,13 +41,6 @@ func makeTable(benchmarks benchmarkData) string {
 		sb.WriteString(" | ---: ")
 	}
 	sb.WriteByte('\n')
-	units := durafmt.Units{
-		Hour:        durafmt.Unit{"h", "h"},
-		Minute:      durafmt.Unit{"m", "m"},
-		Second:      durafmt.Unit{"s", "s"},
-		Millisecond: durafmt.Unit{"ms", "ms"},
-		Microsecond: durafmt.Unit{"µs", "µs"},
-	}
 	for day := 1; day <= 25; day++ {
 		sb.WriteString("Day ")
 		sb.WriteString(strconv.Itoa(day))
@@ -57,13 +48,7 @@ func makeTable(benchmarks benchmarkData) string {
 			sb.WriteString(" | ")
 			runtime := benchmarks[year][day]
 			if runtime > 0 {
-				dur := durafmt.ParseShort(runtime).LimitFirstN(1).LimitToUnit("milliseconds")
-				durString := dur.Format(units)
-				if durString == "" {
-					sb.WriteString("<1 µs")
-				} else {
-					sb.WriteString(dur.Format(units))
-				}
+				sb.WriteString(formatDuration(runtime))
 			} else {
 				sb.WriteByte('-')
 			}
@@ -79,8 +64,7 @@ func makeTable(benchmarks benchmarkData) string {
 			totalRuntime += runtime
 		}
 		sb.WriteString(" | ")
-		dur := durafmt.Parse(totalRuntime).LimitFirstN(1).LimitToUnit("milliseconds")
-		sb.WriteString(dur.Format(units))
+		sb.WriteString(formatDuration(totalRuntime))
 
 	}
 
@@ -118,6 +102,15 @@ func loadBenchmarks() (benchmarkData, error) {
 		}
 	}
 	return benchmarks, nil
+}
+
+func formatDuration(dur time.Duration) string {
+	for interval := time.Nanosecond; interval <= time.Second; interval *= 10 {
+		if dur >= 100*interval {
+			dur = dur.Round(interval)
+		}
+	}
+	return dur.String()
 }
 
 type benchmarkData map[int]map[int]time.Duration
