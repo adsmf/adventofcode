@@ -32,9 +32,15 @@ func makeTable(benchmarks benchmarkData) string {
 	}
 	sort.Ints(years)
 	sb.WriteString(" &nbsp; ")
-	for _, year := range years {
+	yearRuntimes := make([]time.Duration, len(years))
+	for i, year := range years {
 		sb.WriteString(" | ")
 		sb.WriteString(strconv.Itoa(year))
+		totalRuntime := time.Duration(0)
+		for _, runtime := range benchmarks[year] {
+			totalRuntime += runtime
+		}
+		yearRuntimes[i] = totalRuntime
 	}
 	sb.WriteString("\n ---: ")
 	for range years {
@@ -44,27 +50,36 @@ func makeTable(benchmarks benchmarkData) string {
 	for day := 1; day <= 25; day++ {
 		sb.WriteString("Day ")
 		sb.WriteString(strconv.Itoa(day))
-		for _, year := range years {
+		for i, year := range years {
 			sb.WriteString(" | ")
 			runtime := benchmarks[year][day]
+			propTotal := float64(runtime) / float64(yearRuntimes[i])
 			if runtime > 0 {
+				strength := ""
+				prefix := ""
+				if propTotal > 0.2 {
+					strength = "**"
+					prefix = "🔴 "
+				}
+				sb.WriteString(strength)
+				sb.WriteString(prefix)
 				sb.WriteString(formatDuration(runtime))
+				sb.WriteString(strength)
 			} else {
 				sb.WriteByte('-')
 			}
 		}
 		sb.WriteByte('\n')
 	}
-	sb.WriteString("Total")
+	sb.WriteString("*Total*")
 	for _, year := range years {
-		count := 0
 		totalRuntime := time.Duration(0)
 		for _, runtime := range benchmarks[year] {
-			count++
 			totalRuntime += runtime
 		}
-		sb.WriteString(" | ")
+		sb.WriteString(" | *")
 		sb.WriteString(formatDuration(totalRuntime))
+		sb.WriteString("*")
 
 	}
 
