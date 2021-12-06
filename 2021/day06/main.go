@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/ring"
 	_ "embed"
 	"fmt"
 
@@ -19,11 +20,46 @@ func main() {
 }
 
 func runSim() (int, int) {
-	fish := utils.GetInts(input)
-	fishCounts := make([]int, 9, 256+9)
-	for _, f := range fish {
-		fishCounts[f]++
+	fishCounts := countInitialArray()
+	p1 := 0
+	offset := 0
+	for day := 0; day < 80; day++ {
+		fishCounts[(offset+7)%9] += fishCounts[offset]
+		offset = (offset + 1) % 9
 	}
+	p1 = sumArray(fishCounts)
+	for day := 80; day < 256; day++ {
+		fishCounts[(offset+7)%9] += fishCounts[offset]
+		offset = (offset + 1) % 9
+	}
+	return p1, sumArray(fishCounts)
+}
+
+func countInitialArray() [9]int {
+	counts := [9]int{}
+	for _, ch := range input {
+		if ch >= '0' {
+			counts[ch-'0']++
+		}
+	}
+	return counts
+}
+
+func sumArray(counts [9]int) int {
+	total := 0
+	for _, count := range counts {
+		total += count
+	}
+	return total
+}
+
+/// Test zone
+
+//
+// Alternative (slower) implementations for benchmark comparison
+///
+func runSimSlice() (int, int) {
+	fishCounts := countInitial()
 	p1 := 0
 	for day := 0; day < 256; day++ {
 		if day == 80 {
@@ -36,10 +72,85 @@ func runSim() (int, int) {
 	return p1, sum(fishCounts)
 }
 
+func countInitial() []int {
+	counts := make([]int, 9, 9+256) // Pre-allocate space for 256 iterations
+	for _, ch := range input {
+		if ch >= '0' {
+			counts[ch-'0']++
+		}
+	}
+	return counts
+}
+
 func sum(counts []int) int {
 	total := 0
 	for _, count := range counts {
 		total += count
+	}
+	return total
+}
+func runSimNoPreallocate() (int, int) {
+	fishCounts := countInitialNoPreallocate()
+	p1 := 0
+	for day := 0; day < 256; day++ {
+		if day == 80 {
+			p1 = sum(fishCounts)
+		}
+		nextDay := append(fishCounts[1:], fishCounts[0])
+		nextDay[6] += fishCounts[0]
+		fishCounts = nextDay
+	}
+	return p1, sum(fishCounts)
+}
+
+func countInitialNoPreallocate() []int {
+	counts := make([]int, 9, 9) // Pre-allocate space for 256 iterations
+	for _, ch := range input {
+		if ch >= '0' {
+			counts[ch-'0']++
+		}
+	}
+	return counts
+}
+
+func runSimNoAppend() (int, int) {
+	fish := utils.GetInts(input)
+	f := [9]int{}
+	for _, age := range fish {
+		f[age]++
+	}
+	p1 := 0
+	for day := 0; day < 256; day++ {
+		if day == 80 {
+			p1 = sumArray(f)
+		}
+		// More assignment operations are slower than the subslice and append
+		f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8] = f[1], f[2], f[3], f[4], f[5], f[6], f[7]+f[0], f[8], f[0]
+	}
+	return p1, sumArray(f)
+}
+
+func runSimRing() (int, int) {
+	fishCounts := countInitialNoPreallocate()
+	countRing := ring.New(9)
+	for i, v := 0, countRing; i < 9; i, v = i+1, v.Next() {
+		v.Value = &fishCounts[i]
+	}
+	p1 := 0
+	for day := 0; day < 256; day++ {
+		if day == 80 {
+			p1 = sumRing(countRing)
+		}
+		*(countRing.Prev().Prev().Value).(*int) += *countRing.Value.(*int)
+		countRing = countRing.Next()
+	}
+	return p1, sumRing(countRing)
+}
+
+func sumRing(counts *ring.Ring) int {
+	total := 0
+	for i, v := 0, counts; i < counts.Len(); i, v = i+1, v.Next() {
+		total += *(v.Value.(*int))
 	}
 	return total
 }
