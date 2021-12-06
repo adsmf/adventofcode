@@ -4,12 +4,10 @@ import (
 	"container/ring"
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := runSim()
@@ -24,13 +22,27 @@ func runSim() (int, int) {
 	p1 := 0
 	offset := 0
 	for day := 0; day < 80; day++ {
-		fishCounts[(offset+7)%9] += fishCounts[offset]
-		offset = (offset + 1) % 9
+		toUpdate := (offset + 7)
+		if toUpdate > 8 {
+			toUpdate -= 9
+		}
+		fishCounts[toUpdate] += fishCounts[offset]
+		offset++
+		if offset > 8 {
+			offset = 0
+		}
 	}
 	p1 = sumArray(fishCounts)
 	for day := 80; day < 256; day++ {
-		fishCounts[(offset+7)%9] += fishCounts[offset]
-		offset = (offset + 1) % 9
+		toUpdate := (offset + 7)
+		if toUpdate > 8 {
+			toUpdate -= 9
+		}
+		fishCounts[toUpdate] += fishCounts[offset]
+		offset++
+		if offset > 8 {
+			offset = 0
+		}
 	}
 	return p1, sumArray(fishCounts)
 }
@@ -52,8 +64,6 @@ func sumArray(counts [9]int) int {
 	}
 	return total
 }
-
-/// Test zone
 
 //
 // Alternative (slower) implementations for benchmark comparison
@@ -114,11 +124,7 @@ func countInitialNoPreallocate() []int {
 }
 
 func runSimNoAppend() (int, int) {
-	fish := utils.GetInts(input)
-	f := [9]int{}
-	for _, age := range fish {
-		f[age]++
-	}
+	f := countInitialArray()
 	p1 := 0
 	for day := 0; day < 256; day++ {
 		if day == 80 {
