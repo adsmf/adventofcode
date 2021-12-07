@@ -2,9 +2,38 @@ package main
 
 import (
 	"math"
+	"sort"
 
 	"github.com/adsmf/adventofcode/utils"
 )
+
+func calcCostsTargeted() (int, int) {
+	positions := utils.GetInts(input)
+	occupied := make(map[int]int, len(positions))
+	totalPos := 0
+	for _, pos := range positions {
+		totalPos += pos
+		occupied[pos]++
+	}
+	costP1 := 0
+	costP2 := 0
+
+	sort.Ints(positions)
+	medianPos := positions[len(positions)/2]
+	for from, count := range occupied {
+		dist := int(math.Abs(float64(medianPos - from)))
+		costP1 += dist * count
+	}
+
+	mean := totalPos / len(positions)
+	for c2, count := range occupied {
+		dist := int(math.Abs(float64(mean - c2)))
+		p2cost := distCost(dist)
+		costP2 += p2cost * count
+	}
+
+	return costP1, costP2
+}
 
 func calcCostsSlice() (int, int) {
 	positions := utils.GetInts(input)

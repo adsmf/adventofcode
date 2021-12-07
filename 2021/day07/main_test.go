@@ -29,6 +29,7 @@ func TestAlternatives(t *testing.T) {
 		"calcCostsDedup":    calcCostsDedup,
 		"calcCostsSlice":    calcCostsSlice,
 		"calcCostsTargeted": calcCostsTargeted,
+		"calcCostsNoSort":   calcCostsNoSort,
 	}
 	for name, fn := range methods {
 		t.Run(name, func(t *testing.T) {
@@ -46,6 +47,7 @@ func BenchmarkAlternatives(b *testing.B) {
 		"calcCostsDedup":    calcCostsDedup,
 		"calcCostsSlice":    calcCostsSlice,
 		"calcCostsTargeted": calcCostsTargeted,
+		"calcCostsNoSort":   calcCostsNoSort,
 	}
 	for name, fn := range methods {
 		b.Run(name, func(b *testing.B) {

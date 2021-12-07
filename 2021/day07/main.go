@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
-	"sort"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -13,15 +12,14 @@ import (
 var input string
 
 func main() {
-	p1, p2 := calcCostsTargeted()
+	p1, p2 := calcCostsNoSort()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-// Test zone
-func calcCostsTargeted() (int, int) {
+func calcCostsNoSort() (int, int) {
 	positions := utils.GetInts(input)
 	occupied := make(map[int]int, len(positions))
 	totalPos := 0
@@ -32,18 +30,16 @@ func calcCostsTargeted() (int, int) {
 	costP1 := 0
 	costP2 := 0
 
-	sort.Ints(positions)
-	medianPos := positions[len(positions)/2]
-	for from, count := range occupied {
-		dist := int(math.Abs(float64(medianPos - from)))
-		costP1 += dist * count
+	median := 0
+	halfway := len(positions) / 2
+	for i, medianPos := 0, 0; medianPos < halfway; i++ {
+		medianPos += occupied[i]
+		median = i
 	}
-
 	mean := totalPos / len(positions)
-	for c2, count := range occupied {
-		dist := int(math.Abs(float64(mean - c2)))
-		p2cost := distCost(dist)
-		costP2 += p2cost * count
+	for from, count := range occupied {
+		costP1 += int(math.Abs(float64(median-from))) * count
+		costP2 += distCost(int(math.Abs(float64(mean-from)))) * count
 	}
 
 	return costP1, costP2
