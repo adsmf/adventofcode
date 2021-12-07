@@ -25,9 +25,10 @@ func TestAlternatives(t *testing.T) {
 	expectedP2 := 96987874
 	type sim = func() (int, int)
 	methods := map[string]sim{
-		"calcCostsInitial": calcCostsInitial,
-		"calcCostsDedup":   calcCostsDedup,
-		"calcCostsSlice":   calcCostsSlice,
+		"calcCostsInitial":  calcCostsInitial,
+		"calcCostsDedup":    calcCostsDedup,
+		"calcCostsSlice":    calcCostsSlice,
+		"calcCostsTargeted": calcCostsTargeted,
 	}
 	for name, fn := range methods {
 		t.Run(name, func(t *testing.T) {
@@ -41,9 +42,10 @@ func TestAlternatives(t *testing.T) {
 func BenchmarkAlternatives(b *testing.B) {
 	type sim = func() (int, int)
 	methods := map[string]sim{
-		"calcCostsInitial": calcCostsInitial,
-		"calcCostsDedup":   calcCostsDedup,
-		"calcCostsSlice":   calcCostsSlice,
+		"calcCostsInitial":  calcCostsInitial,
+		"calcCostsDedup":    calcCostsDedup,
+		"calcCostsSlice":    calcCostsSlice,
+		"calcCostsTargeted": calcCostsTargeted,
 	}
 	for name, fn := range methods {
 		b.Run(name, func(b *testing.B) {
