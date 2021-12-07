@@ -12,14 +12,106 @@ import (
 var input string
 
 func main() {
-	p1, p2 := calcCosts()
+	p1, p2 := calcCostsSlice()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func calcCosts() (int, int) {
+func calcCostsSlice() (int, int) {
+	positions := utils.GetInts(input)
+	occupied := make(map[int]int, len(positions))
+	for _, pos := range positions {
+		occupied[pos]++
+	}
+	minPos := math.MaxInt32
+	maxPos := 0
+	for pos := range occupied {
+		if minPos > pos {
+			minPos = pos
+		}
+		if maxPos < pos {
+			maxPos = pos
+		}
+	}
+	costsP1 := make([]int, maxPos+1)
+	costsP2 := make([]int, maxPos+1)
+
+	for target := minPos; target <= maxPos; target++ {
+		for c2, count := range occupied {
+			dist := int(math.Abs(float64(target - c2)))
+			p2cost := distCost(dist)
+			costsP1[target] += dist * count
+			costsP2[target] += p2cost * count
+		}
+	}
+	minP1Cost := math.MaxInt32
+	for target := minPos; target <= maxPos; target++ {
+		cost := costsP1[target]
+		if cost < minP1Cost {
+			minP1Cost = cost
+		}
+	}
+	minP2Cost := math.MaxInt32
+	for target := minPos; target <= maxPos; target++ {
+		cost := costsP2[target]
+		if cost < minP2Cost {
+			minP2Cost = cost
+		}
+	}
+	return minP1Cost, minP2Cost
+}
+
+func distCost(dist int) int {
+	return dist * (dist + 1) / 2
+}
+
+// Alternative implementations
+
+func calcCostsDedup() (int, int) {
+	positions := utils.GetInts(input)
+	occupied := make(map[int]int, len(positions))
+	for _, pos := range positions {
+		occupied[pos]++
+	}
+	minPos := math.MaxInt32
+	maxPos := 0
+	for pos := range occupied {
+		if minPos > pos {
+			minPos = pos
+		}
+		if maxPos < pos {
+			maxPos = pos
+		}
+	}
+	costsP1 := map[int]int{}
+	costsP2 := map[int]int{}
+
+	for target := minPos; target <= maxPos; target++ {
+		for c2, count := range occupied {
+			dist := int(math.Abs(float64(target - c2)))
+			p2cost := distCost(dist)
+			costsP1[target] += dist * count
+			costsP2[target] += p2cost * count
+		}
+	}
+	minP1Cost := math.MaxInt32
+	for _, cost := range costsP1 {
+		if cost < minP1Cost {
+			minP1Cost = cost
+		}
+	}
+	minP2Cost := math.MaxInt32
+	for _, cost := range costsP2 {
+		if cost < minP2Cost {
+			minP2Cost = cost
+		}
+	}
+	return minP1Cost, minP2Cost
+}
+
+func calcCostsInitial() (int, int) {
 	positions := utils.GetInts(input)
 	minPos := math.MaxInt32
 	maxPos := 0
@@ -37,10 +129,7 @@ func calcCosts() (int, int) {
 	for target := minPos; target <= maxPos; target++ {
 		for _, c2 := range positions {
 			dist := int(math.Abs(float64(target - c2)))
-			p2cost := 0
-			for i := 1; i <= dist; i++ {
-				p2cost += i
-			}
+			p2cost := distCost(dist)
 			costsP1[target] += dist
 			costsP2[target] += p2cost
 		}
