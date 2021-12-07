@@ -29,16 +29,6 @@ func calcCostsTargeted() (int, int) {
 		totalPos += pos
 		occupied[pos]++
 	}
-	minPos := math.MaxInt32
-	maxPos := 0
-	for pos := range occupied {
-		if minPos > pos {
-			minPos = pos
-		}
-		if maxPos < pos {
-			maxPos = pos
-		}
-	}
 	costP1 := 0
 	costP2 := 0
 
