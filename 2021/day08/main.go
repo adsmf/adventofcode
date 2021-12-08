@@ -3,7 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"sort"
+	"math/bits"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ func part1(board patchboard) int {
 	count := 0
 	for _, display := range board.displays {
 		for _, attempt := range display.rendered {
-			switch len(attempt) {
+			switch bits.OnesCount(uint(attempt)) {
 			case 2, 4, 3, 7:
 				count++
 			}
@@ -35,10 +35,14 @@ func part1(board patchboard) int {
 
 func part2(board patchboard) int {
 	total := 0
-	idealUses := countSegmentUses(idealDigitSegments)
-	segmentLookup := map[string]int{}
-	for i, segments := range idealDigitSegments {
-		segmentLookup[segments] = i
+	idealSevenSegs := make([]sevenSeg, 10)
+	for i := 0; i < 10; i++ {
+		idealSevenSegs[i] = toSevenSeg(idealDigitSegmentStrings[i])
+	}
+	idealUses := countSegmentUses(idealSevenSegs)
+	segmentLookup := map[int]int{}
+	for i, segments := range idealDigitSegmentStrings {
+		segmentLookup[int(toSevenSeg(segments))] = i
 	}
 	for _, display := range board.displays {
 		total += solveDisplay(idealUses, segmentLookup, display)
@@ -46,46 +50,50 @@ func part2(board patchboard) int {
 	return total
 }
 
-type segmentUseCount map[rune]useHash
-type segmentUseMap map[useHash]rune
-type useHash string
+type segmentUseCount map[int]useHash
+type segmentUseMap map[useHash]int
+type useHash uint16
 
-func countSegmentUses(attempts []string) segmentUseMap {
-	charUses := make(segmentUseCount, 10)
-	for ch := 'a'; ch <= 'g'; ch++ {
-		uses := strings.Builder{}
+func countSegmentUses(attempts []sevenSeg) segmentUseMap {
+	segUses := make(segmentUseCount, 7)
+	for seg := 0; seg < 7; seg++ {
+		segMask := sevenSeg(1 << seg)
+		counts := [8]int{}
 		for _, attempt := range attempts {
-			for _, attCh := range attempt {
-				if attCh == ch {
-					uses.WriteByte(byte(len(attempt) + '0'))
-				}
+			if attempt&segMask > 0 {
+				counts[bits.OnesCount(uint(attempt))]++
 			}
 		}
-		charUses[ch] = useHash(sortString(uses.String()))
+		uses := useHash(0)
+		for count := 0; count < 8; count++ {
+			uses |= useHash(counts[count] << (count * 2))
+		}
+		segUses[seg] = uses
 	}
 
 	useMap := make(segmentUseMap, 10)
-	for ch, uses := range charUses {
+	for ch, uses := range segUses {
 		useMap[uses] = ch
 	}
 
 	return useMap
 }
 
-func solveDisplay(idealUses segmentUseMap, segmentLookup map[string]int, disp display) int {
+func solveDisplay(idealUses segmentUseMap, segmentLookup map[int]int, disp display) int {
 	displayUseCount := countSegmentUses(disp.attempts)
-	segmentMap := map[rune]rune{}
+	segmentMap := map[int]int{}
 	for uses, ch := range displayUseCount {
 		segmentMap[ch] = idealUses[uses]
 	}
 
 	displayNum := 0
 	for _, digit := range disp.rendered {
-		decodedSB := strings.Builder{}
-		for _, ch := range digit {
-			decodedSB.WriteByte(byte(segmentMap[ch]))
+		decoded := 0
+		for ch := 0; ch < 10; ch++ {
+			if (1<<ch)&digit > 0 {
+				decoded |= 1 << segmentMap[ch]
+			}
 		}
-		decoded := sortString(decodedSB.String())
 		displayNum = displayNum*10 + segmentLookup[decoded]
 	}
 	return displayNum
@@ -101,7 +109,15 @@ func loadData() patchboard {
 		parts := strings.Split(line, " | ")
 		attempts := strings.Split(parts[0], " ")
 		rendered := strings.Split(parts[1], " ")
-		display := display{attempts: attempts, rendered: rendered}
+		attemptsSeg := make([]sevenSeg, len(attempts))
+		for i := 0; i < len(attempts); i++ {
+			attemptsSeg[i] = toSevenSeg(attempts[i])
+		}
+		renderedSeg := make([]sevenSeg, len(rendered))
+		for i := 0; i < len(rendered); i++ {
+			renderedSeg[i] = toSevenSeg(rendered[i])
+		}
+		display := display{attempts: attemptsSeg, rendered: renderedSeg}
 		displays = append(displays, display)
 	}
 	return patchboard{
@@ -109,28 +125,26 @@ func loadData() patchboard {
 	}
 }
 
-func sortString(input string) string {
-	stringSlice := []byte(input)
-	sort.Sort(sortByteSlice(stringSlice))
-	return string(stringSlice)
-}
-
-type sortByteSlice []byte
-
-func (s sortByteSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s sortByteSlice) Less(i, j int) bool { return s[i] < s[j] }
-func (s sortByteSlice) Len() int           { return len(s) }
-
 type patchboard struct {
 	displays []display
 }
 
 type display struct {
-	attempts []string
-	rendered []string
+	attempts []sevenSeg
+	rendered []sevenSeg
 }
 
-var idealDigitSegments = []string{
+type sevenSeg uint8
+
+func toSevenSeg(input string) sevenSeg {
+	res := sevenSeg(0)
+	for _, char := range []byte(input) {
+		res |= 1 << (sevenSeg(char) - 'a')
+	}
+	return res
+}
+
+var idealDigitSegmentStrings = []string{
 	"abcefg",  // "abc efg", // 0
 	"cf",      // "  c  f ", // 1
 	"acdeg",   // "a cde g", // 2
