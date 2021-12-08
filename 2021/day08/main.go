@@ -40,7 +40,7 @@ func part2(board patchboard) int {
 		idealSevenSegs[i] = toSevenSeg(idealDigitSegmentStrings[i])
 	}
 	idealUses := countSegmentUses(idealSevenSegs)
-	segmentLookup := map[int]int{}
+	segmentLookup := make(map[int]int, 10)
 	for i, segments := range idealDigitSegmentStrings {
 		segmentLookup[int(toSevenSeg(segments))] = i
 	}
@@ -65,13 +65,13 @@ func countSegmentUses(attempts []sevenSeg) segmentUseMap {
 			}
 		}
 		uses := useHash(0)
-		for count := 0; count < 8; count++ {
+		for count := 2; count < 8; count++ {
 			uses |= useHash(counts[count] << (count * 2))
 		}
 		segUses[seg] = uses
 	}
 
-	useMap := make(segmentUseMap, 10)
+	useMap := make(segmentUseMap, 7)
 	for ch, uses := range segUses {
 		useMap[uses] = ch
 	}
@@ -81,7 +81,7 @@ func countSegmentUses(attempts []sevenSeg) segmentUseMap {
 
 func solveDisplay(idealUses segmentUseMap, segmentLookup map[int]int, disp display) int {
 	displayUseCount := countSegmentUses(disp.attempts)
-	segmentMap := map[int]int{}
+	segmentMap := make(map[int]int, 7)
 	for uses, ch := range displayUseCount {
 		segmentMap[ch] = idealUses[uses]
 	}
