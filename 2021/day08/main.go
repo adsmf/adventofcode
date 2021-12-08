@@ -101,12 +101,6 @@ func loadData() patchboard {
 		parts := strings.Split(line, " | ")
 		attempts := strings.Split(parts[0], " ")
 		rendered := strings.Split(parts[1], " ")
-		for i := 0; i < len(attempts); i++ {
-			attempts[i] = sortString(attempts[i])
-		}
-		for i := 0; i < len(rendered); i++ {
-			rendered[i] = sortString(rendered[i])
-		}
 		display := display{attempts: attempts, rendered: rendered}
 		displays = append(displays, display)
 	}
