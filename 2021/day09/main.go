@@ -26,17 +26,17 @@ func part1(data ventData) int {
 	total := 0
 	for y := 0; y <= data.maxY; y++ {
 		for x := 0; x <= data.maxX; x++ {
-			cur := data.grid[point{x, y}]
-			if y > 0 && data.grid[point{x, y - 1}] <= cur {
+			cur := data.val(x, y)
+			if y > 0 && data.val(x, y-1) <= cur {
 				continue
 			}
-			if y < data.maxY && data.grid[point{x, y + 1}] <= cur {
+			if y < data.maxY && data.val(x, y+1) <= cur {
 				continue
 			}
-			if x > 0 && data.grid[point{x - 1, y}] <= cur {
+			if x > 0 && data.val(x-1, y) <= cur {
 				continue
 			}
-			if x < data.maxX && data.grid[point{x + 1, y}] <= cur {
+			if x < data.maxX && data.val(x+1, y) <= cur {
 				continue
 			}
 			total += int(cur) + 1
@@ -46,36 +46,45 @@ func part1(data ventData) int {
 }
 
 func part2(data ventData) int {
-	basinData := make(grid, len(data.grid))
+	basinData := ventData{
+		grid: make(grid, len(data.grid)),
+		maxX: data.maxX,
+		maxY: data.maxY,
+	}
 	basinID := 0
 	merges := map[int]int{}
 	basinAreas := []int{}
 	for y := 0; y <= data.maxY; y++ {
 		for x := 0; x <= data.maxX; x++ {
-			pos := point{x, y}
-			cur := data.grid[pos]
+			cur := data.val(x, y)
 			if cur == 9 {
+				basinData.set(x, y, -1)
 				continue
 			}
-			up, upDef := basinData[point{x, y - 1}]
-			left, leftDef := basinData[point{x - 1, y}]
-			if upDef && leftDef && up != left {
-				basinData[pos] = up
+			up, left := -1, -1
+			if y > 0 {
+				up = basinData.val(x, y-1)
+			}
+			if x > 0 {
+				left = basinData.val(x-1, y)
+			}
+			if up >= 0 && left >= 0 && up != left {
+				basinData.set(x, y, up)
 				merges[left] = up
 				basinAreas[up]++
 				continue
 			}
-			if upDef {
-				basinData[pos] = up
+			if up >= 0 {
+				basinData.set(x, y, up)
 				basinAreas[up]++
 				continue
 			}
-			if leftDef {
-				basinData[pos] = left
+			if left >= 0 {
+				basinData.set(x, y, left)
 				basinAreas[left]++
 				continue
 			}
-			basinData[pos] = basinID
+			basinData.set(x, y, basinID)
 			basinAreas = append(basinAreas, 1)
 			basinID++
 		}
@@ -110,15 +119,15 @@ func part2(data ventData) int {
 }
 
 func loadData(in string) ventData {
-	g := grid{}
+	g := make(grid, len(in))
 	x, y := 0, 0
-	maxX, maxY := 0, 0
+	data := ventData{grid: g}
 	for _, ch := range in {
 		switch {
 		case ch >= '0':
-			g[point{x, y}] = int(ch - '0')
-			if x > maxX {
-				maxX = x
+			data.set(x, y, int(ch-'0'))
+			if x > data.maxX {
+				data.maxX = x
 			}
 			x++
 		case ch == '\n':
@@ -126,8 +135,9 @@ func loadData(in string) ventData {
 			x = 0
 		}
 	}
-	maxY = y - 1
-	return ventData{grid: g, maxX: maxX, maxY: maxY}
+	data.maxY = y - 1
+	data.grid = data.grid[:data.index(data.maxX, data.maxY)+1]
+	return data
 }
 
 type ventData struct {
@@ -135,7 +145,18 @@ type ventData struct {
 	maxX int
 	maxY int
 }
-type grid map[point]int
-type point struct{ x, y int }
+type grid []int
+
+func (v *ventData) index(x, y int) int {
+	return (y)*(v.maxX+1) + x
+}
+func (v *ventData) val(x, y int) int {
+	idx := v.index(x, y)
+	return v.grid[idx]
+}
+func (v *ventData) set(x, y int, val int) {
+	idx := v.index(x, y)
+	v.grid[idx] = val
+}
 
 var benchmark = false
