@@ -51,9 +51,9 @@ func part2(data ventData) int {
 		maxX: data.maxX,
 		maxY: data.maxY,
 	}
-	basinID := 0
-	merges := map[int]int{}
-	basinAreas := []int{}
+	basinID := 1
+	merges := make([]int, 100)
+	basinAreas := []int{-1}
 	for y := 0; y <= data.maxY; y++ {
 		for x := 0; x <= data.maxX; x++ {
 			cur := data.val(x, y)
@@ -70,6 +70,9 @@ func part2(data ventData) int {
 			}
 			if up >= 0 && left >= 0 && up != left {
 				basinData.set(x, y, up)
+				for len(merges) < left+1 {
+					merges = append(merges[:cap(merges)], 0)
+				}
 				merges[left] = up
 				basinAreas[up]++
 				continue
@@ -91,7 +94,7 @@ func part2(data ventData) int {
 	}
 	for from, to := range merges {
 		for {
-			if replace, found := merges[to]; found {
+			if replace := merges[to]; replace > 0 {
 				to = replace
 				continue
 			}
@@ -101,8 +104,8 @@ func part2(data ventData) int {
 	}
 	mergedBasinAreas := make(map[int]int, len(basinAreas))
 	for basin, count := range basinAreas {
-		if to, found := merges[basin]; found {
-			basin = to
+		if replace := merges[basin]; replace > 0 {
+			basin = replace
 		}
 		mergedBasinAreas[basin] += count
 	}
