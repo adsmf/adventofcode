@@ -49,6 +49,7 @@ func part2(data ventData) int {
 	basinData := make(grid, len(data.grid))
 	basinID := 0
 	merges := map[int]int{}
+	basinAreas := []int{}
 	for y := 0; y <= data.maxY; y++ {
 		for x := 0; x <= data.maxX; x++ {
 			pos := point{x, y}
@@ -56,37 +57,48 @@ func part2(data ventData) int {
 			if cur == 9 {
 				continue
 			}
-			up := basinData[point{x, y - 1}]
-			left := basinData[point{x - 1, y}]
-			if up > 0 && left > 0 && up != left {
+			up, upDef := basinData[point{x, y - 1}]
+			left, leftDef := basinData[point{x - 1, y}]
+			if upDef && leftDef && up != left {
 				basinData[pos] = up
 				merges[left] = up
+				basinAreas[up]++
+				continue
 			}
-			if up > 0 {
+			if upDef {
 				basinData[pos] = up
+				basinAreas[up]++
 				continue
 			}
-			if left > 0 {
+			if leftDef {
 				basinData[pos] = left
+				basinAreas[left]++
 				continue
 			}
-			basinID++
 			basinData[pos] = basinID
+			basinAreas = append(basinAreas, 1)
+			basinID++
 		}
 	}
-	basinCounts := map[int]int{}
-	for _, basin := range basinData {
+	for from, to := range merges {
 		for {
-			if replace, found := merges[basin]; found {
-				basin = replace
+			if replace, found := merges[to]; found {
+				to = replace
 				continue
 			}
 			break
 		}
-		basinCounts[basin]++
+		merges[from] = to
 	}
-	sums := []int{}
-	for _, count := range basinCounts {
+	mergedBasinAreas := make(map[int]int, len(basinAreas))
+	for basin, count := range basinAreas {
+		if to, found := merges[basin]; found {
+			basin = to
+		}
+		mergedBasinAreas[basin] += count
+	}
+	sums := make([]int, len(mergedBasinAreas))
+	for _, count := range mergedBasinAreas {
 		sums = append(sums, count)
 	}
 	sort.Ints(sums)
