@@ -36,22 +36,25 @@ func solve(in string) (int, int) {
 }
 
 var syntaxErrorValues = map[byte]int{')': 3, ']': 57, '}': 1197, '>': 25137}
-var closePair = map[byte]byte{'(': ')', '[': ']', '{': '}', '<': '>'}
-var autocompleteValues = map[byte]int{'(': 1, '[': 2, '{': 3, '<': 4}
 
 func parseLine(line string) (int, int) {
-	unclosed := []byte{}
+	unclosed := make([]byte, 0, len(line))
+	var expect byte
 	for _, ch := range []byte(line) {
 		switch ch {
 		case '(', '[', '{', '<':
 			unclosed = append(unclosed, ch)
-		case ')', ']', '}', '>':
-			last := unclosed[len(unclosed)-1]
-			if ch != closePair[last] {
-				return syntaxErrorValues[ch], 0
-			}
-			unclosed = unclosed[:len(unclosed)-1]
+			continue
+		case ')':
+			expect = '('
+		case ']', '}', '>':
+			expect = ch - 2
 		}
+		last := unclosed[len(unclosed)-1]
+		if expect != last {
+			return syntaxErrorValues[ch], 0
+		}
+		unclosed = unclosed[:len(unclosed)-1]
 	}
 	completeScore := closeScore(unclosed)
 	return 0, completeScore
@@ -62,7 +65,16 @@ func closeScore(unclosed []byte) int {
 	for i := len(unclosed) - 1; i >= 0; i-- {
 		ch := unclosed[i]
 		score *= 5
-		score += autocompleteValues[ch]
+		switch ch {
+		case '<':
+			score += 4
+		case '{':
+			score += 3
+		case '[':
+			score += 2
+		default:
+			score++
+		}
 	}
 	return score
 }
