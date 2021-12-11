@@ -56,12 +56,14 @@ func (g grid) step() int {
 			toFlash = append(toFlash, point(p))
 		}
 	}
+	neighbors := make([]point, 0, 8)
 	for len(toFlash) > 0 {
 		p := toFlash[len(toFlash)-1]
 		toFlash = toFlash[:len(toFlash)-1]
 		if !hasFlashed[p] {
 			hasFlashed[p] = true
-			for _, n := range p.neighbours() {
+			neighbors = p.neighbours(neighbors)
+			for _, n := range neighbors {
 				g[n]++
 				if g[n] > 9 {
 					toFlash = append(toFlash, n)
@@ -82,21 +84,25 @@ func (g grid) step() int {
 
 type point int
 
-func (p point) neighbours() []point {
-	n := make([]point, 0, 8)
+func (p point) neighbours(neighbours []point) []point {
+	pX, pY := int(p)%10, int(p)/10
+	numNeighbours := 0
+	neighbours = neighbours[:cap(neighbours)]
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			if x == 0 && y == 0 {
 				continue
 			}
-			nX, nY := int(p)%10+x, int(p)/10+y
+			nX, nY := pX+x, pY+y
 			if nX < 0 || nX > 9 || nY < 0 || nY > 9 {
 				continue
 			}
-			n = append(n, point(nX+10*nY))
+			neighbours[numNeighbours] = point(nX + 10*nY)
+			numNeighbours++
 		}
 	}
-	return n
+	neighbours = neighbours[:numNeighbours]
+	return neighbours
 }
 func toPoint(x, y int) point {
 	return point(x + 10*y)
