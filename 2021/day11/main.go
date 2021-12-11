@@ -38,46 +38,49 @@ func load(in string) grid {
 	for y, line := range utils.GetLines(in) {
 		for x, ch := range []byte(line) {
 			if ch >= '0' {
-				g[point{x, y}] = int(ch - '0')
+				g[toPoint(x, y)] = int(ch - '0')
 			}
 		}
 	}
 	return g
 }
 
-type grid map[point]int
+type grid []int
 
 func (g grid) step() int {
-	toFlash := []point{}
-	flashed := map[point]bool{}
+	toFlash := make([]point, 0, 100)
+	hasFlashed := make([]bool, 100)
 	for p := range g {
 		g[p]++
 		if g[p] > 9 {
-			toFlash = append(toFlash, p)
+			toFlash = append(toFlash, point(p))
 		}
 	}
 	for len(toFlash) > 0 {
 		p := toFlash[len(toFlash)-1]
 		toFlash = toFlash[:len(toFlash)-1]
-		if !flashed[p] {
-			flashed[p] = true
+		if !hasFlashed[p] {
+			hasFlashed[p] = true
 			for _, n := range p.neighbours() {
-				if _, valid := g[n]; valid {
-					g[n]++
-					if g[n] > 9 {
-						toFlash = append(toFlash, n)
-					}
+				g[n]++
+				if g[n] > 9 {
+					toFlash = append(toFlash, n)
 				}
 			}
 		}
 	}
-	for p := range flashed {
-		g[p] = 0
+	numFlashed := 0
+	for p, flashed := range hasFlashed {
+		if flashed {
+			g[p] = 0
+			numFlashed++
+		}
 	}
-	return len(flashed)
+
+	return numFlashed
 }
 
-type point struct{ x, y int }
+type point int
 
 func (p point) neighbours() []point {
 	n := make([]point, 0, 8)
@@ -86,10 +89,17 @@ func (p point) neighbours() []point {
 			if x == 0 && y == 0 {
 				continue
 			}
-			n = append(n, point{p.x + x, p.y + y})
+			nX, nY := int(p)%10+x, int(p)/10+y
+			if nX < 0 || nX > 9 || nY < 0 || nY > 9 {
+				continue
+			}
+			n = append(n, point(nX+10*nY))
 		}
 	}
 	return n
+}
+func toPoint(x, y int) point {
+	return point(x + 10*y)
 }
 
 var benchmark = false
