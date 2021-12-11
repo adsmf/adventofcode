@@ -54,20 +54,19 @@ func (g grid) step() int {
 		g[p]++
 		if g[p] > 9 {
 			toFlash = append(toFlash, point(p))
+			hasFlashed[p] = true
 		}
 	}
 	neighbors := make([]point, 0, 8)
 	for len(toFlash) > 0 {
 		p := toFlash[len(toFlash)-1]
 		toFlash = toFlash[:len(toFlash)-1]
-		if !hasFlashed[p] {
-			hasFlashed[p] = true
-			neighbors = p.neighbours(neighbors)
-			for _, n := range neighbors {
-				g[n]++
-				if g[n] > 9 {
-					toFlash = append(toFlash, n)
-				}
+		neighbors = p.neighbours(neighbors)
+		for _, n := range neighbors {
+			g[n]++
+			if !hasFlashed[n] && g[n] > 9 {
+				hasFlashed[n] = true
+				toFlash = append(toFlash, n)
 			}
 		}
 	}
