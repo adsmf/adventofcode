@@ -37,8 +37,8 @@ func TestExamples(t *testing.T) {
 	for id, test := range tests {
 		t.Run(fmt.Sprintf("Part1-Test%d", id+1), func(t *testing.T) {
 			t.Logf("Test def:\n %v", test)
-			routes := load(test.routeList)
-			p1, p2 := explore(routes)
+			routes, smallCaves := load(test.routeList)
+			p1, p2 := explore(routes, smallCaves)
 			assert.Equal(t, test.expectedP1, p1)
 			assert.Equal(t, test.expectedP2, p2)
 		})
