@@ -40,10 +40,11 @@ func explore(routes caveRouteList, smallCaves int16) (int, int) {
 				goodRoutesP2++
 				continue
 			}
-			for _, nextCave := range routes[cur.pos] {
+			neighbors := routes[cur.pos]
+			for _, nextCave := range neighbors {
 				smallVisited := cur.smallVisited
 				if smallCaves&nextCave > 0 && nextCave&cur.visited > 0 {
-					if cur.smallVisited {
+					if smallVisited {
 						continue
 					}
 					smallVisited = true
