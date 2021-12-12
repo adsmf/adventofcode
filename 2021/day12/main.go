@@ -23,14 +23,15 @@ func main() {
 func explore(routes caveRouteList) (int, int) {
 	goodRoutesP1 := 0
 	goodRoutesP2 := 0
-	openSet := []routeState{}
+	openSet := make([]routeState, 0, 100)
 
 	for _, next := range routes["start"] {
 		openSet = append(openSet, routeState{pos: next, visited: "start"})
 	}
 
+	nextOpen := make([]routeState, 0, 100)
 	for len(openSet) > 0 {
-		nextOpen := []routeState{}
+		nextOpen = nextOpen[0:0]
 		for _, cur := range openSet {
 			if cur.pos == "end" {
 				if !cur.smallVisited {
@@ -50,15 +51,20 @@ func explore(routes caveRouteList) (int, int) {
 					}
 					smallVisited = true
 				}
+				route := strings.Builder{}
+				route.Grow(len(cur.visited) + len(cur.pos) + 1)
+				route.WriteString(cur.visited)
+				route.WriteByte(',')
+				route.WriteString(cur.pos)
 				nextState := routeState{
 					pos:          nextCave,
-					visited:      cur.visited + "," + cur.pos,
+					visited:      route.String(),
 					smallVisited: smallVisited,
 				}
 				nextOpen = append(nextOpen, nextState)
 			}
 		}
-		openSet = nextOpen
+		openSet, nextOpen = nextOpen, openSet
 	}
 
 	return goodRoutesP1, goodRoutesP2
