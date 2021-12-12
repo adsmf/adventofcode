@@ -20,7 +20,7 @@ func main() {
 	}
 }
 
-func explore(routes caveRouteList, smallCaves []bool) (int, int) {
+func explore(routes caveRouteList, smallCaves int16) (int, int) {
 	goodRoutesP1 := 0
 	goodRoutesP2 := 0
 	openSet := make([]routeState, 0, 100)
@@ -42,7 +42,7 @@ func explore(routes caveRouteList, smallCaves []bool) (int, int) {
 			}
 			for _, nextCave := range routes[cur.pos] {
 				smallVisited := cur.smallVisited
-				if smallCaves[nextCave] && (1<<nextCave)&cur.visited > 0 {
+				if smallCaves&nextCave > 0 && nextCave&cur.visited > 0 {
 					if cur.smallVisited {
 						continue
 					}
@@ -50,7 +50,7 @@ func explore(routes caveRouteList, smallCaves []bool) (int, int) {
 				}
 				nextState := routeState{
 					pos:          nextCave,
-					visited:      cur.visited | 1<<cur.pos,
+					visited:      cur.visited | cur.pos,
 					smallVisited: smallVisited,
 				}
 				nextOpen = append(nextOpen, nextState)
@@ -63,15 +63,15 @@ func explore(routes caveRouteList, smallCaves []bool) (int, int) {
 }
 
 const (
-	caveStart = 1
-	caveEnd   = 2
+	caveStart int16 = 1
+	caveEnd   int16 = 2
 )
 
-func load(in string) (caveRouteList, []bool) {
-	routes := make(caveRouteList, 15)
-	smallCaves := make([]bool, 15)
+func load(in string) (caveRouteList, int16) {
+	routes := make(caveRouteList, 1<<13)
+	smallCaves := int16(0)
 
-	caveIDs := map[string]int{
+	caveIDs := map[string]int16{
 		"start": caveStart,
 		"end":   caveEnd,
 	}
@@ -83,20 +83,20 @@ func load(in string) (caveRouteList, []bool) {
 		a, b := parts[0], parts[1]
 		idA, idB := caveIDs[a], caveIDs[b]
 		if idA == 0 {
-			idA = nextID
+			idA = 1 << nextID
 			caveIDs[a] = idA
 			nextID++
 		}
 		if idB == 0 {
-			idB = nextID
+			idB = 1 << nextID
 			caveIDs[b] = idB
 			nextID++
 		}
 		if a[0] >= 'a' {
-			smallCaves[idA] = true
+			smallCaves |= idA
 		}
 		if b[0] >= 'a' {
-			smallCaves[idB] = true
+			smallCaves |= idB
 		}
 		if b != "start" {
 			routes[idA] = append(routes[idA], idB)
@@ -109,11 +109,11 @@ func load(in string) (caveRouteList, []bool) {
 	return routes, smallCaves
 }
 
-type caveRouteList [][]int
+type caveRouteList [][]int16
 
 type routeState struct {
-	pos          int
-	visited      int
+	pos          int16
+	visited      int16
 	smallVisited bool
 }
 
