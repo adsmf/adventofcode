@@ -46,21 +46,16 @@ func TestPart2Examples(t *testing.T) {
 	}
 }
 
-// func ExampleMain() {
-// 	main()
-// 	//Output:
-// 	//Part 1: 492982
-// 	//Part 2: 6989950
-// }
-
-func BenchmarkPart1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part1()
-	}
+func ExampleMain() {
+	main()
+	//Output:
+	//Part 1: 492982
+	//Part 2: 6989950
 }
 
-func BenchmarkPart2(b *testing.B) {
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
 	for i := 0; i < b.N; i++ {
-		part2()
+		main()
 	}
 }

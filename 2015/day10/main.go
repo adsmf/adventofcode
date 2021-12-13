@@ -1,52 +1,53 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
 
+//go:embed input.txt
+var input string
+
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1, p2 := play()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
-func part1() int {
-	return len(repeat("input.txt", 40))
-}
-
-func part2() int {
-	return len(repeat("input.txt", 50))
+func play() (int, int) {
+	p1Str := repeat(input, 40)
+	p2Str := repeat(p1Str, 10)
+	return len(p1Str), len(p2Str)
 }
 
 func next(start string) string {
-	new := ""
+	new := strings.Builder{}
 	var lastChar rune
 	count := 0
 	for _, char := range start + string('\x00') {
 		if char != lastChar {
 			if count > 0 {
-				new += strconv.Itoa(count) + string(lastChar)
+				new.WriteString(strconv.Itoa(count))
+				new.WriteByte(byte(lastChar))
 				count = 0
 			}
 			lastChar = char
 		}
 		count++
 	}
-	return new
+	return new.String()
 }
 
-func repeat(filename string, times int) string {
-	input, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	result := string(input)
-	result = strings.TrimSpace(result)
+func repeat(in string, times int) string {
+	result := strings.TrimSpace(in)
 	for i := 0; i < times; i++ {
-		fmt.Println(i, "\t", len(result))
 		result = next(result)
 	}
 	return result
 }
+
+var benchmark = false
