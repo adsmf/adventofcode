@@ -12,27 +12,27 @@ import (
 var input string
 
 func main() {
-	p1, p2 := fold(input)
+	p1, p2 := foldFunctional(input)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2:\n%s\n", p2)
 	}
 }
 
-func fold(in string) (int, string) {
-	g, folds := load(in)
-	p1 := 0
-	for i, fold := range folds {
-		g = g.fold(fold)
-		if i == 0 {
-			p1 = len(g)
-		}
+func foldFunctional(in string) (int, string) {
+	g, firstFold, subsequentFolds := loadFunctional(in)
+	p1Grid := make(grid, len(g))
+	p2Grid := make(grid, len(g))
+	for pos := range g {
+		p1pos := firstFold(pos)
+		p1Grid[p1pos] = true
+		p2pos := subsequentFolds(p1pos)
+		p2Grid[p2pos] = true
 	}
-	return p1, g.String()
+	return len(p1Grid), p2Grid.String()
 }
 
-func load(in string) (grid, []foldInstruction) {
-
+func loadFunctional(in string) (grid, foldOperation, foldOperation) {
 	blocks := strings.Split(in, "\n\n")
 	pointLines := strings.Split(blocks[0], "\n")
 	g := make(grid, len(pointLines))
@@ -41,8 +41,9 @@ func load(in string) (grid, []foldInstruction) {
 		g[point{coords[0], coords[1]}] = true
 	}
 	foldLines := strings.Split(blocks[1], "\n")
-	folds := make([]foldInstruction, 0, len(foldLines))
-	for _, line := range foldLines {
+	var firstFold, subsequentFolds foldOperation
+	subsequentFolds = noFold
+	for i, line := range foldLines {
 		if line == "" {
 			continue
 		}
@@ -51,27 +52,41 @@ func load(in string) (grid, []foldInstruction) {
 			horizontal = true
 		}
 		axis := utils.MustInt(line[13:])
-		folds = append(folds, foldInstruction{horizontal: horizontal, axis: axis})
+		if i == 0 {
+			firstFold = addFoldOperation(noFold, horizontal, axis)
+
+			continue
+		}
+		subsequentFolds = addFoldOperation(subsequentFolds, horizontal, axis)
 	}
 
-	return g, folds
+	return g, firstFold, subsequentFolds
 }
+
+type foldOperation func(point) point
+
+func addFoldOperation(previousFolds foldOperation, horizontal bool, axis int) foldOperation {
+	if horizontal {
+		return func(in point) point {
+			in = previousFolds(in)
+			if in.y > axis {
+				in.y = axis - (in.y - axis)
+			}
+			return in
+		}
+	}
+	return func(in point) point {
+		in = previousFolds(in)
+		if in.x > axis {
+			in.x = axis - (in.x - axis)
+		}
+		return in
+	}
+}
+
+func noFold(in point) point { return in }
 
 type grid map[point]bool
-
-func (g grid) fold(fold foldInstruction) grid {
-	newGrid := make(grid, len(g))
-	for pos := range g {
-		if fold.horizontal && pos.y > fold.axis {
-			pos.y = fold.axis - (pos.y - fold.axis)
-		}
-		if !fold.horizontal && pos.x > fold.axis {
-			pos.x = fold.axis - (pos.x - fold.axis)
-		}
-		newGrid[pos] = true
-	}
-	return newGrid
-}
 
 func (g grid) String() string {
 	maxX, maxY := 0, 0
@@ -98,9 +113,5 @@ func (g grid) String() string {
 }
 
 type point struct{ x, y int }
-type foldInstruction struct {
-	horizontal bool
-	axis       int
-}
 
 var benchmark = false
