@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -33,33 +31,52 @@ func foldFunctional(in string) (int, string) {
 }
 
 func loadFunctional(in string) (grid, foldOperation, foldOperation) {
-	blocks := strings.Split(in, "\n\n")
-	pointLines := strings.Split(blocks[0], "\n")
-	g := make(grid, len(pointLines))
-	for _, line := range pointLines {
-		coords := utils.GetInts(line)
-		g[makePoint(coords[0], coords[1])] = true
-	}
-	foldLines := strings.Split(blocks[1], "\n")
-	var firstFold, subsequentFolds foldOperation
-	subsequentFolds = noFold
-	for i, line := range foldLines {
-		if line == "" {
-			continue
+	g := make(grid, len(in)/8)
+	i := 0
+	acc := 0
+	x := 0
+	pointsParsed := false
+	for ; !pointsParsed; i++ {
+		ch := in[i]
+		switch ch {
+		case '\n':
+			if acc == 0 {
+				pointsParsed = true
+				break
+			}
+			g[makePoint(x, acc)] = true
+			acc = 0
+			x = 0
+		case ',':
+			x, acc = acc, 0
+		default:
+			acc = acc*10 + int(ch-'0')
 		}
+	}
+	i += 11
+	var firstFold, subsequentFolds foldOperation
+	firstFold = noFold
+	subsequentFolds = noFold
+	first := true
+	for ; i < len(input); i++ {
 		horizontal := false
-		if line[11] == 'y' {
+		if input[i] == 'y' {
 			horizontal = true
 		}
-		axis := utils.MustInt(line[13:])
-		if i == 0 {
-			firstFold = addFoldOperation(noFold, horizontal, axis)
-
-			continue
+		i += 2
+		axis := 0
+		for ; input[i] != '\n'; i++ {
+			axis = axis*10 + int(input[i]-'0')
 		}
-		subsequentFolds = addFoldOperation(subsequentFolds, horizontal, axis)
-	}
 
+		if first {
+			first = false
+			firstFold = addFoldOperation(noFold, horizontal, axis)
+		} else {
+			subsequentFolds = addFoldOperation(subsequentFolds, horizontal, axis)
+		}
+		i += 11
+	}
 	return g, firstFold, subsequentFolds
 }
 
