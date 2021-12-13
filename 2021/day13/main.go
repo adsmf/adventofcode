@@ -38,7 +38,7 @@ func loadFunctional(in string) (grid, foldOperation, foldOperation) {
 	g := make(grid, len(pointLines))
 	for _, line := range pointLines {
 		coords := utils.GetInts(line)
-		g[point{coords[0], coords[1]}] = true
+		g[makePoint(coords[0], coords[1])] = true
 	}
 	foldLines := strings.Split(blocks[1], "\n")
 	var firstFold, subsequentFolds foldOperation
@@ -69,16 +69,16 @@ func addFoldOperation(previousFolds foldOperation, horizontal bool, axis int) fo
 	if horizontal {
 		return func(in point) point {
 			in = previousFolds(in)
-			if in.y > axis {
-				in.y = axis - (in.y - axis)
+			if in.y() > axis {
+				in = in.withY(axis - (in.y() - axis))
 			}
 			return in
 		}
 	}
 	return func(in point) point {
 		in = previousFolds(in)
-		if in.x > axis {
-			in.x = axis - (in.x - axis)
+		if in.x() > axis {
+			in = in.withX(axis - (in.x() - axis))
 		}
 		return in
 	}
@@ -91,17 +91,17 @@ type grid map[point]bool
 func (g grid) String() string {
 	maxX, maxY := 0, 0
 	for pos := range g {
-		if pos.x > maxX {
-			maxX = pos.x
+		if pos.x() > maxX {
+			maxX = pos.x()
 		}
-		if pos.y > maxY {
-			maxY = pos.y
+		if pos.y() > maxY {
+			maxY = pos.y()
 		}
 	}
 	sb := strings.Builder{}
 	for y := 0; y <= maxY; y++ {
 		for x := 0; x <= maxX; x++ {
-			if g[point{x, y}] {
+			if g[makePoint(x, y)] {
 				sb.WriteByte('#')
 			} else {
 				sb.WriteByte('.')
@@ -112,6 +112,23 @@ func (g grid) String() string {
 	return sb.String()
 }
 
-type point struct{ x, y int }
+func makePoint(x, y int) point {
+	return point(x | (y << 16))
+}
+
+type point uint32
+
+func (p point) x() int {
+	return int(p & 0xffff)
+}
+func (p point) y() int {
+	return int(p >> 16)
+}
+func (p point) withY(y int) point {
+	return point(p&0xffff | point(y<<16))
+}
+func (p point) withX(x int) point {
+	return point(p&0xffff0000 | point(x))
+}
 
 var benchmark = false

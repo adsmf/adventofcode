@@ -25,7 +25,7 @@ func load(in string) (grid, []foldInstruction) {
 	g := make(grid, len(pointLines))
 	for _, line := range pointLines {
 		coords := utils.GetInts(line)
-		g[point{coords[0], coords[1]}] = true
+		g[makePoint(coords[0], coords[1])] = true
 	}
 	foldLines := strings.Split(blocks[1], "\n")
 	folds := make([]foldInstruction, 0, len(foldLines))
@@ -47,11 +47,11 @@ func load(in string) (grid, []foldInstruction) {
 func (g grid) fold(fold foldInstruction) grid {
 	newGrid := make(grid, len(g))
 	for pos := range g {
-		if fold.horizontal && pos.y > fold.axis {
-			pos.y = fold.axis - (pos.y - fold.axis)
+		if fold.horizontal && pos.y() > fold.axis {
+			pos = pos.withY(fold.axis - (pos.y() - fold.axis))
 		}
-		if !fold.horizontal && pos.x > fold.axis {
-			pos.x = fold.axis - (pos.x - fold.axis)
+		if !fold.horizontal && pos.x() > fold.axis {
+			pos = pos.withX(fold.axis - (pos.x() - fold.axis))
 		}
 		newGrid[pos] = true
 	}
