@@ -71,17 +71,17 @@ func diffElements(pairs map[pairVal]int, first, last byte) int {
 }
 
 func load(in string) (string, map[pairVal]byte) {
-	blocks := strings.Split(strings.TrimSpace(in), "\n\n")
-	polymer := blocks[0]
-	ruleLines := strings.Split(blocks[1], "\n")
-
-	rules := make(map[pairVal]byte, len(ruleLines))
-	for _, line := range ruleLines {
-		parts := strings.Split(line, " -> ")
-		rules[stringToPairVal(parts[0])] = parts[1][0]
+	polymer := strings.Builder{}
+	pos := 0
+	for ; in[pos] != '\n'; pos++ {
+		polymer.WriteByte(in[pos])
 	}
-
-	return polymer, rules
+	pos += 2
+	rules := make(map[pairVal]byte, (len(in)-pos)/8)
+	for ; pos < len(in); pos += 8 {
+		rules[stringToPairVal(in[pos:pos+2])] = in[pos+6]
+	}
+	return polymer.String(), rules
 }
 
 type pairVal uint16
