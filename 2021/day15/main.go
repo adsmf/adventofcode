@@ -1,11 +1,9 @@
 package main
 
 import (
+	"container/heap"
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
-	"github.com/adsmf/adventofcode/utils/pathfinding/astar"
 )
 
 //go:embed input.txt
@@ -22,20 +20,8 @@ func main() {
 }
 
 func part1(g grid, size point) int {
-	start := g[point{0, 0}]
-	goal := g[point{size.x - 1, size.y - 1}]
-	route, err := astar.Route(start, goal)
-	if err != nil {
-		fmt.Println(err)
-		return -1
-	}
-	cost := 0
-	for _, edge := range route {
-		cost += edge.(cell).value
-	}
-	return cost - start.value
+	return explore(g, size)
 }
-
 func part2(g grid, size point) int {
 	bigGrid := make(grid, len(g)*25)
 	for pos, v := range g {
@@ -49,23 +35,60 @@ func part2(g grid, size point) int {
 				bigGrid[bigPos] = cell{
 					point: bigPos,
 					value: bigVal,
-					grid:  &bigGrid,
 				}
 			}
 		}
 	}
-	start := bigGrid[point{0, 0}]
-	goal := bigGrid[point{size.x*5 - 1, size.y*5 - 1}]
-	route, err := astar.Route(start, goal)
-	if err != nil {
-		fmt.Println(err)
-		return -1
+	return explore(bigGrid, point{size.x * 5, size.y * 5})
+}
+
+func explore(g grid, size point) int {
+	start := point{0, 0}
+	goal := point{size.x - 1, size.y - 1}
+	visited := make(map[point]bool, len(g))
+	open := &cellHeap{exploredCell{start, 0}}
+	heap.Init(open)
+
+	for len(*open) > 0 {
+		cur := heap.Pop(open).(exploredCell)
+		if cur.point == goal {
+			return cur.totalRisk
+		}
+		if _, found := visited[cur.point]; found {
+			continue
+		}
+		visited[cur.point] = true
+		for _, n := range cur.point.neighbours() {
+			if _, found := g[n]; !found {
+				continue
+			}
+			next := exploredCell{
+				point:     n,
+				totalRisk: cur.totalRisk + g[n].value,
+			}
+			heap.Push(open, next)
+		}
 	}
-	cost := 0
-	for _, edge := range route {
-		cost += edge.(cell).value
-	}
-	return cost - start.value
+	return -1
+}
+
+type cellHeap []exploredCell
+
+func (c cellHeap) Len() int            { return len(c) }
+func (c cellHeap) Less(i, j int) bool  { return c[i].totalRisk < c[j].totalRisk }
+func (c cellHeap) Swap(i, j int)       { c[i], c[j] = c[j], c[i] }
+func (c *cellHeap) Push(x interface{}) { *c = append(*c, x.(exploredCell)) }
+func (c *cellHeap) Pop() interface{} {
+	old := *c
+	n := len(old)
+	item := old[n-1]
+	*c = old[0 : n-1]
+	return item
+}
+
+type exploredCell struct {
+	point     point
+	totalRisk int
 }
 
 func load(in string) (grid, point) {
@@ -80,11 +103,7 @@ func load(in string) (grid, point) {
 			x = 0
 		default:
 			pos := point{x, y}
-			g[pos] = cell{
-				pos,
-				&g,
-				int(ch - '0'),
-			}
+			g[pos] = cell{pos, int(ch - '0')}
 			x++
 		}
 	}
@@ -95,29 +114,10 @@ func load(in string) (grid, point) {
 type grid map[point]cell
 type cell struct {
 	point point
-	grid  *grid
 	value int
 }
 
-func (c cell) Heuristic(to astar.Node) astar.Cost {
-	return astar.Cost(utils.IntAbs(c.point.x-to.(cell).point.x) + utils.IntAbs(c.point.y-to.(cell).point.y))
-}
-func (c cell) Paths() []astar.Edge {
-	edges := []astar.Edge{}
-	for _, n := range c.point.neighbours() {
-		if target, found := (*c.grid)[n]; found {
-			edges = append(edges, astar.Edge{
-				To:   target,
-				Cost: astar.Cost(target.value),
-			})
-		}
-	}
-	return edges
-}
-
-type point struct {
-	x, y int
-}
+type point struct{ x, y int }
 
 func (p point) neighbours() []point {
 	return []point{
@@ -126,9 +126,6 @@ func (p point) neighbours() []point {
 		{p.x, p.y - 1},
 		{p.x, p.y + 1},
 	}
-}
-func (p point) Heuristic() {
-
 }
 
 var benchmark = false
