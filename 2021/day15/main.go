@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/heap"
 	_ "embed"
 	"fmt"
 )
@@ -46,11 +45,11 @@ func explore(g grid, size point) int {
 	start := point{0, 0}
 	goal := point{size.x - 1, size.y - 1}
 	visited := make(map[point]bool, len(g))
-	open := &cellHeap{exploredCell{start, 0}}
-	heap.Init(open)
+	open := make(cellStack, 1, 1000)
+	open[0] = exploredCell{start, 0}
 
-	for len(*open) > 0 {
-		cur := heap.Pop(open).(exploredCell)
+	for len(open) > 0 {
+		cur := open.Pop()
 		if cur.point == goal {
 			return cur.totalRisk
 		}
@@ -66,24 +65,36 @@ func explore(g grid, size point) int {
 				point:     n,
 				totalRisk: cur.totalRisk + g[n].value,
 			}
-			heap.Push(open, next)
+			open.Insert(next)
 		}
 	}
 	return -1
 }
 
-type cellHeap []exploredCell
+type cellStack []exploredCell
 
-func (c cellHeap) Len() int            { return len(c) }
-func (c cellHeap) Less(i, j int) bool  { return c[i].totalRisk < c[j].totalRisk }
-func (c cellHeap) Swap(i, j int)       { c[i], c[j] = c[j], c[i] }
-func (c *cellHeap) Push(x interface{}) { *c = append(*c, x.(exploredCell)) }
-func (c *cellHeap) Pop() interface{} {
-	old := *c
-	n := len(old)
-	item := old[n-1]
-	*c = old[0 : n-1]
-	return item
+func (c *cellStack) Insert(ec exploredCell) {
+	l, h := 0, len(*c)
+	mid := 0
+	for l != h {
+		mid = (l + h) / 2
+		if ec.totalRisk < (*c)[mid].totalRisk {
+			h = mid
+		} else {
+			l = mid + 1
+		}
+	}
+	if mid >= len(*c) {
+		*c = append(*c, ec)
+		return
+	}
+	*c = append((*c)[:mid+1], (*c)[mid:]...)
+	(*c)[mid] = ec
+}
+func (c *cellStack) Pop() exploredCell {
+	ec := (*c)[0]
+	*c = (*c)[1:]
+	return ec
 }
 
 type exploredCell struct {
