@@ -26,7 +26,7 @@ func part2(g grid, size point) int {
 	for pos, v := range g {
 		for cX := 0; cX < 5; cX++ {
 			for cY := 0; cY < 5; cY++ {
-				bigPos := point{pos.x + cX*size.x, pos.y + cY*size.y}
+				bigPos := makePoint(pos.x()+cX*size.x(), pos.y()+cY*size.y())
 				bigVal := (v.value + cY + cX)
 				for bigVal > 9 {
 					bigVal -= 9
@@ -38,12 +38,12 @@ func part2(g grid, size point) int {
 			}
 		}
 	}
-	return explore(bigGrid, point{size.x * 5, size.y * 5})
+	return explore(bigGrid, makePoint(size.x()*5, size.y()*5))
 }
 
 func explore(g grid, size point) int {
-	start := point{0, 0}
-	goal := point{size.x - 1, size.y - 1}
+	start := makePoint(0, 0)
+	goal := makePoint(size.x()-1, size.y()-1)
 	visited := make(map[point]bool, len(g))
 	open := make(cellStack, 1, 1000)
 	open[0] = exploredCell{start, 0}
@@ -113,12 +113,12 @@ func load(in string) (grid, point) {
 			maxX = x
 			x = 0
 		default:
-			pos := point{x, y}
+			pos := makePoint(x, y)
 			g[pos] = cell{pos, int(ch - '0')}
 			x++
 		}
 	}
-	max := point{maxX, y}
+	max := makePoint(maxX, y)
 	return g, max
 }
 
@@ -128,14 +128,18 @@ type cell struct {
 	value int
 }
 
-type point struct{ x, y int }
+type point uint32
+
+func makePoint(x, y int) point { return point(x | (y << 16)) }
+func (p point) x() int         { return int(p & 0xffff) }
+func (p point) y() int         { return int(p >> 16) }
 
 func (p point) neighbours() []point {
 	return []point{
-		{p.x - 1, p.y},
-		{p.x + 1, p.y},
-		{p.x, p.y - 1},
-		{p.x, p.y + 1},
+		p - 1,
+		p + 1,
+		p - (1 << 16),
+		p + (1 << 16),
 	}
 }
 
