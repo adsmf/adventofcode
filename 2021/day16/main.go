@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
@@ -31,11 +30,18 @@ func solve() (int, int) {
 func parse(in string) (int, int, error) {
 	packetBitBuilder := strings.Builder{}
 	for _, ch := range []byte(in) {
-		val, err := strconv.ParseUint(string(ch), 16, 8)
-		if err != nil {
-			return -1, -1, err
+		if ch >= 'A' {
+			ch -= 'A' - 10
+		} else {
+			ch -= '0'
 		}
-		packetBitBuilder.WriteString(fmt.Sprintf("%04b", val))
+		for bit := byte(8); bit > 0; bit >>= 1 {
+			if ch&bit > 0 {
+				packetBitBuilder.WriteByte('1')
+			} else {
+				packetBitBuilder.WriteByte('0')
+			}
+		}
 	}
 	packetBits := packetBitBuilder.String()
 	sum, value, _, err := parseBits(packetBits, 0, 0)
@@ -54,44 +60,32 @@ func parseBits(packetBits string, maxPackets int, operation packetType) (int, in
 		if maxPackets > 0 && packetsRead > maxPackets {
 			break
 		}
-		version, err := strconv.ParseInt(packetBits[idx:idx+3], 2, 8)
-		if err != nil {
-			return versionSum, packetValue, idx, err
-		}
+		version := toInt(packetBits[idx : idx+3])
 		versionSum += int(version)
 		idx += 3
 
-		pType, err := strconv.ParseInt(packetBits[idx:idx+3], 2, 8)
-		if err != nil {
-			return versionSum, packetValue, idx, err
-		}
+		pType := toInt(packetBits[idx : idx+3])
 		idx += 3
 
 		switch packetType(pType) {
 		case packetTypeLiteral:
-			litString := strings.Builder{}
+			value := 0
 			for {
 				group := packetBits[idx : idx+5]
 				idx += 5
-				litString.WriteString(group[1:])
+				value <<= 4
+				value += toInt(group[1:])
 				if group[0] == '0' {
 					break
 				}
 			}
-			value, err := strconv.ParseInt(litString.String(), 2, 63)
-			if err != nil {
-				return versionSum, packetValue, idx, err
-			}
-			packetValues = append(packetValues, int(value))
+			packetValues = append(packetValues, value)
 		default:
 			lengthType := packetBits[idx]
 			idx++
 			if lengthType == '0' {
-				length, err := strconv.ParseInt(packetBits[idx:idx+15], 2, 32)
+				length := toInt(packetBits[idx : idx+15])
 				idx += 15
-				if err != nil {
-					return versionSum, packetValue, idx, err
-				}
 				subPacket := packetBits[idx : idx+int(length)]
 				idx += int(length)
 				subSum, subValue, consumed, err := parseBits(subPacket, 0, packetType(pType))
@@ -105,11 +99,8 @@ func parseBits(packetBits string, maxPackets int, operation packetType) (int, in
 				}
 
 			} else {
-				length, err := strconv.ParseUint(packetBits[idx:idx+11], 2, 11)
+				length := toInt(packetBits[idx : idx+11])
 				idx += 11
-				if err != nil {
-					return versionSum, packetValue, idx, err
-				}
 				subSum, subValue, consumed, err := parseBits(packetBits[idx:], int(length), packetType(pType))
 				packetValues = append(packetValues, subValue)
 				versionSum += subSum
@@ -171,6 +162,17 @@ func parseBits(packetBits string, maxPackets int, operation packetType) (int, in
 	return versionSum, packetValue, idx, nil
 }
 
+func toInt(bits string) int {
+	val := 0
+	for _, ch := range bits {
+		val <<= 1
+		if ch == '1' {
+			val++
+		}
+	}
+	return val
+}
+
 type packetType int
 
 const (
@@ -183,16 +185,5 @@ const (
 	packetTypeLess
 	packetTypeEqual
 )
-
-var packetTypeName = map[packetType]string{
-	packetTypeSum:     "sum",
-	packetTypeProduct: "product",
-	packetTypeMin:     "min",
-	packetTypeMax:     "max",
-	packetTypeLiteral: "literal",
-	packetTypeGreater: "greater",
-	packetTypeLess:    "less",
-	packetTypeEqual:   "equal",
-}
 
 var benchmark = false
