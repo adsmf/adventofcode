@@ -44,8 +44,8 @@ func part2(g grid, size point) int {
 func explore(g grid, size point) int {
 	start := makePoint(0, 0)
 	goal := makePoint(size.x()-1, size.y()-1)
-	visited := make(map[point]bool, len(g))
-	open := make(cellStack, 1, 1000)
+	visited := make([]bool, int(size))
+	open := make(cellStack, 1, 100)
 	open[0] = exploredCell{start, 0}
 
 	for len(open) > 0 {
@@ -53,7 +53,7 @@ func explore(g grid, size point) int {
 		if cur.point == goal {
 			return cur.totalRisk
 		}
-		if _, found := visited[cur.point]; found {
+		if visited[cur.point] {
 			continue
 		}
 		visited[cur.point] = true
@@ -88,7 +88,8 @@ func (c *cellStack) Insert(ec exploredCell) {
 		*c = append(*c, ec)
 		return
 	}
-	*c = append((*c)[:mid+1], (*c)[mid:]...)
+	*c = append(*c, exploredCell{})
+	copy((*c)[mid+1:], (*c)[mid:])
 	(*c)[mid] = ec
 }
 func (c *cellStack) Pop() exploredCell {
