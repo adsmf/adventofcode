@@ -45,25 +45,27 @@ func explore(g grid, size point) int {
 	start := makePoint(0, 0)
 	goal := makePoint(size.x()-1, size.y()-1)
 	visited := make([]bool, int(size))
-	open := make(cellStack, 1, 100)
+	open := make(cellStack, 1, 50000)
 	open[0] = exploredCell{start, 0}
 
 	for len(open) > 0 {
 		cur := open.Pop()
-		if cur.point == goal {
-			return cur.totalRisk
-		}
 		if visited[cur.point] {
 			continue
 		}
 		visited[cur.point] = true
 		for _, n := range cur.point.neighbours() {
-			if _, found := g[n]; !found {
+			value := g[n].value
+			if value == 0 {
 				continue
+			}
+			risk := cur.totalRisk + value
+			if n == goal {
+				return risk
 			}
 			next := exploredCell{
 				point:     n,
-				totalRisk: cur.totalRisk + g[n].value,
+				totalRisk: risk,
 			}
 			open.Insert(next)
 		}
@@ -75,10 +77,15 @@ type cellStack []exploredCell
 
 func (c *cellStack) Insert(ec exploredCell) {
 	l, h := 0, len(*c)
+	targetRisk := ec.totalRisk
 	mid := 0
 	for l != h {
 		mid = (l + h) / 2
-		if ec.totalRisk < (*c)[mid].totalRisk {
+		risk := (*c)[mid].totalRisk
+		if risk == targetRisk {
+			break
+		}
+		if targetRisk < risk {
 			h = mid
 		} else {
 			l = mid + 1
