@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"testing"
 
+	"github.com/adsmf/adventofcode/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +19,10 @@ func ExampleMain() {
 }
 
 func TestExample(t *testing.T) {
-	p1, p2 := solve(example)
+	vals := utils.GetInts(example)
+	minX, maxX, minY, maxY := vals[0], vals[1], vals[2], vals[3]
+	p1 := part1(minY)
+	p2 := part2(minX, maxX, minY, maxY)
 	assert.Equal(t, 45, p1)
 	assert.Equal(t, 112, p2)
 }
