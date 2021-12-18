@@ -18,7 +18,24 @@ func ExampleMain() {
 	//Part 2: 4701
 }
 
-func TestPart1Examples(t *testing.T) {
+func TestParse(t *testing.T) {
+	tests := []string{
+		"[[1,2],[[3,4],5]]",
+		"[[[[0,7],4],[[7,8],[6,0]]],[8,1]]",
+		"[[[[1,1],[2,2]],[3,3]],[4,4]]",
+		"[[[[3,0],[5,3]],[4,4]],[5,5]]",
+		"[[[[5,0],[7,4]],[5,5]],[6,6]]",
+		"[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]",
+	}
+	for _, test := range tests {
+		t.Run(test, func(t *testing.T) {
+			parsed := parse(test)
+			assert.Equal(t, test, parsed.String())
+		})
+	}
+}
+
+func TestExamples(t *testing.T) {
 	type testDef struct {
 		input     string
 		reduced   string
@@ -26,6 +43,7 @@ func TestPart1Examples(t *testing.T) {
 	}
 	tests := []testDef{
 		{"[[1,2],[[3,4],5]]", "", 143},
+		{"[1,2]\n[3,4]", "[[1,2],[3,4]]", 0},
 		{"[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", "", 1384},
 		{"[[[[1,1],[2,2]],[3,3]],[4,4]]", "", 445},
 		{"[[[[3,0],[5,3]],[4,4]],[5,5]]", "", 791},

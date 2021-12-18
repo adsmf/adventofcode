@@ -60,30 +60,35 @@ func combine(a, b elementList) elementList {
 		return b
 	}
 	newList := make(elementList, len(a)+len(b)+3)
-	newList[0] = "["
+	newList[0] = entityOpen
 	copy(newList[1:], a)
-	newList[len(a)+1] = ","
+	newList[len(a)+1] = entitySeparator
 	copy(newList[len(a)+2:], b)
-	newList[len(newList)-1] = "]"
+	newList[len(newList)-1] = entityClose
 	return newList
 }
 
 func reduce(elements elementList) elementList {
 	changed := true
 	for changed {
-		// fmt.Println("Reduce", elements)
 		elements, changed = process(elements)
 	}
 	return elements
 }
 
 func parse(in string) elementList {
-	elements := elementList{}
+	elements := make(elementList, 0, len(in))
 	for i := 0; i < len(in); {
 		ch := byte(in[i])
 		switch ch {
-		case '[', ']', ',':
-			elements = append(elements, string(ch))
+		case '[':
+			elements = append(elements, entityOpen)
+			i++
+		case ']':
+			elements = append(elements, entityClose)
+			i++
+		case ',':
+			elements = append(elements, entitySeparator)
 			i++
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			acc := 0
@@ -91,7 +96,7 @@ func parse(in string) elementList {
 				acc *= 10
 				acc += int(in[i] - '0')
 			}
-			elements = append(elements, acc)
+			elements = append(elements, entity(acc))
 		case '\n':
 			i++
 		default:
@@ -102,27 +107,23 @@ func parse(in string) elementList {
 }
 
 func process(elements elementList) (elementList, bool) {
-
 	depth := 0
 	for i, element := range elements {
 		switch element {
-		case "[":
+		case entityOpen:
 			depth++
 			if depth == 5 {
 				elements = explode(elements, i)
 				return elements, true
 			}
-		case "]":
+		case entityClose:
 			depth--
 		}
 	}
 	for i, element := range elements {
-		switch e := element.(type) {
-		case int:
-			if e > 9 {
-				elements = split(elements, i)
-				return elements, true
-			}
+		if element > 9 {
+			elements = split(elements, i)
+			return elements, true
 		}
 	}
 	return elements, false
@@ -130,20 +131,17 @@ func process(elements elementList) (elementList, bool) {
 
 func explode(elements elementList, offset int) elementList {
 	l, r := elements[offset+1], elements[offset+3]
-	done := false
-	for search := offset - 1; search > 0 && !done; search-- {
-		switch e := elements[search].(type) {
-		case int:
-			elements[search] = e + l.(int)
-			done = true
+
+	for search := offset - 1; search > 0; search-- {
+		if elements[search] >= 0 {
+			elements[search] = elements[search] + l
+			break
 		}
 	}
-	done = false
-	for search := offset + 5; search < len(elements) && !done; search++ {
-		switch e := elements[search].(type) {
-		case int:
-			elements[search] = e + r.(int)
-			done = true
+	for search := offset + 5; search < len(elements); search++ {
+		if elements[search] >= 0 {
+			elements[search] = elements[search] + r
+			break
 		}
 	}
 	elements = append(elements[:offset], elements[offset+4:]...)
@@ -152,13 +150,13 @@ func explode(elements elementList, offset int) elementList {
 }
 
 func split(elements elementList, offset int) elementList {
-	v := elements[offset].(int)
+	v := elements[offset]
 	elements = append(elements[:offset+5], elements[offset+1:]...)
-	elements[offset+0] = "["
+	elements[offset+0] = entityOpen
 	elements[offset+1] = v / 2
-	elements[offset+2] = ","
+	elements[offset+2] = entitySeparator
 	elements[offset+3] = (v + 1) / 2
-	elements[offset+4] = "]"
+	elements[offset+4] = entityClose
 	return elements
 }
 
@@ -166,44 +164,41 @@ func magnitude(origElements elementList) int {
 	elements := make(elementList, len(origElements))
 	copy(elements, origElements)
 	for len(elements) > 1 {
-		changed := false
 		for i := 0; i < len(elements)-2; i++ {
-			elemLeft, elemRight := elements[i], elements[i+2]
-			valLeft, isIntLeft := elemLeft.(int)
-			valRight, isIntRight := elemRight.(int)
-			if isIntLeft && isIntRight {
+			left, right := elements[i], elements[i+2]
+			if left >= 0 && right >= 0 {
 				elements = append(elements[:i], elements[i+4:]...)
-				elements[i-1] = valLeft*3 + valRight*2
-				changed = true
-				break
+				elements[i-1] = left*3 + right*2
 			}
 		}
-		if !changed {
-			fmt.Println("No change", elements)
-			return -1
-		}
 	}
-	return elements[0].(int)
+	return int(elements[0])
 }
 
-type elementList []interface{}
+type elementList []entity
+type entity int16
 
 func (el elementList) String() string {
 	sb := strings.Builder{}
 	for _, element := range el {
-		switch e := element.(type) {
-		case int:
-			sb.WriteString(strconv.Itoa(e))
-		case string:
-			sb.WriteString(e)
-			if e == "" {
-				sb.WriteString("?")
-			}
+		switch element {
+		case entitySeparator:
+			sb.WriteByte(',')
+		case entityClose:
+			sb.WriteByte(']')
+		case entityOpen:
+			sb.WriteByte('[')
 		default:
-			sb.WriteByte('?')
+			sb.WriteString(strconv.Itoa(int(element)))
 		}
 	}
 	return sb.String()
 }
+
+const (
+	entityOpen      = -3
+	entityClose     = -2
+	entitySeparator = -1
+)
 
 var benchmark = false
