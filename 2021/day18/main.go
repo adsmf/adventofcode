@@ -59,11 +59,10 @@ func combine(a, b elementList) elementList {
 	if len(a) == 0 {
 		return b
 	}
-	newList := make(elementList, len(a)+len(b)+3)
+	newList := make(elementList, len(a)+len(b)+2)
 	newList[0] = entityOpen
 	copy(newList[1:], a)
-	newList[len(a)+1] = entitySeparator
-	copy(newList[len(a)+2:], b)
+	copy(newList[len(a)+1:], b)
 	newList[len(newList)-1] = entityClose
 	return newList
 }
@@ -88,7 +87,6 @@ func parse(in string) elementList {
 			elements = append(elements, entityClose)
 			i++
 		case ',':
-			elements = append(elements, entitySeparator)
 			i++
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			acc := 0
@@ -130,7 +128,7 @@ func process(elements elementList) (elementList, bool) {
 }
 
 func explode(elements elementList, offset int) elementList {
-	l, r := elements[offset+1], elements[offset+3]
+	l, r := elements[offset+1], elements[offset+2]
 
 	for search := offset - 1; search > 0; search-- {
 		if elements[search] >= 0 {
@@ -138,25 +136,24 @@ func explode(elements elementList, offset int) elementList {
 			break
 		}
 	}
-	for search := offset + 5; search < len(elements); search++ {
+	for search := offset + 4; search < len(elements); search++ {
 		if elements[search] >= 0 {
 			elements[search] = elements[search] + r
 			break
 		}
 	}
-	elements = append(elements[:offset], elements[offset+4:]...)
+	elements = append(elements[:offset], elements[offset+3:]...)
 	elements[offset] = 0
 	return elements
 }
 
 func split(elements elementList, offset int) elementList {
 	v := elements[offset]
-	elements = append(elements[:offset+5], elements[offset+1:]...)
+	elements = append(elements[:offset+4], elements[offset+1:]...)
 	elements[offset+0] = entityOpen
 	elements[offset+1] = v / 2
-	elements[offset+2] = entitySeparator
-	elements[offset+3] = (v + 1) / 2
-	elements[offset+4] = entityClose
+	elements[offset+2] = (v + 1) / 2
+	elements[offset+3] = entityClose
 	return elements
 }
 
@@ -164,10 +161,10 @@ func magnitude(origElements elementList) int {
 	elements := make(elementList, len(origElements))
 	copy(elements, origElements)
 	for len(elements) > 1 {
-		for i := 0; i < len(elements)-2; i++ {
-			left, right := elements[i], elements[i+2]
+		for i := 0; i < len(elements)-1; i++ {
+			left, right := elements[i], elements[i+1]
 			if left >= 0 && right >= 0 {
-				elements = append(elements[:i], elements[i+4:]...)
+				elements = append(elements[:i], elements[i+3:]...)
 				elements[i-1] = left*3 + right*2
 			}
 		}
@@ -182,8 +179,6 @@ func (el elementList) String() string {
 	sb := strings.Builder{}
 	for _, element := range el {
 		switch element {
-		case entitySeparator:
-			sb.WriteByte(',')
 		case entityClose:
 			sb.WriteByte(']')
 		case entityOpen:
@@ -196,9 +191,8 @@ func (el elementList) String() string {
 }
 
 const (
-	entityOpen      = -3
-	entityClose     = -2
-	entitySeparator = -1
+	entityOpen  = -2
+	entityClose = -1
 )
 
 var benchmark = false

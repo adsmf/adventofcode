@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,8 @@ func TestParse(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test, func(t *testing.T) {
 			parsed := parse(test)
-			assert.Equal(t, test, parsed.String())
+			noSep := strings.ReplaceAll(test, ",", "")
+			assert.Equal(t, noSep, parsed.String())
 		})
 	}
 }
@@ -58,7 +60,8 @@ func TestExamples(t *testing.T) {
 			t.Logf("Test def:\n %v", test)
 			reduced, mag := part1(test.input)
 			if test.reduced != "" {
-				assert.Equal(t, test.reduced, reduced)
+				noSep := strings.ReplaceAll(test.reduced, ",", "")
+				assert.Equal(t, noSep, reduced)
 			}
 			if test.magnitude > 0 {
 				assert.Equal(t, test.magnitude, mag)
