@@ -50,7 +50,7 @@ func part1(in string) (int, int) {
 	maxDist := 0
 	for _, a := range fixedScanners {
 		for _, b := range fixedScanners {
-			dist := a.pos.point.sub(b.pos.point).magnitude()
+			dist := a.pos.point.sub(b.pos.point).manhattan()
 			if dist > maxDist {
 				maxDist = dist
 			}
@@ -65,6 +65,7 @@ func matches(fixed, unfixed scannerInfo) (bool, scannerInfo) {
 			for pB := range possible {
 				offset := fB.sub(pB)
 				count := 0
+				remaining := len(possible)
 				for adjPB := range possible {
 					adjPB = adjPB.add(offset)
 					if fixed.readings[adjPB] {
@@ -84,6 +85,10 @@ func matches(fixed, unfixed scannerInfo) (bool, scannerInfo) {
 							}
 							return true, nowFixed
 						}
+					}
+					remaining--
+					if count+remaining < 12 {
+						break
 					}
 				}
 			}
@@ -167,7 +172,7 @@ func (p point) String() string {
 
 func (p point) add(q point) point { return point{p.x + q.x, p.y + q.y, p.z + q.z} }
 func (p point) sub(q point) point { return point{p.x - q.x, p.y - q.y, p.z - q.z} }
-func (p point) magnitude() int {
+func (p point) manhattan() int {
 	return utils.IntAbs(p.x) + utils.IntAbs(p.y) + utils.IntAbs(p.z)
 }
 func (p point) roll() point {
