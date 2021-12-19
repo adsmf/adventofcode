@@ -44,6 +44,9 @@ func part1(in string) (int, int) {
 		}
 		openSet, nextOpen = nextOpen, openSet
 	}
+	if len(fixedScanners) < len(scanners) {
+		fmt.Printf("Only fixed %d of %d scanners\n", len(fixedScanners), len(scanners))
+	}
 	allPoints := pointSet{}
 	for _, scanner := range fixedScanners {
 		for pos := range scanner.readings {
@@ -63,8 +66,43 @@ func part1(in string) (int, int) {
 }
 
 func matches(fixed, unfixed scannerInfo) (bool, scannerInfo) {
+	count := 0
+	goodDists := make(map[int]bool, 12)
+	for dist := range fixed.distances {
+		if unfixed.distances[dist] > 0 {
+			goodDists[dist] = true
+			if unfixed.distances[dist] > fixed.distances[dist] {
+				count += fixed.distances[dist]
+			} else {
+				count += unfixed.distances[dist]
+			}
+		}
+	}
+	if count < 66 {
+		return false, unfixed
+	}
+	needPoints := 2
+	for n := 12; n*(n-1)/2 <= count; n++ {
+		needPoints += 2
+	}
+	goodPoints := make([]point, 0, needPoints)
+	for a := range fixed.readings {
+		for b := range fixed.readings {
+			if a == b {
+				continue
+			}
+			if goodDists[b.sub(a).manhattan()] {
+				goodPoints = append(goodPoints, a, b)
+			}
+			break
+		}
+		if len(goodPoints) >= needPoints {
+			break
+		}
+	}
+
 	for facing, possible := range unfixed.orientedReadings {
-		for fB := range fixed.readings {
+		for _, fB := range goodPoints {
 			for pB := range possible {
 				offset := fB.sub(pB)
 				count := 0
@@ -73,7 +111,7 @@ func matches(fixed, unfixed scannerInfo) (bool, scannerInfo) {
 					adjPB = adjPB.add(offset)
 					if fixed.readings[adjPB] {
 						count++
-						if count >= 12 {
+						if count >= needPoints {
 							adjustedReadings := make(pointSet, len(possible))
 							for pos := range possible {
 								adjustedReadings[pos.add(offset)] = true
@@ -84,7 +122,8 @@ func matches(fixed, unfixed scannerInfo) (bool, scannerInfo) {
 									point:       offset,
 									orientation: orientation(facing),
 								},
-								readings: adjustedReadings,
+								readings:  adjustedReadings,
+								distances: unfixed.distances,
 							}
 							return true, nowFixed
 						}
@@ -109,6 +148,7 @@ func load(in string) []scannerInfo {
 			id:               scannerID,
 			readings:         make(pointSet, len(lines)),
 			orientedReadings: make([]pointSet, 24),
+			distances:        nil,
 		}
 		for i := 0; i < 24; i++ {
 			scanner.orientedReadings[i] = make(pointSet, len(lines))
@@ -122,11 +162,25 @@ func load(in string) []scannerInfo {
 			for or, oriented := range genOrientations(pos) {
 				scanner.orientedReadings[or][oriented] = true
 			}
-
 		}
+		scanner.distances = genPairwiseDistances(scanner.orientedReadings[0])
 		scanners = append(scanners, scanner)
 	}
 	return scanners
+}
+
+func genPairwiseDistances(ps pointSet) distanceSet {
+	dists := make(distanceSet, len(ps)*(len(ps)-1)/2)
+	points := make([]point, 0, len(ps))
+	for p := range ps {
+		points = append(points, p)
+	}
+	for iA := 0; iA < len(points)-1; iA++ {
+		for iB := iA + 1; iB < len(points); iB++ {
+			dists[points[iB].sub(points[iA]).manhattan()]++
+		}
+	}
+	return dists
 }
 
 type scannerInfo struct {
@@ -134,6 +188,7 @@ type scannerInfo struct {
 	pos              locationInfo
 	readings         pointSet
 	orientedReadings []pointSet
+	distances        distanceSet
 }
 type locationInfo struct {
 	point       point
@@ -141,6 +196,7 @@ type locationInfo struct {
 }
 type orientation byte
 
+type distanceSet map[int]int
 type pointSet map[point]bool
 
 func (ps pointSet) String() string {
