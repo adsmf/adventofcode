@@ -26,20 +26,23 @@ func part1(in string) (int, int) {
 	fixedScanners := []scannerInfo{scanners[0]}
 	unfixedScanners := append([]scannerInfo{}, scanners[1:]...)
 
-	for changed := true; changed && len(unfixedScanners) > 0; {
-		changed = false
-		for _, fixed := range fixedScanners {
+	openSet := []scannerInfo{scanners[0]}
+	nextOpen := []scannerInfo{}
+	for len(openSet) > 0 {
+		nextOpen = nextOpen[0:0]
+		for _, fixed := range openSet {
 			for i := 0; i < len(unfixedScanners); i++ {
 				unfixed := unfixedScanners[i]
 				matched, nowFixed := matches(fixed, unfixed)
 				if matched {
-					changed = true
 					fixedScanners = append(fixedScanners, nowFixed)
+					nextOpen = append(nextOpen, nowFixed)
 					unfixedScanners = append(unfixedScanners[:i], unfixedScanners[i+1:]...)
 					i--
 				}
 			}
 		}
+		openSet, nextOpen = nextOpen, openSet
 	}
 	allPoints := pointSet{}
 	for _, scanner := range fixedScanners {
