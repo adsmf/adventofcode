@@ -42,15 +42,15 @@ func load(input string) (image, []bool) {
 	for y, line := range lines {
 		for x, ch := range line {
 			if ch == '#' {
-				g[point{x, y}] = true
+				g[makePoint(x, y)] = true
 			}
 		}
 	}
 	im := image{
 		grid:     g,
 		inverted: false,
-		min:      point{0, 0},
-		max:      point{len(lines[0]), len(lines)},
+		min:      makePoint(0, 0),
+		max:      makePoint(len(lines[0]), len(lines)),
 	}
 	return im, enhancement
 }
@@ -70,9 +70,9 @@ func (im *image) enhance(enhancement []bool) {
 		nextInverted = !im.inverted
 	}
 
-	for y := im.min.y - 1; y <= im.max.y+1; y++ {
-		for x := im.min.x - 1; x <= im.max.x+1; x++ {
-			pos := point{x, y}
+	for y := im.min.y() - 1; y <= im.max.y()+1; y++ {
+		for x := im.min.x() - 1; x <= im.max.x()+1; x++ {
+			pos := makePoint(x, y)
 			lookup := 0
 			if im.inverted {
 				for _, n := range pos.neighbours() {
@@ -101,19 +101,38 @@ func (im *image) enhance(enhancement []bool) {
 
 	im.grid = newGrid
 	im.inverted = nextInverted
-	im.min = point{im.min.x - 1, im.min.y - 1}
-	im.max = point{im.max.x + 1, im.max.y + 1}
+	im.min = im.min.dec()
+	im.max = im.max.inc()
 }
 
-type point struct {
-	x, y int
-}
+const (
+	bitsize = 8
+	offset  = 1 << bitsize
+	mask    = (1 << (bitsize * 2)) - 1
+)
+
+func makePoint(x, y int) point { return point(x+offset)<<(bitsize*2) + point(y+offset) }
+
+type point uint32
+
+func (p point) x() int     { return int(p>>(bitsize*2)) - offset }
+func (p point) y() int     { return int(p&mask) - offset }
+func (p point) dec() point { return p - 1<<(bitsize*2) - 1 }
+func (p point) inc() point { return p + 1<<(bitsize*2) + 1 }
 
 func (p point) neighbours() []point {
 	return []point{
-		{p.x - 1, p.y - 1}, {p.x + 0, p.y - 1}, {p.x + 1, p.y - 1},
-		{p.x - 1, p.y}, {p.x, p.y}, {p.x + 1, p.y},
-		{p.x - 1, p.y + 1}, {p.x, p.y + 1}, {p.x + 1, p.y + 1},
+		p - 1<<(bitsize*2) - 1,
+		p - 1,
+		p + 1<<(bitsize*2) - 1,
+
+		p - 1<<(bitsize*2),
+		p,
+		p + 1<<(bitsize*2),
+
+		p - 1<<(bitsize*2) + 1,
+		p + 1,
+		p + 1<<(bitsize*2) + 1,
 	}
 }
 
