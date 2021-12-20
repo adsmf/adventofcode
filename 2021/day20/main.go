@@ -42,7 +42,7 @@ func load(input string) (image, []bool) {
 	for y, line := range lines {
 		for x, ch := range line {
 			if ch == '#' {
-				g[makePoint(x, y)] = true
+				g[makePoint(x, y)] = 1
 			}
 		}
 	}
@@ -64,7 +64,7 @@ type image struct {
 	lit      int
 }
 
-type grid []bool
+type grid []uint16
 
 func (im *image) enhance(enhancement []bool) {
 	nextInverted := im.inverted
@@ -76,13 +76,7 @@ func (im *image) enhance(enhancement []bool) {
 	for y := im.min.y() - 1; y <= im.max.y()+1; y++ {
 		for x := im.min.x() - 1; x <= im.max.x()+1; x++ {
 			pos := makePoint(x, y)
-			lookup := uint16(0)
-			for _, n := range pos.neighbours() {
-				lookup <<= 1
-				if im.grid[n] {
-					lookup++
-				}
-			}
+			lookup := im.nextLookup(pos)
 			if im.inverted {
 				lookup = 0x1ff & ^lookup
 			}
@@ -90,10 +84,12 @@ func (im *image) enhance(enhancement []bool) {
 			if nextInverted {
 				value = !value
 			}
+			set := uint16(0)
 			if value {
 				lit++
+				set = 1
 			}
-			im.buf[pos] = value
+			im.buf[pos] = set
 		}
 	}
 
@@ -102,6 +98,22 @@ func (im *image) enhance(enhancement []bool) {
 	im.lit = lit
 	im.min = im.min.dec()
 	im.max = im.max.inc()
+}
+
+func (im *image) nextLookup(p point) uint16 {
+	lookup := uint16(0)
+
+	lookup += 1 << 8 * im.grid[p-1<<(bitsize*2)-1]
+	lookup += 1 << 7 * im.grid[p-1]
+	lookup += 1 << 6 * im.grid[p+1<<(bitsize*2)-1]
+	lookup += 1 << 5 * im.grid[p-1<<(bitsize*2)]
+	lookup += 1 << 4 * im.grid[p]
+	lookup += 1 << 3 * im.grid[p+1<<(bitsize*2)]
+	lookup += 1 << 2 * im.grid[p-1<<(bitsize*2)+1]
+	lookup += 1 << 1 * im.grid[p+1]
+	lookup += im.grid[p+1<<(bitsize*2)+1]
+
+	return lookup
 }
 
 const (
@@ -118,21 +130,5 @@ func (p point) x() int     { return int(p>>(bitsize*2)) - offset }
 func (p point) y() int     { return int(p&mask) - offset }
 func (p point) dec() point { return p - 1<<(bitsize*2) - 1 }
 func (p point) inc() point { return p + 1<<(bitsize*2) + 1 }
-
-func (p point) neighbours() []point {
-	return []point{
-		p - 1<<(bitsize*2) - 1,
-		p - 1,
-		p + 1<<(bitsize*2) - 1,
-
-		p - 1<<(bitsize*2),
-		p,
-		p + 1<<(bitsize*2),
-
-		p - 1<<(bitsize*2) + 1,
-		p + 1,
-		p + 1<<(bitsize*2) + 1,
-	}
-}
 
 var benchmark = false
