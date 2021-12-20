@@ -76,21 +76,15 @@ func (im *image) enhance(enhancement []bool) {
 	for y := im.min.y() - 1; y <= im.max.y()+1; y++ {
 		for x := im.min.x() - 1; x <= im.max.x()+1; x++ {
 			pos := makePoint(x, y)
-			lookup := 0
+			lookup := uint16(0)
+			for _, n := range pos.neighbours() {
+				lookup <<= 1
+				if im.grid[n] {
+					lookup++
+				}
+			}
 			if im.inverted {
-				for _, n := range pos.neighbours() {
-					lookup <<= 1
-					if !im.grid[n] {
-						lookup += 1
-					}
-				}
-			} else {
-				for _, n := range pos.neighbours() {
-					lookup <<= 1
-					if im.grid[n] {
-						lookup += 1
-					}
-				}
+				lookup = 0x1ff & ^lookup
 			}
 			value := enhancement[lookup]
 			if nextInverted {
