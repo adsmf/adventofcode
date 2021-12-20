@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -20,19 +18,18 @@ func main() {
 }
 
 func solve(input string) (int, int) {
-	g, enahncement := load(input)
-	inverted := false
+	im, enahncement := load(input)
 	for i := 0; i < 2; i++ {
-		g, inverted = g.enhance(enahncement, inverted)
+		im.enhance(enahncement)
 	}
-	p1 := len(g)
+	p1 := len(im.grid)
 	for i := 2; i < 50; i++ {
-		g, inverted = g.enhance(enahncement, inverted)
+		im.enhance(enahncement)
 	}
-	return p1, len(g)
+	return p1, len(im.grid)
 }
 
-func load(input string) (grid, []bool) {
+func load(input string) (image, []bool) {
 	blocks := strings.Split(input, "\n\n")
 
 	enhancement := make([]bool, 0, len(blocks[0]))
@@ -49,35 +46,45 @@ func load(input string) (grid, []bool) {
 			}
 		}
 	}
-	return g, enhancement
+	im := image{
+		grid:     g,
+		inverted: false,
+		min:      point{0, 0},
+		max:      point{len(lines[0]), len(lines)},
+	}
+	return im, enhancement
+}
+
+type image struct {
+	grid     grid
+	inverted bool
+	min, max point
 }
 
 type grid map[point]bool
 
-func (g grid) enhance(enhancement []bool, inverted bool) (grid, bool) {
-	newGrid := make(grid, len(g))
-	nextInverted := inverted
+func (im *image) enhance(enhancement []bool) {
+	newGrid := make(grid, len(im.grid))
+	nextInverted := im.inverted
 	if enhancement[0] {
-		nextInverted = !inverted
+		nextInverted = !im.inverted
 	}
 
-	min, max := g.bounds()
-
-	for y := min.y - 1; y <= max.y+1; y++ {
-		for x := min.x - 1; x <= max.x+1; x++ {
+	for y := im.min.y - 1; y <= im.max.y+1; y++ {
+		for x := im.min.x - 1; x <= im.max.x+1; x++ {
 			pos := point{x, y}
 			lookup := 0
-			if inverted {
+			if im.inverted {
 				for _, n := range pos.neighbours() {
 					lookup *= 2
-					if !g[n] {
+					if !im.grid[n] {
 						lookup += 1
 					}
 				}
 			} else {
 				for _, n := range pos.neighbours() {
 					lookup *= 2
-					if g[n] {
+					if im.grid[n] {
 						lookup += 1
 					}
 				}
@@ -92,44 +99,10 @@ func (g grid) enhance(enhancement []bool, inverted bool) (grid, bool) {
 		}
 	}
 
-	return newGrid, nextInverted
-}
-
-func (g grid) bounds() (point, point) {
-	minX, maxX := utils.MaxInt, -utils.MaxInt
-	minY, maxY := utils.MaxInt, -utils.MaxInt
-
-	for pos := range g {
-		if pos.x < minX {
-			minX = pos.x
-		}
-		if pos.x > maxX {
-			maxX = pos.x
-		}
-		if pos.y < minY {
-			minY = pos.y
-		}
-		if pos.y > maxY {
-			maxY = pos.y
-		}
-	}
-	return point{minX, minY}, point{maxX, maxY}
-}
-
-func (g grid) String() string {
-	sb := strings.Builder{}
-	min, max := g.bounds()
-	for y := min.y - 1; y <= max.y+1; y++ {
-		for x := min.x - 1; x <= max.x+1; x++ {
-			if g[point{x, y}] {
-				sb.WriteByte('#')
-			} else {
-				sb.WriteByte('.')
-			}
-		}
-		sb.WriteByte('\n')
-	}
-	return sb.String()
+	im.grid = newGrid
+	im.inverted = nextInverted
+	im.min = point{im.min.x - 1, im.min.y - 1}
+	im.max = point{im.max.x + 1, im.max.y + 1}
 }
 
 type point struct {
