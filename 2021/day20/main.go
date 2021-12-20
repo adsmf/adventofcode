@@ -22,11 +22,11 @@ func solve(input string) (int, int) {
 	for i := 0; i < 2; i++ {
 		im.enhance(enahncement)
 	}
-	p1 := len(im.grid)
+	p1 := im.lit
 	for i := 2; i < 50; i++ {
 		im.enhance(enahncement)
 	}
-	return p1, len(im.grid)
+	return p1, im.lit
 }
 
 func load(input string) (image, []bool) {
@@ -38,7 +38,7 @@ func load(input string) (image, []bool) {
 	}
 
 	lines := strings.Split(blocks[1], "\n")
-	g := make(grid, len(lines)*len(lines[0]))
+	g := make(grid, 1<<(bitsize*4))
 	for y, line := range lines {
 		for x, ch := range line {
 			if ch == '#' {
@@ -48,6 +48,7 @@ func load(input string) (image, []bool) {
 	}
 	im := image{
 		grid:     g,
+		buf:      make(grid, len(g)),
 		inverted: false,
 		min:      makePoint(0, 0),
 		max:      makePoint(len(lines[0]), len(lines)),
@@ -57,19 +58,21 @@ func load(input string) (image, []bool) {
 
 type image struct {
 	grid     grid
+	buf      grid
 	inverted bool
 	min, max point
+	lit      int
 }
 
-type grid map[point]bool
+type grid []bool
 
 func (im *image) enhance(enhancement []bool) {
-	newGrid := make(grid, len(im.grid))
 	nextInverted := im.inverted
 	if enhancement[0] {
 		nextInverted = !im.inverted
 	}
 
+	lit := 0
 	for y := im.min.y() - 1; y <= im.max.y()+1; y++ {
 		for x := im.min.x() - 1; x <= im.max.x()+1; x++ {
 			pos := makePoint(x, y)
@@ -94,13 +97,15 @@ func (im *image) enhance(enhancement []bool) {
 				value = !value
 			}
 			if value {
-				newGrid[pos] = value
+				lit++
 			}
+			im.buf[pos] = value
 		}
 	}
 
-	im.grid = newGrid
+	im.grid, im.buf = im.buf, im.grid
 	im.inverted = nextInverted
+	im.lit = lit
 	im.min = im.min.dec()
 	im.max = im.max.inc()
 }
