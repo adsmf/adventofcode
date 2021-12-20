@@ -76,14 +76,14 @@ func (im *image) enhance(enhancement []bool) {
 			lookup := 0
 			if im.inverted {
 				for _, n := range pos.neighbours() {
-					lookup *= 2
+					lookup <<= 1
 					if !im.grid[n] {
 						lookup += 1
 					}
 				}
 			} else {
 				for _, n := range pos.neighbours() {
-					lookup *= 2
+					lookup <<= 1
 					if im.grid[n] {
 						lookup += 1
 					}
@@ -106,7 +106,7 @@ func (im *image) enhance(enhancement []bool) {
 }
 
 const (
-	bitsize = 8
+	bitsize = 6
 	offset  = 1 << bitsize
 	mask    = (1 << (bitsize * 2)) - 1
 )
