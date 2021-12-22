@@ -21,26 +21,21 @@ func main() {
 
 func solve(ranges []gridRange) (int, int) {
 	cubes := make(map[cubeBounds]int8, len(ranges))
-	type mergeEntry struct {
-		cube  cubeBounds
-		value int8
-	}
-	toMerge := make([]mergeEntry, 0, len(cubes)*10)
+	toMerge := make(map[cubeBounds]int8, 100)
 	for _, r := range ranges {
-		toMerge = toMerge[0:0]
 		for prev, value := range cubes {
 			intersect := prev.intersection(r.cube)
 			if intersect != nil {
-				toMerge = append(toMerge, mergeEntry{*intersect, value})
+				toMerge[*intersect] += value
 			}
 		}
-		for _, entry := range toMerge {
-			value := cubes[entry.cube]
-			if value == entry.value {
-				delete(cubes, entry.cube)
+		for cube, value := range toMerge {
+			if cubes[cube] == value {
+				delete(cubes, cube)
 			} else {
-				cubes[entry.cube] -= entry.value
+				cubes[cube] -= value
 			}
+			delete(toMerge, cube)
 		}
 		if r.on {
 			cubes[r.cube]++
