@@ -20,24 +20,38 @@ func main() {
 }
 
 func solve(ranges []gridRange) (int, int) {
-	cubes := make([]gridRange, 0, len(ranges)*6)
-	nextCubes := make([]gridRange, 0, len(ranges)*6)
+	cubes := make(map[cubeBounds]int8, len(ranges))
+	type mergeEntry struct {
+		cube  cubeBounds
+		value int8
+	}
+	toMerge := make([]mergeEntry, 0, len(cubes)*10)
 	for _, r := range ranges {
-		nextCubes = nextCubes[0:0]
-		for _, cube := range cubes {
-			nextCubes = append(nextCubes, cube.disjoint(r)...)
+		toMerge = toMerge[0:0]
+		for prev, value := range cubes {
+			intersect := prev.intersection(r.cube)
+			if intersect != nil {
+				toMerge = append(toMerge, mergeEntry{*intersect, value})
+			}
+		}
+		for _, entry := range toMerge {
+			value := cubes[entry.cube]
+			if value == entry.value {
+				delete(cubes, entry.cube)
+			} else {
+				cubes[entry.cube] -= entry.value
+			}
 		}
 		if r.on {
-			nextCubes = append(nextCubes, r)
+			cubes[r.cube]++
 		}
-		cubes, nextCubes = nextCubes, cubes
 	}
 
 	p1, p2 := 0, 0
-	fiftyCube := gridRange{point{-50, -50, -50}, point{50, 50, 50}, true}
-	for _, cube := range cubes {
-		p1 += cube.intersection(fiftyCube).volume()
-		p2 += cube.volume()
+	fiftyCube := cubeBounds{point{-50, -50, -50}, point{50, 50, 50}}
+	for cube, value := range cubes {
+		p1 += cube.intersection(fiftyCube).volume() * int(value)
+		p2 += cube.volume() * int(value)
 	}
 	return p1, p2
 }
@@ -48,9 +62,11 @@ func loadRanges(input string) []gridRange {
 	for _, line := range lines {
 		vals := utils.GetInts(line)
 		newRange := gridRange{
-			min: point{vals[0], vals[2], vals[4]},
-			max: point{vals[1], vals[3], vals[5]},
-			on:  line[1] == 'n',
+			cube: cubeBounds{
+				min: point{pointVal(vals[0]), pointVal(vals[2]), pointVal(vals[4])},
+				max: point{pointVal(vals[1]), pointVal(vals[3]), pointVal(vals[5])},
+			},
+			on: line[1] == 'n',
 		}
 		r = append(r, newRange)
 	}
@@ -58,76 +74,47 @@ func loadRanges(input string) []gridRange {
 }
 
 type gridRange struct {
+	cube cubeBounds
+	on   bool
+}
+
+type cubeBounds struct {
 	min, max point
-	on       bool
 }
 
-func (g gridRange) disjoint(o gridRange) []gridRange {
-	intersect := g.intersection(o)
-	if intersect == nil {
-		return []gridRange{g}
-	}
-	subCubes := []gridRange{
-		{min: point{g.min.x, g.min.y, g.min.z}, max: point{g.max.x, g.max.y, o.min.z - 1}, on: g.on},
-		{min: point{g.min.x, g.min.y, o.max.z + 1}, max: point{g.max.x, g.max.y, g.max.z}, on: g.on},
-
-		{min: point{g.min.x, g.min.y, max(g.min.z, o.min.z)}, max: point{g.max.x, o.min.y - 1, min(g.max.z, o.max.z)}, on: g.on},
-		{min: point{g.min.x, o.max.y + 1, max(g.min.z, o.min.z)}, max: point{g.max.x, g.max.y, min(g.max.z, o.max.z)}, on: g.on},
-
-		{min: point{g.min.x, max(g.min.y, o.min.y), max(g.min.z, o.min.z)}, max: point{o.min.x - 1, min(g.max.y, o.max.y), min(g.max.z, o.max.z)}, on: g.on},
-		{min: point{o.max.x + 1, max(g.min.y, o.min.y), max(g.min.z, o.min.z)}, max: point{g.max.x, min(g.max.y, o.max.y), min(g.max.z, o.max.z)}, on: g.on},
-	}
-
-	n := 0
-	for i := 0; i < len(subCubes); i++ {
-		cube := subCubes[i]
-		if cube.max.x < cube.min.x ||
-			cube.max.y < cube.min.y ||
-			cube.max.z < cube.min.z {
-			continue
-		}
-		subCubes[n] = cube
-		n++
-	}
-
-	subCubes = subCubes[:n]
-
-	return subCubes
-}
-
-func (g gridRange) intersection(o gridRange) *gridRange {
-	if g.min.x > o.max.x || g.max.x < o.min.x ||
-		g.min.y > o.max.y || g.max.y < o.min.y ||
-		g.min.z > o.max.z || g.max.z < o.min.z {
+func (c cubeBounds) intersection(o cubeBounds) *cubeBounds {
+	if c.min.x > o.max.x || c.max.x < o.min.x ||
+		c.min.y > o.max.y || c.max.y < o.min.y ||
+		c.min.z > o.max.z || c.max.z < o.min.z {
 		return nil
 	}
-	return &gridRange{
-		min: point{max(g.min.x, o.min.x), max(g.min.y, o.min.y), max(g.min.z, o.min.z)},
-		max: point{min(g.max.x, o.max.x), min(g.max.y, o.max.y), min(g.max.z, o.max.z)},
-		on:  g.on,
+	return &cubeBounds{
+		min: point{max(c.min.x, o.min.x), max(c.min.y, o.min.y), max(c.min.z, o.min.z)},
+		max: point{min(c.max.x, o.max.x), min(c.max.y, o.max.y), min(c.max.z, o.max.z)},
 	}
 }
 
-func (g *gridRange) volume() int {
-	if g == nil {
+func (c *cubeBounds) volume() int {
+	if c == nil {
 		return 0
 	}
-	return (g.max.x - g.min.x + 1) * (g.max.y - g.min.y + 1) * (g.max.z - g.min.z + 1)
+	return int(c.max.x-c.min.x+1) * int(c.max.y-c.min.y+1) * int(c.max.z-c.min.z+1)
 }
 
-func max(a, b int) int {
+func max(a, b pointVal) pointVal {
 	if a > b {
 		return a
 	}
 	return b
 }
-func min(a, b int) int {
+func min(a, b pointVal) pointVal {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-type point struct{ x, y, z int }
+type pointVal int32
+type point struct{ x, y, z pointVal }
 
 var benchmark = false
