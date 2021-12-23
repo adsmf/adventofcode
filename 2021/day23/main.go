@@ -30,6 +30,7 @@ func calcEnergy(initial grid) int {
 	heap.Init(&openStates)
 	visited := make(map[gridHash]bool, len(initial.rooms[0])*22000)
 
+	moves := make([]*grid, 0, 50)
 	for openStates.Len() > 0 {
 		nextInt := heap.Pop(&openStates)
 		next := *nextInt.(*grid)
@@ -50,7 +51,7 @@ func calcEnergy(initial grid) int {
 				return next.energy
 			}
 		}
-		moves := next.moves()
+		moves = next.moves(moves)
 		for _, move := range moves {
 			heap.Push(&openStates, move)
 		}
@@ -106,8 +107,8 @@ type grid struct {
 	energy  int
 }
 
-func (g grid) moves() []*grid {
-	moves := make([]*grid, 0, 3)
+func (g grid) moves(moves []*grid) []*grid {
+	moves = moves[0:0]
 	// Check hallway candidates
 	for i := 0; i < 11; i++ {
 		tile := g.hallway[i]
