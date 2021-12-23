@@ -60,23 +60,22 @@ func calcEnergy(initial grid) int {
 }
 
 func part2(initial grid) int {
-	initial.rooms[0] = append([]tileType{initial.rooms[0][0]}, tileD, tileD, initial.rooms[0][1])
-	initial.rooms[1] = append([]tileType{initial.rooms[1][0]}, tileB, tileC, initial.rooms[1][1])
-	initial.rooms[2] = append([]tileType{initial.rooms[2][0]}, tileA, tileB, initial.rooms[2][1])
-	initial.rooms[3] = append([]tileType{initial.rooms[3][0]}, tileC, tileA, initial.rooms[3][1])
+	initial.rooms[0] = [4]tileType{initial.rooms[0][0], tileD, tileD, initial.rooms[0][1]}
+	initial.rooms[1] = [4]tileType{initial.rooms[1][0], tileB, tileC, initial.rooms[1][1]}
+	initial.rooms[2] = [4]tileType{initial.rooms[2][0], tileA, tileB, initial.rooms[2][1]}
+	initial.rooms[3] = [4]tileType{initial.rooms[3][0], tileC, tileA, initial.rooms[3][1]}
+	initial.size = 4
 	return calcEnergy(initial)
 }
 
 func load(input string) grid {
 	g := grid{
-		hallway: make([]tileType, 11),
-		rooms:   make([][]tileType, 4),
+		hallway: [11]tileType{},
+		rooms:   [4][4]tileType{},
+		size:    2,
 	}
 	for i := 0; i < 11; i++ {
 		g.hallway[i] = tileOpen
-	}
-	for i := 0; i < 4; i++ {
-		g.rooms[i] = make([]tileType, 2)
 	}
 	lines := utils.GetLines(input)
 	for i := 0; i < 2; i++ {
@@ -102,8 +101,9 @@ func (s *stateHeap) Push(entry interface{}) {
 }
 
 type grid struct {
-	hallway []tileType
-	rooms   [][]tileType
+	hallway [11]tileType
+	rooms   [4][4]tileType
+	size    int
 	energy  int
 }
 
@@ -125,10 +125,10 @@ func (g grid) moves(moves []*grid) []*grid {
 			_, targetIndex := g.firstOccupant(tile)
 			targetIndex++
 
-			option := g.copy()
+			option := g
 			option.hallway[i] = tileOpen
 			option.rooms[tile][targetIndex] = tile
-			option.energy += (utils.IntAbs(int(start-end)) + (len(g.rooms[tile]) - targetIndex)) * costs[tile]
+			option.energy += (utils.IntAbs(int(start-end)) + (g.size - targetIndex)) * costs[tile]
 
 			moves = append(moves, &option)
 		}
@@ -145,21 +145,21 @@ func (g grid) moves(moves []*grid) []*grid {
 
 			_, targetIndex := g.firstOccupant(tile)
 			targetIndex++
-			opt := g.copy()
+			opt := g
 
 			opt.rooms[i][startIndex] = tileOpen
 			opt.rooms[tile][targetIndex] = tile
-			opt.energy += ((len(g.rooms[i]) - startIndex) + (hallwayDist) + (len(g.rooms[tile]) - targetIndex)) * costs[tile]
+			opt.energy += ((g.size - startIndex) + (hallwayDist) + (g.size - targetIndex)) * costs[tile]
 			moves = append(moves, &opt)
 		} else {
 			// Needs to move to hallway
 			start := (i + 1) * 2
 			for _, haltAt := range haltablePositions {
 				if g.clearPath(start, haltAt, true) {
-					opt := g.copy()
+					opt := g
 					opt.rooms[i][startIndex] = tileOpen
 					opt.hallway[haltAt] = tile
-					opt.energy += ((len(g.rooms[i]) - startIndex) + utils.IntAbs(int(start-haltAt))) * costs[tile]
+					opt.energy += ((g.size - startIndex) + utils.IntAbs(int(start-haltAt))) * costs[tile]
 					moves = append(moves, &opt)
 				}
 			}
@@ -191,7 +191,7 @@ func (g grid) pathBetweenRooms(room1, room2 tileType) bool {
 }
 
 func (g grid) firstOccupant(room tileType) (tileType, int) {
-	for i := len(g.rooms[room]) - 1; i >= 0; i-- {
+	for i := g.size - 1; i >= 0; i-- {
 		if g.rooms[room][i] == tileOpen {
 			continue
 		}
@@ -201,26 +201,12 @@ func (g grid) firstOccupant(room tileType) (tileType, int) {
 }
 
 func (g grid) roomCorrect(room tileType) bool {
-	for j := 0; j < len(g.rooms[room]); j++ {
+	for j := 0; j < g.size; j++ {
 		if g.rooms[room][j] != tileOpen && g.rooms[room][j] != room {
 			return false
 		}
 	}
 	return true
-}
-
-func (g grid) copy() grid {
-	c := grid{
-		hallway: make([]tileType, 11),
-		rooms:   make([][]tileType, 4),
-		energy:  g.energy,
-	}
-	copy(c.hallway, g.hallway)
-	for i := 0; i < 4; i++ {
-		c.rooms[i] = make([]tileType, len(g.rooms[i]))
-		copy(c.rooms[i], g.rooms[i])
-	}
-	return c
 }
 
 type gridHash = uint32
