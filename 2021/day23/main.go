@@ -26,13 +26,13 @@ func main() {
 
 func calcEnergy(initial grid) int {
 	openStates := make(stateHeap, 1, 22000)
-	openStates[0] = initial
+	openStates[0] = &initial
 	heap.Init(&openStates)
 	visited := make(map[gridHash]bool, len(initial.rooms[0])*22000)
 
 	for openStates.Len() > 0 {
 		nextInt := heap.Pop(&openStates)
-		next := nextInt.(grid)
+		next := *nextInt.(*grid)
 		hash := next.hash()
 		if visited[hash] {
 			continue
@@ -86,7 +86,7 @@ func load(input string) grid {
 	return g
 }
 
-type stateHeap []grid
+type stateHeap []*grid
 
 func (s stateHeap) Len() int           { return len(s) }
 func (s stateHeap) Less(i, j int) bool { return s[i].energy < s[j].energy }
@@ -97,7 +97,7 @@ func (s *stateHeap) Pop() interface{} {
 	return popped
 }
 func (s *stateHeap) Push(entry interface{}) {
-	(*s) = append((*s), entry.(grid))
+	(*s) = append((*s), entry.(*grid))
 }
 
 type grid struct {
@@ -106,8 +106,8 @@ type grid struct {
 	energy  int
 }
 
-func (g grid) moves() []grid {
-	moves := make([]grid, 0, 3)
+func (g grid) moves() []*grid {
+	moves := make([]*grid, 0, 3)
 	// Check hallway candidates
 	for i := 0; i < 11; i++ {
 		tile := g.hallway[i]
@@ -129,7 +129,7 @@ func (g grid) moves() []grid {
 			option.rooms[tile][targetIndex] = tile
 			option.energy += (utils.IntAbs(int(start-end)) + (len(g.rooms[tile]) - targetIndex)) * costs[tile]
 
-			moves = append(moves, option)
+			moves = append(moves, &option)
 		}
 	}
 	// Check room occupants
@@ -149,7 +149,7 @@ func (g grid) moves() []grid {
 			opt.rooms[i][startIndex] = tileOpen
 			opt.rooms[tile][targetIndex] = tile
 			opt.energy += ((len(g.rooms[i]) - startIndex) + (hallwayDist) + (len(g.rooms[tile]) - targetIndex)) * costs[tile]
-			moves = append(moves, opt)
+			moves = append(moves, &opt)
 		} else {
 			// Needs to move to hallway
 			start := (i + 1) * 2
@@ -159,7 +159,7 @@ func (g grid) moves() []grid {
 					opt.rooms[i][startIndex] = tileOpen
 					opt.hallway[haltAt] = tile
 					opt.energy += ((len(g.rooms[i]) - startIndex) + utils.IntAbs(int(start-haltAt))) * costs[tile]
-					moves = append(moves, opt)
+					moves = append(moves, &opt)
 				}
 			}
 		}
