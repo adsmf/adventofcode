@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
+	"github.com/adsmf/adventofcode/utils/hashing/fnv"
 )
 
 //go:embed input.txt
@@ -27,7 +28,7 @@ func calcEnergy(initial grid) int {
 	openStates := make(stateHeap, 1, 22000)
 	openStates[0] = initial
 	heap.Init(&openStates)
-	visited := make(map[string]bool, len(initial.rooms[0])*22000)
+	visited := make(map[gridHash]bool, len(initial.rooms[0])*22000)
 
 	for openStates.Len() > 0 {
 		nextInt := heap.Pop(&openStates)
@@ -222,20 +223,21 @@ func (g grid) copy() grid {
 	return c
 }
 
-func (g grid) hash() string {
-	sb := strings.Builder{}
-	for i := 0; i < 11; i++ {
-		sb.WriteByte(g.hallway[i].asByte())
-	}
+type gridHash uint32
 
-	sb.WriteByte('\n')
+var hasher = &fnv.Hasher{}
+
+func (g grid) hash() gridHash {
+	hasher.Reset()
+	for _, pos := range haltablePositions {
+		hasher.AddByte(g.hallway[pos].asByte())
+	}
 	for i := 0; i < 4; i++ {
 		for j := len(g.rooms[i]) - 1; j >= 0; j-- {
-			sb.WriteByte(g.rooms[i][j].asByte())
+			hasher.AddByte(g.rooms[i][j].asByte())
 		}
-		sb.WriteByte('\n')
 	}
-	return sb.String()
+	return gridHash(hasher.Sum())
 }
 
 func (g grid) String() string {

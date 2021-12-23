@@ -30,3 +30,18 @@ func FNV1a_HashBytes32(input []byte) uint32 {
 
 	return hash
 }
+
+type Hasher struct {
+	value uint32
+}
+
+func (h *Hasher) Reset() {
+	h.value = fnvo32
+}
+func (h *Hasher) AddByte(b byte) {
+	h.value ^= uint32(b)
+	h.value *= fnvp32
+}
+func (h Hasher) Sum() uint32 {
+	return h.value
+}
