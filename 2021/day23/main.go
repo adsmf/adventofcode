@@ -222,9 +222,9 @@ func (g grid) copy() grid {
 	return c
 }
 
-type gridHash uint32
+type gridHash = uint32
 
-var hasher = &fnv.Hasher{}
+var hasher = &fnv.Hasher32a{}
 
 func (g grid) hash() gridHash {
 	hasher.Reset()
