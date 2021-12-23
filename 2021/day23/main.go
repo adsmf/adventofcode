@@ -232,7 +232,7 @@ func (g grid) hash() gridHash {
 		hasher.AddByte(g.hallway[pos].asByte())
 	}
 	for i := 0; i < 4; i++ {
-		for j := len(g.rooms[i]) - 1; j >= 0; j-- {
+		for j := 0; j < len(g.rooms[i]); j++ {
 			hasher.AddByte(g.rooms[i][j].asByte())
 		}
 	}
