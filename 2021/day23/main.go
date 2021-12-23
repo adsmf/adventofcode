@@ -200,13 +200,12 @@ func (g grid) firstOccupant(room tileType) (tileType, int) {
 }
 
 func (g grid) roomCorrect(room tileType) bool {
-	correct := true
 	for j := 0; j < len(g.rooms[room]); j++ {
 		if g.rooms[room][j] != tileOpen && g.rooms[room][j] != room {
-			correct = false
+			return false
 		}
 	}
-	return correct
+	return true
 }
 
 func (g grid) copy() grid {
