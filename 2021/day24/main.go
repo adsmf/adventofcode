@@ -28,12 +28,24 @@ func search(prefix int, pos int, prevZ int, start, step int) (int, bool) {
 	if prevZ > max {
 		return -1, false
 	}
-	for i := 0; i < 9; i++ {
-		digit := start + i*step
+	if addX[pos] < 0 {
+		digit := addX[pos] + prevZ%26
+		if digit < 1 || digit > 9 {
+			return -1, false
+		}
 		z := calcZ(pos, prevZ, digit)
 		val, found := search(prefix*10+digit, pos+1, z, start, step)
 		if found {
 			return val, true
+		}
+	} else {
+		for i := 0; i < 9; i++ {
+			digit := start + i*step
+			z := calcZ(pos, prevZ, digit)
+			val, found := search(prefix*10+digit, pos+1, z, start, step)
+			if found {
+				return val, true
+			}
 		}
 	}
 	return -1, false
