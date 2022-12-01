@@ -2,7 +2,7 @@
 The following are the benchmarks for the Go implementations of solutions for each day. The results are as measured by a `BenchmarkMain` benchmark in each solution.
  &nbsp;  | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022
  ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---: 
-Day 1 | 88.7µs | 102µs | 46.4µs | 19ms | - | 396µs | 14.4µs | **🔴 109µs**
+Day 1 | 88.7µs | 102µs | 46.4µs | 19ms | - | 396µs | 14.4µs | **🔴 86.3µs**
 Day 2 | 390µs | 176µs | 47.8µs | 76.4ms | - | 3.06ms | 1.22µs | -
 Day 3 | 1.53ms | 507µs | 2ns | 45.7ms | - | 83.5µs | 48.2µs | -
 Day 4 | 2.24s | 23ms | 1.3ms | 745µs | - | 927µs | 692µs | -
@@ -27,4 +27,4 @@ Day 22 | 1.36s | 2.65s | 654ms | 1.71s | - | 288ms | 16.7ms | -
 Day 23 | 81.4µs | 5.53ms | 4.65ms | 8.02ms | - | **🔴 682ms** | **🔴 142ms** | -
 Day 24 | **🔴 31.9s** | 211ms | 485ms | 140ms | - | 101ms | 1.42ms | -
 Day 25 | 69.9ms | 432ms | 561ms | 31.7ms | - | 179µs | 139ms | -
-*Total* | *1m2s* | *1m19.9s* | *5.1s* | *50s* | *0s* | *2.01s* | *707ms* | *109µs*
+*Total* | *1m2s* | *1m19.9s* | *5.1s* | *50s* | *0s* | *2.01s* | *707ms* | *86.3µs*

@@ -20,15 +20,9 @@ func main() {
 }
 
 func solve() (int, int) {
-	blocks := strings.Split(input, "\n\n")
 	top3 := utils.NewTopN[int](3)
-	for _, block := range blocks {
-		items := utils.GetInts(block)
-		sum := 0
-		for _, item := range items {
-			sum += item
-		}
-		top3.Add(sum)
+	for _, elf := range strings.Split(input, "\n\n") {
+		top3.Add(utils.SumInts(elf))
 	}
 	totalTop := 0
 	vals := top3.Values()

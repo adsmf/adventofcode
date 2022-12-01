@@ -36,3 +36,31 @@ func GetInts(input string) []int {
 func GetLines(input string) []string {
 	return strings.Split(strings.TrimSpace(input), "\n")
 }
+
+func SumInts(input string) int {
+	accumulator := 0
+	negative := false
+	started := false
+	sum := 0
+
+	for _, char := range input + "\n" {
+		switch {
+		case !started && char == '-':
+			negative = true
+		case char >= '0' && char <= '9':
+			accumulator = accumulator*10 + int(char-'0')
+			started = true
+		default:
+			if started {
+				if negative {
+					accumulator *= -1
+				}
+				sum += accumulator
+				accumulator = 0
+				started = false
+			}
+			negative = false
+		}
+	}
+	return sum
+}
