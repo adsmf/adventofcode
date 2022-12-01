@@ -11,7 +11,7 @@ func GetInts(input string) []int {
 	negative := false
 	started := false
 
-	for _, char := range input + "\n" {
+	for _, char := range append([]byte(input), '\n') {
 		switch {
 		case !started && char == '-':
 			negative = true
@@ -43,7 +43,7 @@ func SumInts(input string) int {
 	started := false
 	sum := 0
 
-	for _, char := range input + "\n" {
+	for _, char := range append([]byte(input), '\n') {
 		switch {
 		case !started && char == '-':
 			negative = true
