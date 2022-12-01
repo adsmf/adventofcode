@@ -17,15 +17,16 @@ func NewTopN[T constraints.Ordered](max int) TopN[T] {
 }
 
 func (h *TopN[T]) Add(val T) {
+	min := (T)(0)
 	if len(h.heap) < h.max {
-		h.heap = append(h.heap, val)
-		return
+		h.heap = append(h.heap, (T)(0))
+	} else if len(h.heap) > 0 {
+		min = h.heap[len(h.heap)-1]
 	}
-	min := h.heap[h.max-1]
 	if val > min {
-		for i := 0; i < h.max; i++ {
+		for i := 0; i < len(h.heap); i++ {
 			if h.heap[i] < val {
-				for j := h.max - 1; j > i; j-- {
+				for j := len(h.heap) - 1; j > i; j-- {
 					h.heap[j] = h.heap[j-1]
 				}
 				h.heap[i] = val
