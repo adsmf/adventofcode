@@ -20,10 +20,9 @@ func solve() (int, int) {
 	p1score, p2score := 0, 0
 	p1lookup, p2lookup := calcLookups()
 	for pos := 0; pos < len(input); pos += 4 {
-		opSym := symbol(input[pos] - 'A')
-		mySym := symbol(input[pos+2] - 'X')
-		p1score += p1lookup[inState(opSym, mySym)]
-		p2score += p2lookup[inState(opSym, mySym)]
+		state := stateRep(symbol(input[pos]-'A'), symbol(input[pos+2]-'X'))
+		p1score += p1lookup[state]
+		p2score += p2lookup[state]
 	}
 	return p1score, p2score
 }
@@ -31,12 +30,12 @@ func solve() (int, int) {
 func calcLookups() (scoreLookup, scoreLookup) {
 	p1 := make(scoreLookup, 1<<4)
 	p2 := make(scoreLookup, 1<<4)
-
 	for op := symbolRock; op <= symbolScissors; op++ {
 		for me := symbolRock; me <= symbolScissors; me++ {
-			winScore, choiceScore := scoreRound(op, me)
-			p1[inState(op, me)] = winScore + choiceScore
-			p2[inState(op, symbol(winScore)/3)] = int(me) + 1 + winScore
+			winstate := (4 + me - op) % 3
+			choiceScore := me + 1
+			p1[stateRep(op, me)] = winstate*3 + choiceScore
+			p2[stateRep(op, winstate)] = me + 1 + winstate*3
 		}
 	}
 	return p1, p2
@@ -44,11 +43,11 @@ func calcLookups() (scoreLookup, scoreLookup) {
 
 type scoreLookup []int
 
-func inState(op symbol, me symbol) byte { return byte(op)<<2 + byte(me) }
+func stateRep(op symbol, me symbol) byte {
+	return byte(op)<<2 + byte(me)
+}
 
-func scoreRound(op, me symbol) (int, int) { return 3 * int((4+me-op)%3), int(me) + 1 }
-
-type symbol int
+type symbol = int
 
 const (
 	symbolRock symbol = iota
