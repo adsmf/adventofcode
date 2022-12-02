@@ -3,8 +3,8 @@ package main
 import (
 	"embed"
 	"fmt"
-	"io/ioutil"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,15 +15,20 @@ import (
 var resultsFS embed.FS
 
 func main() {
-	benchmarks, err := loadBenchmarks()
+	benchmarkTime, benchmarkMemory, err := loadBenchmarks()
 	if err != nil {
 		panic(err)
 	}
-	table := makeTable(benchmarks)
-	ioutil.WriteFile("benchmarks.md", []byte(table), 0644)
+	table := strings.Builder{}
+	table.WriteString("\n## CPU time\n\n")
+	table.WriteString(makeTimeTable(benchmarkTime))
+	table.WriteString("\n\n")
+	table.WriteString("## Heap memory\n\n")
+	table.WriteString(makeMemoryTable(benchmarkMemory))
+	_ = os.WriteFile("benchmarks.md", []byte(table.String()), 0644)
 }
 
-func makeTable(benchmarks benchmarkData) string {
+func makeTimeTable(benchmarks benchmarkTimeData) string {
 	sb := strings.Builder{}
 
 	years := []int{}
@@ -86,8 +91,72 @@ func makeTable(benchmarks benchmarkData) string {
 	return sb.String()
 }
 
-func loadBenchmarks() (benchmarkData, error) {
-	benchmarks := benchmarkData{}
+func makeMemoryTable(benchmarks benchmarkMemoryData) string {
+	sb := strings.Builder{}
+
+	years := []int{}
+	for year := range benchmarks {
+		years = append(years, year)
+	}
+	sort.Ints(years)
+	sb.WriteString(" &nbsp; ")
+	yearMemories := make([]int, len(years))
+	for i, year := range years {
+		sb.WriteString(" | ")
+		sb.WriteString(strconv.Itoa(year))
+		totalMemory := 0
+		for _, memory := range benchmarks[year] {
+			totalMemory += memory
+		}
+		yearMemories[i] = totalMemory
+	}
+	sb.WriteString("\n ---: ")
+	for range years {
+		sb.WriteString(" | ---: ")
+	}
+	sb.WriteByte('\n')
+	for day := 1; day <= 25; day++ {
+		sb.WriteString("Day ")
+		sb.WriteString(strconv.Itoa(day))
+		for i, year := range years {
+			sb.WriteString(" | ")
+			memory := float64(benchmarks[year][day])
+			propTotal := memory / float64(yearMemories[i])
+			if memory > 0 {
+				strength := ""
+				prefix := ""
+				if propTotal > 0.2 {
+					strength = "**"
+					prefix = "🔴 "
+				}
+				sb.WriteString(strength)
+				sb.WriteString(prefix)
+				sb.WriteString(formatMemory(memory))
+				sb.WriteString(strength)
+			} else {
+				sb.WriteByte('-')
+			}
+		}
+		sb.WriteByte('\n')
+	}
+	sb.WriteString("*Total*")
+	for _, year := range years {
+		totalMemory := 0.0
+		for _, memory := range benchmarks[year] {
+			totalMemory += float64(memory)
+		}
+		sb.WriteString(" | *")
+		sb.WriteString(formatMemory(totalMemory))
+		sb.WriteString("*")
+
+	}
+
+	return sb.String()
+}
+
+func loadBenchmarks() (benchmarkTimeData, benchmarkMemoryData, error) {
+	benchmarkTime := benchmarkTimeData{}
+	benchmarkMemory := benchmarkMemoryData{}
 	yearDirs, err := resultsFS.ReadDir("results")
 	if err != nil {
 		panic(err)
@@ -95,28 +164,42 @@ func loadBenchmarks() (benchmarkData, error) {
 
 	for _, yearDir := range yearDirs {
 		year, _ := strconv.Atoi(yearDir.Name())
-		benchmarks[year] = map[int]time.Duration{}
+		benchmarkTime[year] = map[int]time.Duration{}
+		benchmarkMemory[year] = map[int]int{}
 		dayResults, err := resultsFS.ReadDir("results/" + yearDir.Name())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for _, dayResult := range dayResults {
-			day, err := strconv.Atoi(strings.TrimPrefix(strings.TrimSuffix(dayResult.Name(), "-ns"), "day"))
+			parts := strings.SplitN(dayResult.Name(), "-", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			if !strings.HasPrefix(parts[0], "day") {
+				continue
+			}
+			day, err := strconv.Atoi(strings.TrimPrefix(parts[0], "day"))
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			path := fmt.Sprintf("results/%s/%s", yearDir.Name(), dayResult.Name())
 			result, err := resultsFS.ReadFile(path)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			benchmark, err := strconv.ParseFloat(strings.TrimSpace(string(result)), 64)
-			if err == nil {
-				benchmarks[year][day] = time.Duration(int64(math.Round(benchmark)))
+			if err != nil {
+				continue
+			}
+			switch parts[1] {
+			case "ns":
+				benchmarkTime[year][day] = time.Duration(int64(math.Round(benchmark)))
+			case "mem-b":
+				benchmarkMemory[year][day] = int(benchmark)
 			}
 		}
 	}
-	return benchmarks, nil
+	return benchmarkTime, benchmarkMemory, nil
 }
 
 func formatDuration(dur time.Duration) string {
@@ -128,4 +211,23 @@ func formatDuration(dur time.Duration) string {
 	return dur.String()
 }
 
-type benchmarkData map[int]map[int]time.Duration
+func formatMemory(mem float64) string {
+	units := []string{"B", "KB", "MB", "GB"}
+	for _, unit := range units {
+		if mem < 100 {
+			return fmt.Sprintf("%.1f %s", math.Round(mem*10)/10, unit)
+		}
+		if mem < 1000 {
+			return fmt.Sprintf("%.0f %s", math.Round(mem), unit)
+		}
+		mem /= 1000
+	}
+	unit := units[len(units)-1]
+	if mem < 100 {
+		return fmt.Sprintf("%f %s", math.Round(mem*10)/10, unit)
+	}
+	return fmt.Sprintf("%f %s", math.Round(mem), unit)
+}
+
+type benchmarkTimeData map[int]map[int]time.Duration
+type benchmarkMemoryData map[int]map[int]int
