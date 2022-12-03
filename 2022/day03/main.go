@@ -19,15 +19,15 @@ func main() {
 func solve() (int, int) {
 	p1, p2 := 0, 0
 	line := make([]byte, 0, 60)
-	groupItems := map[byte]int{}
+	groupItems := map[byte]byte{}
 	groupSize := 0
+	compItems := make(map[byte]nothing, 52)
 	for _, ch := range input {
 		switch ch {
 		case '\n':
 			groupSize++
 			compSize := len(line) / 2
-			compItems := make(map[byte]nothing, compSize)
-			elfID := 1 << (groupSize - 1)
+			elfID := byte(1 << (groupSize - 1))
 			for i := 0; i < compSize; i++ {
 				compItems[line[i]] = nothing{}
 				groupItems[line[i]] |= elfID
@@ -50,6 +50,9 @@ func solve() (int, int) {
 					delete(groupItems, item)
 				}
 				groupSize = 0
+			}
+			for item := range compItems {
+				delete(compItems, item)
 			}
 			line = line[0:0]
 		default:
