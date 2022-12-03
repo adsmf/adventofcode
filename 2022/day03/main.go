@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"math/bits"
 )
 
 //go:embed input.txt
@@ -18,43 +19,45 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
-	line := make([]byte, 0, 60)
-	groupItems := map[byte]byte{}
+	groupItems := make([]uint, 3)
 	groupSize := 0
-	for _, ch := range input {
-		switch ch {
-		case '\n':
-			groupSize++
-			compSize := len(line) / 2
-			compItems := 0
-			elfID := byte(1 << (groupSize - 1))
-			for i := 0; i < compSize; i++ {
-				compItems |= 1 << itemPriority(line[i])
-				groupItems[line[i]] |= elfID
+	for lineStart := 0; lineStart < len(input); {
+		lineEnd := lineStart
+		for pos := lineStart; pos < len(input); pos++ {
+			if input[pos] == '\n' {
+				lineEnd = pos - 1
+				break
 			}
-			var commonItem byte
-			for i := compSize; i < compSize*2; i++ {
-				if commonItem == 0 {
-					if compItems&(1<<itemPriority(line[i])) > 0 {
-						commonItem = line[i]
-					}
-				}
-				groupItems[line[i]] |= elfID
-			}
-			p1 += itemPriority(commonItem)
-			if groupSize == 3 {
-				for item, elfBits := range groupItems {
-					if elfBits == 7 {
-						p2 += itemPriority(item)
-					}
-					delete(groupItems, item)
-				}
-				groupSize = 0
-			}
-			line = line[0:0]
-		default:
-			line = append(line, ch)
 		}
+
+		groupSize++
+		compSize := (lineEnd - lineStart + 1) / 2
+		compItems := uint(0)
+		elfID := groupSize - 1
+		for i := 0; i < compSize; i++ {
+			itemID := uint(1 << itemPriority(input[i+lineStart]))
+			compItems |= itemID
+			groupItems[elfID] |= itemID
+		}
+		var commonItem byte
+		for i := compSize; i < compSize*2; i++ {
+			itemID := uint(1 << itemPriority(input[i+lineStart]))
+			if commonItem == 0 {
+				if compItems&(itemID) > 0 {
+					commonItem = input[i+lineStart]
+				}
+			}
+			groupItems[elfID] |= itemID
+		}
+		p1 += itemPriority(commonItem)
+		if groupSize == 3 {
+			common := groupItems[0] & groupItems[1] & groupItems[2]
+			p2 += bits.Len(common) - 1
+			groupItems[0], groupItems[1], groupItems[2] = 0, 0, 0
+			groupSize = 0
+		}
+
+		lineStart = lineEnd + 2
 	}
 	return p1, p2
 }
@@ -65,7 +68,5 @@ func itemPriority(item byte) int {
 	}
 	return int(item - 'A' + 27)
 }
-
-type nothing struct{}
 
 var benchmark = false
