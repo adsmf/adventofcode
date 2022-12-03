@@ -21,21 +21,21 @@ func solve() (int, int) {
 	line := make([]byte, 0, 60)
 	groupItems := map[byte]byte{}
 	groupSize := 0
-	compItems := make(map[byte]nothing, 52)
 	for _, ch := range input {
 		switch ch {
 		case '\n':
 			groupSize++
 			compSize := len(line) / 2
+			compItems := 0
 			elfID := byte(1 << (groupSize - 1))
 			for i := 0; i < compSize; i++ {
-				compItems[line[i]] = nothing{}
+				compItems |= 1 << itemPriority(line[i])
 				groupItems[line[i]] |= elfID
 			}
 			var commonItem byte
 			for i := compSize; i < compSize*2; i++ {
 				if commonItem == 0 {
-					if _, found := compItems[line[i]]; found {
+					if compItems&(1<<itemPriority(line[i])) > 0 {
 						commonItem = line[i]
 					}
 				}
@@ -50,9 +50,6 @@ func solve() (int, int) {
 					delete(groupItems, item)
 				}
 				groupSize = 0
-			}
-			for item := range compItems {
-				delete(compItems, item)
 			}
 			line = line[0:0]
 		default:
