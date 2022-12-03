@@ -19,22 +19,16 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
-	groupItems := make([]uint, 3)
+	groupItems := idMax
 	groupSize := 0
-	for lineStart := 0; lineStart < len(input); {
-		lineEnd := lineStart
-		for pos := lineStart; pos < len(input); pos++ {
-			if input[pos] == '\n' {
-				lineEnd = pos - 1
-				break
-			}
+	for lineStart, lineEnd := 0, 0; lineStart < len(input); {
+		for pos := lineStart; input[pos] != '\n'; pos++ {
+			lineEnd = pos
 		}
-
 		groupSize++
 		compSize := (lineEnd - lineStart + 1) / 2
 		comp1Items := uint(0)
 		comp2Items := uint(0)
-		elfID := groupSize - 1
 		for i := 0; i < compSize; i++ {
 			comp1Items |= itemID(input[i+lineStart])
 		}
@@ -42,15 +36,13 @@ func solve() (int, int) {
 			comp2Items |= itemID(input[i+lineStart])
 		}
 		commonItemID := comp1Items & comp2Items
-		groupItems[elfID] = comp1Items | comp2Items
 		p1 += idToPriority(commonItemID)
+		groupItems &= comp1Items | comp2Items
 		if groupSize == 3 {
-			common := groupItems[0] & groupItems[1] & groupItems[2]
-			p2 += idToPriority(common)
-			groupItems[0], groupItems[1], groupItems[2] = 0, 0, 0
+			p2 += idToPriority(groupItems)
+			groupItems = idMax
 			groupSize = 0
 		}
-
 		lineStart = lineEnd + 2
 	}
 	return p1, p2
@@ -61,10 +53,13 @@ func idToPriority(id uint) int {
 }
 
 func itemID(item byte) uint {
-	if item >= 'a' {
-		return uint(1 << (item - 'a'))
+	item -= 'A' - 26
+	if item >= 52 {
+		item -= 32 + 26
 	}
-	return uint(1 << (item - 'A' + 26))
+	return uint(1 << item)
 }
+
+const idMax = uint(1<<52 - 1)
 
 var benchmark = false
