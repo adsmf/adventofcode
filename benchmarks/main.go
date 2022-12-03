@@ -106,7 +106,7 @@ func makeMemoryTable(benchmarks benchmarkMemoryData) string {
 		sb.WriteString(strconv.Itoa(year))
 		totalMemory := 0
 		for _, memory := range benchmarks[year] {
-			totalMemory += memory
+			totalMemory += *memory
 		}
 		yearMemories[i] = totalMemory
 	}
@@ -120,9 +120,9 @@ func makeMemoryTable(benchmarks benchmarkMemoryData) string {
 		sb.WriteString(strconv.Itoa(day))
 		for i, year := range years {
 			sb.WriteString(" | ")
-			memory := float64(benchmarks[year][day])
-			propTotal := memory / float64(yearMemories[i])
-			if memory > 0 {
+			memory := benchmarks[year][day]
+			if memory != nil {
+				propTotal := float64(*memory) / float64(yearMemories[i])
 				strength := ""
 				prefix := ""
 				if propTotal > 0.2 {
@@ -131,7 +131,7 @@ func makeMemoryTable(benchmarks benchmarkMemoryData) string {
 				}
 				sb.WriteString(strength)
 				sb.WriteString(prefix)
-				sb.WriteString(formatMemory(memory))
+				sb.WriteString(formatMemory(float64(*memory)))
 				sb.WriteString(strength)
 			} else {
 				sb.WriteByte('-')
@@ -143,7 +143,7 @@ func makeMemoryTable(benchmarks benchmarkMemoryData) string {
 	for _, year := range years {
 		totalMemory := 0.0
 		for _, memory := range benchmarks[year] {
-			totalMemory += float64(memory)
+			totalMemory += float64(*memory)
 		}
 		sb.WriteString(" | *")
 		sb.WriteString(formatMemory(totalMemory))
@@ -165,7 +165,7 @@ func loadBenchmarks() (benchmarkTimeData, benchmarkMemoryData, error) {
 	for _, yearDir := range yearDirs {
 		year, _ := strconv.Atoi(yearDir.Name())
 		benchmarkTime[year] = map[int]time.Duration{}
-		benchmarkMemory[year] = map[int]int{}
+		benchmarkMemory[year] = map[int]*int{}
 		dayResults, err := resultsFS.ReadDir("results/" + yearDir.Name())
 		if err != nil {
 			return nil, nil, err
@@ -195,7 +195,8 @@ func loadBenchmarks() (benchmarkTimeData, benchmarkMemoryData, error) {
 			case "ns":
 				benchmarkTime[year][day] = time.Duration(int64(math.Round(benchmark)))
 			case "mem-b":
-				benchmarkMemory[year][day] = int(benchmark)
+				mem := int(benchmark)
+				benchmarkMemory[year][day] = &mem
 			}
 		}
 	}
@@ -212,6 +213,9 @@ func formatDuration(dur time.Duration) string {
 }
 
 func formatMemory(mem float64) string {
+	if mem == 0 {
+		return "None"
+	}
 	units := []string{"B", "KB", "MB", "GB"}
 	for _, unit := range units {
 		if mem < 100 {
@@ -230,4 +234,4 @@ func formatMemory(mem float64) string {
 }
 
 type benchmarkTimeData map[int]map[int]time.Duration
-type benchmarkMemoryData map[int]map[int]int
+type benchmarkMemoryData map[int]map[int]*int
