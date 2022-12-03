@@ -3,13 +3,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -20,16 +17,35 @@ func main() {
 }
 
 func solve() (int, int) {
-	top3 := utils.NewTopN[int](3)
-	for _, elf := range strings.Split(input, "\n\n") {
-		top3.Add(utils.SumInts(elf))
+	topSnacks := make([]int, 3)
+	elfCalories := 0
+	accumulator := 0
+	for _, ch := range input {
+		switch {
+		case ch >= '0' && ch <= '9':
+			accumulator *= 10
+			accumulator += int(ch - '0')
+		default:
+			if accumulator > 0 {
+				elfCalories += accumulator
+				accumulator = 0
+				continue
+			}
+			if elfCalories < topSnacks[0] {
+				elfCalories = 0
+				continue
+			}
+			topSnacks[0] = elfCalories
+			for pos := 0; pos < 2; pos++ {
+				if topSnacks[pos] < topSnacks[pos+1] {
+					break
+				}
+				topSnacks[pos+1], topSnacks[pos] = topSnacks[pos], topSnacks[pos+1]
+			}
+			elfCalories = 0
+		}
 	}
-	totalTop := 0
-	vals := top3.Values()
-	for _, elf := range vals {
-		totalTop += elf
-	}
-	return (vals)[0], totalTop
+	return topSnacks[2], topSnacks[2] + topSnacks[1] + topSnacks[0]
 }
 
 var benchmark = false
