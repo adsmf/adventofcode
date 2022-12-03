@@ -18,7 +18,9 @@ func main() {
 
 func solve() (int, int) {
 	p1score, p2score := 0, 0
-	p1lookup, p2lookup := calcLookups()
+	p1lookup := make(scoreLookup, 1<<4)
+	p2lookup := make(scoreLookup, 1<<4)
+	populateLookups(p1lookup, p2lookup)
 	for pos := 0; pos < len(input); pos += 4 {
 		state := stateRep(symbol(input[pos]-'A'), symbol(input[pos+2]-'X'))
 		p1score += p1lookup[state]
@@ -27,9 +29,7 @@ func solve() (int, int) {
 	return p1score, p2score
 }
 
-func calcLookups() (scoreLookup, scoreLookup) {
-	p1 := make(scoreLookup, 1<<4)
-	p2 := make(scoreLookup, 1<<4)
+func populateLookups(p1, p2 scoreLookup) {
 	for op := symbolRock; op <= symbolScissors; op++ {
 		for me := symbolRock; me <= symbolScissors; me++ {
 			winstate := (4 + me - op) % 3
@@ -38,7 +38,6 @@ func calcLookups() (scoreLookup, scoreLookup) {
 			p2[stateRep(op, winstate)] = me + 1 + winstate*3
 		}
 	}
-	return p1, p2
 }
 
 type scoreLookup []int
