@@ -32,27 +32,21 @@ func solve() (int, int) {
 
 		groupSize++
 		compSize := (lineEnd - lineStart + 1) / 2
-		compItems := uint(0)
+		comp1Items := uint(0)
+		comp2Items := uint(0)
 		elfID := groupSize - 1
 		for i := 0; i < compSize; i++ {
-			itemID := uint(1 << itemPriority(input[i+lineStart]))
-			compItems |= itemID
-			groupItems[elfID] |= itemID
+			comp1Items |= itemID(input[i+lineStart])
 		}
-		var commonItem byte
 		for i := compSize; i < compSize*2; i++ {
-			itemID := uint(1 << itemPriority(input[i+lineStart]))
-			if commonItem == 0 {
-				if compItems&(itemID) > 0 {
-					commonItem = input[i+lineStart]
-				}
-			}
-			groupItems[elfID] |= itemID
+			comp2Items |= itemID(input[i+lineStart])
 		}
-		p1 += itemPriority(commonItem)
+		commonItemID := comp1Items & comp2Items
+		groupItems[elfID] = comp1Items | comp2Items
+		p1 += idToPriority(commonItemID)
 		if groupSize == 3 {
 			common := groupItems[0] & groupItems[1] & groupItems[2]
-			p2 += bits.Len(common) - 1
+			p2 += idToPriority(common)
 			groupItems[0], groupItems[1], groupItems[2] = 0, 0, 0
 			groupSize = 0
 		}
@@ -62,11 +56,15 @@ func solve() (int, int) {
 	return p1, p2
 }
 
-func itemPriority(item byte) int {
+func idToPriority(id uint) int {
+	return bits.Len(id)
+}
+
+func itemID(item byte) uint {
 	if item >= 'a' {
-		return int(item - 'a' + 1)
+		return uint(1 << (item - 'a'))
 	}
-	return int(item - 'A' + 27)
+	return uint(1 << (item - 'A' + 26))
 }
 
 var benchmark = false
