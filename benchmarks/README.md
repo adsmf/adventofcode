@@ -7,7 +7,7 @@ The following are the benchmarks for the Go implementations of solutions for eac
  ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---:  | ---: 
 Day 1 | 88.7µs | 102µs | 46.4µs | 19ms | - | 396µs | 14.4µs | 75.1µs
 Day 2 | 390µs | 176µs | 47.8µs | 76.4ms | - | 3.06ms | 1.22µs | 4.78µs
-Day 3 | 1.53ms | 507µs | 2ns | 45.7ms | - | 83.5µs | 48.2µs | **🔴 949µs**
+Day 3 | 1.53ms | 507µs | 2ns | 45.7ms | - | 83.5µs | 48.2µs | **🔴 946µs**
 Day 4 | 2.24s | 23ms | 1.3ms | 745µs | - | 927µs | 692µs | -
 Day 5 | 2.1ms | 15.8s | 70.5ms | 112ms | - | 28µs | 704µs | -
 Day 6 | 5.73s | 183µs | 11.4ms | 37.5ms | - | 1.34ms | 656ns | -
