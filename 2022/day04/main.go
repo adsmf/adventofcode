@@ -3,12 +3,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -19,18 +17,30 @@ func main() {
 }
 
 func solve() (int, int) {
-	contains := 0
-	overlap := 0
-	for _, line := range utils.GetLines(input) {
-		sections := utils.GetInts(line)
-		if sections[0] <= sections[2] && sections[1] >= sections[3] ||
-			sections[0] >= sections[2] && sections[1] <= sections[3] {
-			contains++
+	contains, overlap := 0, 0
+	sections := [4]int{}
+	accumulator, index := 0, 0
+	for _, ch := range input {
+		switch {
+		case ch >= '0' && ch <= '9':
+			accumulator = accumulator * 10
+			accumulator += int(ch - '0')
+		default:
+			sections[index] = accumulator
+			accumulator = 0
+			if index == 3 {
+				if sections[0] <= sections[2] && sections[1] >= sections[3] ||
+					sections[0] >= sections[2] && sections[1] <= sections[3] {
+					contains++
+				}
+				if !(sections[1] < sections[2] || sections[0] > sections[3]) {
+					overlap++
+				}
+				index = 0
+				continue
+			}
+			index++
 		}
-		if sections[1] < sections[2] || sections[0] > sections[3] {
-			continue
-		}
-		overlap++
 	}
 	return contains, overlap
 }
