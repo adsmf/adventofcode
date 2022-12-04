@@ -18,28 +18,27 @@ func main() {
 
 func solve() (int, int) {
 	contains, overlap := 0, 0
-	sections := [4]int{}
+	sec := [4]int{}
 	accumulator, index := 0, 0
 	for _, ch := range input {
-		switch {
-		case ch >= '0' && ch <= '9':
-			accumulator = accumulator * 10
-			accumulator += int(ch - '0')
-		default:
-			sections[index] = accumulator
-			accumulator = 0
-			if index == 3 {
-				if sections[0] <= sections[2] && sections[1] >= sections[3] ||
-					sections[0] >= sections[2] && sections[1] <= sections[3] {
-					contains++
-				}
-				if !(sections[1] < sections[2] || sections[0] > sections[3]) {
-					overlap++
-				}
-				index = 0
-				continue
+		if ch&0xf0 == 0x30 {
+			accumulator <<= 4
+			accumulator |= int(ch & 0xf)
+			continue
+		}
+		sec[index] = accumulator
+		accumulator = 0
+		index++
+		if index < 4 {
+			continue
+		}
+		index = 0
+		if !(sec[1] < sec[2] || sec[0] > sec[3]) {
+			overlap++
+			if sec[0] <= sec[2] && sec[1] >= sec[3] ||
+				sec[0] >= sec[2] && sec[1] <= sec[3] {
+				contains++
 			}
-			index++
 		}
 	}
 	return contains, overlap
