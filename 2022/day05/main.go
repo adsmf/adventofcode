@@ -21,7 +21,7 @@ func main() {
 
 func solve() (string, string) {
 	blocks := strings.Split(input, "\n\n")
-	dock1, dock2 := loadStacks(blocks[1])
+	dock1, dock2 := loadStacks()
 	for _, line := range utils.GetLines(blocks[1]) {
 		vals := utils.GetInts(line)
 		for i := 0; i < vals[0]; i++ {
@@ -35,11 +35,34 @@ func solve() (string, string) {
 type dockyard [_yardStacks]crateStack
 
 func (d dockyard) readTop() []byte {
-	crates := make([]byte, 9)
-	for i := 0; i < 9; i++ {
+	crates := make([]byte, _yardStacks)
+	for i := 0; i < _yardStacks; i++ {
 		crates[i] = d[i].getTop()
 	}
 	return crates
+}
+
+func (d dockyard) String() string {
+	sb := strings.Builder{}
+	maxHeight := 0
+	for _, stack := range d {
+		if stack.height > maxHeight {
+			maxHeight = stack.height
+		}
+	}
+	for level := maxHeight; level > 0; level-- {
+		for _, stack := range d {
+			if stack.height < level {
+				sb.WriteString("    ")
+				continue
+			}
+			sb.WriteByte('[')
+			sb.WriteByte(stack.crates[level-1])
+			sb.WriteString("] ")
+		}
+		sb.WriteByte('\n')
+	}
+	return sb.String()
 }
 
 type crateStack struct {
@@ -71,23 +94,29 @@ func (c crateStack) getTop() byte {
 	return c.crates[c.height-1]
 }
 
-func loadStacks(input string) (dockyard, dockyard) {
-	return hardcodedStack(input), hardcodedStack(input)
-}
-
-func hardcodedStack(input string) dockyard {
-	stacks := dockyard{
-		{6, [_maxCrates]byte{'S', 'T', 'H', 'F', 'W', 'R'}},
-		{5, [_maxCrates]byte{'S', 'G', 'D', 'Q', 'W'}},
-		{3, [_maxCrates]byte{'B', 'T', 'W'}},
-		{8, [_maxCrates]byte{'D', 'R', 'W', 'T', 'N', 'Q', 'Z', 'J'}},
-		{8, [_maxCrates]byte{'F', 'B', 'H', 'G', 'L', 'V', 'T', 'Z'}},
-		{8, [_maxCrates]byte{'L', 'P', 'T', 'C', 'V', 'B', 'S', 'G'}},
-		{7, [_maxCrates]byte{'Z', 'B', 'R', 'T', 'W', 'G', 'P'}},
-		{7, [_maxCrates]byte{'N', 'G', 'M', 'T', 'C', 'J', 'R'}},
-		{4, [_maxCrates]byte{'L', 'G', 'B', 'W'}},
+func loadStacks() (dockyard, dockyard) {
+	var layoutRows int
+	const lineWidth = 4 * _yardStacks
+	for layoutRows = 1; layoutRows*lineWidth < len(input); layoutRows++ {
+		if input[layoutRows*lineWidth-1] == '\n' && input[layoutRows*lineWidth] == '\n' {
+			break
+		}
 	}
-	return stacks
+	dock1, dock2 := dockyard{}, dockyard{}
+	for row := 0; row < layoutRows-1; row++ {
+		rowOffset := lineWidth * (layoutRows - row - 2)
+		for stack := 0; stack < _yardStacks; stack++ {
+			char := input[rowOffset+stack*4+1]
+			if char >= 'A' && char <= 'Z' {
+				dock1[stack].crates[row] = char
+				dock1[stack].height = row + 1
+
+				dock2[stack].crates[row] = char
+				dock2[stack].height = row + 1
+			}
+		}
+	}
+	return dock1, dock2
 }
 
 const (
