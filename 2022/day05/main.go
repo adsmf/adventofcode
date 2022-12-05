@@ -12,8 +12,11 @@ var input string
 func main() {
 	d1, d2 := solve()
 	if !benchmark {
-		fmt.Printf("Part 1: %s\n", d1.readTop())
-		fmt.Printf("Part 2: %s\n", d2.readTop())
+		fmt.Print("Part 1: ")
+		d1.printTop()
+		fmt.Print("\nPart 2: ")
+		d2.printTop()
+		fmt.Print("\n")
 	}
 }
 
@@ -54,12 +57,10 @@ func getInt(offset int) (int, int) {
 
 type dockyard [_yardStacks]crateStack
 
-func (d dockyard) readTop() []byte {
-	crates := make([]byte, _yardStacks)
+func (d dockyard) printTop() {
 	for i := 0; i < _yardStacks; i++ {
-		crates[i] = d[i].getTop()
+		fmt.Print(string(d[i].getTop()))
 	}
-	return crates
 }
 
 func (d dockyard) String() string {
