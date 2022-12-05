@@ -32,7 +32,7 @@ func solve() (string, string) {
 	return string(dock1.readTop()), string(dock2.readTop())
 }
 
-type dockyard []crateStack
+type dockyard [_yardStacks]crateStack
 
 func (d dockyard) readTop() []byte {
 	crates := make([]byte, 9)
@@ -43,15 +43,20 @@ func (d dockyard) readTop() []byte {
 }
 
 type crateStack struct {
-	crates []byte
+	height int
+	crates [_maxCrates]byte
 }
 
 func (c *crateStack) sendTo(toStack *crateStack) {
-	c.crates, toStack.crates = c.crates[0:len(c.crates)-1], append(toStack.crates, c.crates[len(c.crates)-1])
+	toStack.crates[toStack.height] = c.crates[c.height-1]
+	toStack.height++
+	c.height--
 }
 
 func (c *crateStack) moveNTo(numCrates int, toStack *crateStack) {
-	c.crates, toStack.crates = c.crates[0:len(c.crates)-numCrates], append(toStack.crates, c.crates[len(c.crates)-numCrates:]...)
+	copy(toStack.crates[toStack.height:toStack.height+numCrates], c.crates[c.height-numCrates:c.height])
+	toStack.height += numCrates
+	c.height -= numCrates
 }
 
 func (c crateStack) String() string {
@@ -63,26 +68,31 @@ func (c crateStack) String() string {
 }
 
 func (c crateStack) getTop() byte {
-	return c.crates[len(c.crates)-1]
+	return c.crates[c.height-1]
 }
 
 func loadStacks(input string) (dockyard, dockyard) {
-	return parseStacks(input), parseStacks(input)
+	return hardcodedStack(input), hardcodedStack(input)
 }
 
-func parseStacks(input string) []crateStack {
-	stacks := []crateStack{
-		{[]byte{'S', 'T', 'H', 'F', 'W', 'R'}},
-		{[]byte{'S', 'G', 'D', 'Q', 'W'}},
-		{[]byte{'B', 'T', 'W'}},
-		{[]byte{'D', 'R', 'W', 'T', 'N', 'Q', 'Z', 'J'}},
-		{[]byte{'F', 'B', 'H', 'G', 'L', 'V', 'T', 'Z'}},
-		{[]byte{'L', 'P', 'T', 'C', 'V', 'B', 'S', 'G'}},
-		{[]byte{'Z', 'B', 'R', 'T', 'W', 'G', 'P'}},
-		{[]byte{'N', 'G', 'M', 'T', 'C', 'J', 'R'}},
-		{[]byte{'L', 'G', 'B', 'W'}},
+func hardcodedStack(input string) dockyard {
+	stacks := dockyard{
+		{6, [_maxCrates]byte{'S', 'T', 'H', 'F', 'W', 'R'}},
+		{5, [_maxCrates]byte{'S', 'G', 'D', 'Q', 'W'}},
+		{3, [_maxCrates]byte{'B', 'T', 'W'}},
+		{8, [_maxCrates]byte{'D', 'R', 'W', 'T', 'N', 'Q', 'Z', 'J'}},
+		{8, [_maxCrates]byte{'F', 'B', 'H', 'G', 'L', 'V', 'T', 'Z'}},
+		{8, [_maxCrates]byte{'L', 'P', 'T', 'C', 'V', 'B', 'S', 'G'}},
+		{7, [_maxCrates]byte{'Z', 'B', 'R', 'T', 'W', 'G', 'P'}},
+		{7, [_maxCrates]byte{'N', 'G', 'M', 'T', 'C', 'J', 'R'}},
+		{4, [_maxCrates]byte{'L', 'G', 'B', 'W'}},
 	}
 	return stacks
 }
+
+const (
+	_maxCrates  = 50
+	_yardStacks = 9
+)
 
 var benchmark = false
