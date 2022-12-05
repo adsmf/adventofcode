@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"strings"
 )
 
 //go:embed input.txt
@@ -23,11 +22,8 @@ func main() {
 func solve() (dockyard, dockyard) {
 	dock1, dock2, offset := loadStacks()
 	var num, from, to int
-	for offset < len(input) {
+	for ; offset < len(input); offset++ {
 		num, from, to, offset = getInstruction(offset)
-		if num == 0 {
-			break
-		}
 		for i := 0; i < num; i++ {
 			dock1[from-1].sendTo(&(dock1[to-1]))
 		}
@@ -38,15 +34,14 @@ func solve() (dockyard, dockyard) {
 
 func getInstruction(offset int) (int, int, int, int) {
 	var num, from, to int
-	num, offset = getInt(offset)
-	from, offset = getInt(offset)
-	to, offset = getInt(offset)
+	num, offset = getInt(offset + 5)
+	from = int(input[offset+6] & 0xf)
+	to = int(input[offset+11] & 0xf)
+	offset += 12
 	return num, from, to, offset
 }
 
 func getInt(offset int) (int, int) {
-	for ; offset < len(input) && (input[offset] < '0' || input[offset] > '9'); offset++ {
-	}
 	accumulator := 0
 	for ; offset < len(input) && input[offset] >= '0' && input[offset] <= '9'; offset++ {
 		accumulator *= 10
@@ -61,29 +56,6 @@ func (d dockyard) printTop() {
 	for i := 0; i < _yardStacks; i++ {
 		fmt.Print(string(d[i].getTop()))
 	}
-}
-
-func (d dockyard) String() string {
-	sb := strings.Builder{}
-	maxHeight := 0
-	for _, stack := range d {
-		if stack.height > maxHeight {
-			maxHeight = stack.height
-		}
-	}
-	for level := maxHeight; level > 0; level-- {
-		for _, stack := range d {
-			if stack.height < level {
-				sb.WriteString("    ")
-				continue
-			}
-			sb.WriteByte('[')
-			sb.WriteByte(stack.crates[level-1])
-			sb.WriteString("] ")
-		}
-		sb.WriteByte('\n')
-	}
-	return sb.String()
 }
 
 type crateStack struct {
@@ -101,14 +73,6 @@ func (c *crateStack) moveNTo(numCrates int, toStack *crateStack) {
 	copy(toStack.crates[toStack.height:toStack.height+numCrates], c.crates[c.height-numCrates:c.height])
 	toStack.height += numCrates
 	c.height -= numCrates
-}
-
-func (c crateStack) String() string {
-	sb := strings.Builder{}
-	for _, crate := range c.crates {
-		sb.WriteByte(crate)
-	}
-	return sb.String()
 }
 
 func (c crateStack) getTop() byte {
