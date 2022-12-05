@@ -4,32 +4,52 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
 var input string
 
 func main() {
-	p1, p2 := solve()
+	d1, d2 := solve()
 	if !benchmark {
-		fmt.Printf("Part 1: %s\n", p1)
-		fmt.Printf("Part 2: %s\n", p2)
+		fmt.Printf("Part 1: %s\n", d1.readTop())
+		fmt.Printf("Part 2: %s\n", d2.readTop())
 	}
 }
 
-func solve() (string, string) {
-	blocks := strings.Split(input, "\n\n")
-	dock1, dock2 := loadStacks()
-	for _, line := range utils.GetLines(blocks[1]) {
-		vals := utils.GetInts(line)
-		for i := 0; i < vals[0]; i++ {
-			dock1[vals[1]-1].sendTo(&(dock1[vals[2]-1]))
+func solve() (dockyard, dockyard) {
+	dock1, dock2, offset := loadStacks()
+	var num, from, to int
+	for offset < len(input) {
+		num, from, to, offset = getInstruction(offset)
+		if num == 0 {
+			break
 		}
-		dock2[vals[1]-1].moveNTo(vals[0], &(dock2[vals[2]-1]))
+		for i := 0; i < num; i++ {
+			dock1[from-1].sendTo(&(dock1[to-1]))
+		}
+		dock2[from-1].moveNTo(num, &(dock2[to-1]))
 	}
-	return string(dock1.readTop()), string(dock2.readTop())
+	return dock1, dock2
+}
+
+func getInstruction(offset int) (int, int, int, int) {
+	var num, from, to int
+	num, offset = getInt(offset)
+	from, offset = getInt(offset)
+	to, offset = getInt(offset)
+	return num, from, to, offset
+}
+
+func getInt(offset int) (int, int) {
+	for ; offset < len(input) && (input[offset] < '0' || input[offset] > '9'); offset++ {
+	}
+	accumulator := 0
+	for ; offset < len(input) && input[offset] >= '0' && input[offset] <= '9'; offset++ {
+		accumulator *= 10
+		accumulator += int(input[offset] & 0xf)
+	}
+	return accumulator, offset
 }
 
 type dockyard [_yardStacks]crateStack
@@ -94,7 +114,7 @@ func (c crateStack) getTop() byte {
 	return c.crates[c.height-1]
 }
 
-func loadStacks() (dockyard, dockyard) {
+func loadStacks() (dockyard, dockyard, int) {
 	var layoutRows int
 	const lineWidth = 4 * _yardStacks
 	for layoutRows = 1; layoutRows*lineWidth < len(input); layoutRows++ {
@@ -116,7 +136,7 @@ func loadStacks() (dockyard, dockyard) {
 			}
 		}
 	}
-	return dock1, dock2
+	return dock1, dock2, layoutRows*lineWidth + 1
 }
 
 const (
