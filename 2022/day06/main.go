@@ -25,14 +25,16 @@ func solve() (int, int) {
 }
 
 func findMarker(offset, signalLength int) int {
-	for i := offset + signalLength; i < len(input); i++ {
+	for i := offset + signalLength; i < len(input); {
 		last := uint32(0)
 		for _, ch := range input[i-signalLength : i] {
-			last |= 1 << (ch - 'a')
+			last |= 1 << (ch & 0x1f)
 		}
-		if bits.OnesCount32(last) == signalLength {
+		count := bits.OnesCount32(last)
+		if count == signalLength {
 			return i
 		}
+		i += signalLength - count
 	}
 	panic("not found")
 }
