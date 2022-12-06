@@ -19,15 +19,15 @@ func main() {
 
 func solve() (int, int) {
 	const len1, len2 = 4, 14
-	p1 := findMarker(0, len1)
-	p2 := findMarker(p1-len1, len2)
+	p1 := findMarker(len1, 0, signal(input))
+	p2 := findMarker(len2, p1-len1, signal(input))
 	return p1, p2
 }
 
-func findMarker(offset, signalLength int) int {
-	for i := offset + signalLength; i < len(input); {
+func findMarker(signalLength, offset int, stream signal) int {
+	for i := offset + signalLength; i < len(stream); {
 		last := uint32(0)
-		for _, ch := range input[i-signalLength : i] {
+		for _, ch := range stream[i-signalLength : i] {
 			last |= 1 << (ch & 0x1f)
 		}
 		count := bits.OnesCount32(last)
@@ -38,5 +38,7 @@ func findMarker(offset, signalLength int) int {
 	}
 	panic("not found")
 }
+
+type signal *[4096]byte
 
 var benchmark = false
