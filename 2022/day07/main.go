@@ -17,20 +17,20 @@ func main() {
 }
 
 func solve() (fsSize, fsSize) {
-	nodePool := [180]node{}
+	nodePool := [180]fsSize{}
 	poolAllocated := 0
 	p1 := fsSize(0)
 	p2 := fsSize(70000000)
 
-	stack := [10]*node{}
+	stack := [10]*fsSize{}
 	stackPos := -1
 
-	var curNode *node
+	var curNode *fsSize
 
 	completeDir := func() {
 		stackPos--
-		curNodeSize := curNode.size()
-		stack[stackPos].subdirSize += curNodeSize
+		curNodeSize := curNode
+		*(stack[stackPos]) += *curNodeSize
 
 		curNode = stack[stackPos]
 	}
@@ -55,16 +55,16 @@ func solve() (fsSize, fsSize) {
 		default:
 			size := 0
 			size, pos = getInt(input, pos)
-			curNode.addFile(fsSize(size))
+			*curNode += fsSize(size)
 			pos = nextLine(input, pos)
 		}
 	}
 	for stackPos > 0 {
 		completeDir()
 	}
-	spaceNeeded := fsSize(nodePool[0].size() + 30000000 - 70000000)
+	spaceNeeded := fsSize(nodePool[0] + 30000000 - 70000000)
 	for n := 0; n < poolAllocated; n++ {
-		curNodeSize := nodePool[n].size()
+		curNodeSize := nodePool[n]
 		if curNodeSize <= 100000 {
 			p1 += curNodeSize
 		}
@@ -83,14 +83,6 @@ func nextLine(in []byte, pos int) int {
 }
 
 type fsSize uint32
-
-type node struct {
-	totalFileSize fsSize
-	subdirSize    fsSize
-}
-
-func (n *node) addFile(size fsSize) { n.totalFileSize += size }
-func (n *node) size() fsSize        { return n.totalFileSize + n.subdirSize }
 
 func getInt(in []byte, pos int) (int, int) {
 	accumulator := 0
