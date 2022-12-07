@@ -29,16 +29,13 @@ func solve() (fsSize, fsSize) {
 
 	completeDir := func() {
 		stackPos--
-		curNodeSize := curNode
-		*(stack[stackPos]) += *curNodeSize
-
+		*(stack[stackPos]) += *curNode
 		curNode = stack[stackPos]
 	}
 
 	for pos := 0; pos < len(input); {
-		switch input[pos] {
-		case '$':
-			if input[pos+2] != 'c' {
+		if input[pos] == '$' {
+			if input[pos+2] == 'l' {
 				pos += 5
 				continue
 			}
@@ -52,12 +49,12 @@ func solve() (fsSize, fsSize) {
 			poolAllocated++
 			curNode = stack[stackPos]
 			pos = nextLine(input, pos)
-		default:
-			size := 0
-			size, pos = getInt(input, pos)
-			*curNode += fsSize(size)
-			pos = nextLine(input, pos)
+			continue
 		}
+		size := 0
+		size, pos = getInt(input, pos)
+		*curNode += fsSize(size)
+		pos = nextLine(input, pos)
 	}
 	for stackPos > 0 {
 		completeDir()
