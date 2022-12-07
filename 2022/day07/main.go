@@ -39,7 +39,8 @@ func solve() (int, int) {
 }
 
 func buildTree(in string, allNodes *[]*node) {
-	stack := []*node{}
+	stack := nodeList{}
+	stackPos := -1
 
 	var curNode *node
 	for _, line := range utils.GetLines(in) {
@@ -49,16 +50,17 @@ func buildTree(in string, allNodes *[]*node) {
 				continue
 			}
 			if line[5] == '.' { // Traverse up
-				stack = stack[0 : len(stack)-1]
-				curNode = stack[len(stack)-1]
+				stackPos--
+				curNode = stack[stackPos]
 				continue
 			}
-			curNode = newNode()
+			stackPos++
+			curNode = &node{treeSize: -1}
 			*allNodes = append(*allNodes, curNode)
-			if len(stack) > 0 {
-				stack[len(stack)-1].addChild(curNode)
+			if stackPos > 0 {
+				stack[stackPos-1].addChild(curNode)
 			}
-			stack = append(stack, curNode)
+			stack[stackPos] = curNode
 		case 'd': // Directory
 		default: // file size
 			curNode.totalFileSize += getInt(line)
@@ -66,14 +68,7 @@ func buildTree(in string, allNodes *[]*node) {
 	}
 }
 
-func newNode() *node {
-	return &node{
-		children: make([]*node, 0),
-		treeSize: -1,
-	}
-}
-
-type nodeList []*node
+type nodeList [10]*node
 
 type node struct {
 	children      nodeList
@@ -83,8 +78,8 @@ type node struct {
 }
 
 func (n *node) addChild(child *node) {
+	n.children[n.numChildren] = child
 	n.numChildren++
-	n.children = append(n.children, child)
 }
 
 func (n *node) size() int {
@@ -92,8 +87,8 @@ func (n *node) size() int {
 		return n.treeSize
 	}
 	size := n.totalFileSize
-	for _, child := range n.children {
-		size += child.size()
+	for i := 0; i < n.numChildren; i++ {
+		size += n.children[i].size()
 	}
 	n.treeSize = size
 	return n.treeSize
