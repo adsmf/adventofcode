@@ -15,6 +15,7 @@
 /session.cookie
 .DS_Store
 cpu.prof
+mem.prof
 pprof-list.txt
 
 /benchmarks/results
