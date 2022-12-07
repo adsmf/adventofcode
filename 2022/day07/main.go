@@ -17,21 +17,54 @@ func main() {
 }
 
 func solve() (fsSize, fsSize) {
-	nodes := nodePool{}
-	numNodes := buildTree(input, &nodes)
 	p1 := fsSize(0)
-	p2 := fsSize(0)
-	spaceNeeded := (nodes[0].size() + 30000000 - 70000000)
-	for i := 0; i < numNodes; i++ {
-		node := nodes[i]
-		if node.size() <= 100000 {
-			p1 += node.treeSize
+	p2 := fsSize(70000000)
+	spaceNeeded := fsSize(sumAllInts(input) + 30000000 - 70000000)
+
+	stack := make(nodeList, 10)
+	stackPos := -1
+
+	var curNode *node
+
+	completeDir := func() {
+		stackPos--
+		curNodeSize := curNode.size()
+		stack[stackPos].subdirSize += curNodeSize
+		if curNodeSize <= 100000 {
+			p1 += curNodeSize
 		}
-		if node.size() >= spaceNeeded {
-			if node.size() < p2 || p2 == 0 {
-				p2 = node.size()
+		if curNodeSize >= spaceNeeded && curNodeSize < p2 {
+			p2 = curNodeSize
+		}
+
+		curNode = &stack[stackPos]
+	}
+
+	for pos := 0; pos < len(input); {
+		switch input[pos] {
+		case '$':
+			if input[pos+2] != 'c' {
+				pos += 5
+				continue
 			}
+			if input[pos+5] == '.' {
+				completeDir()
+				pos += 8
+				continue
+			}
+			stackPos++
+			stack[stackPos] = node{}
+			curNode = &stack[stackPos]
+			pos = nextLine(input, pos)
+		default:
+			size := 0
+			size, pos = getInt(input, pos)
+			curNode.addFile(fsSize(size))
+			pos = nextLine(input, pos)
 		}
+	}
+	for stackPos > 0 {
+		completeDir()
 	}
 
 	return p1, p2
@@ -43,72 +76,17 @@ func nextLine(in []byte, pos int) int {
 	return pos + 1
 }
 
-func buildTree(in []byte, nodes *nodePool) int {
-	stack := make(nodeList, 10)
-	stackPos := -1
-	nodesAllocated := 0
-
-	var curNode *node
-	for pos := 0; pos < len(in); {
-		switch in[pos] {
-		case '$':
-			if in[pos+2] != 'c' {
-				pos += 5
-				continue
-			}
-			if in[pos+5] == '.' {
-				stackPos--
-				curNode = stack[stackPos]
-				pos += 8
-				continue
-			}
-			stackPos++
-			curNode = &(nodes)[nodesAllocated]
-			nodesAllocated++
-			if stackPos > 0 {
-				stack[stackPos-1].addChild(curNode)
-			}
-			stack[stackPos] = curNode
-			pos = nextLine(in, pos)
-		default:
-			size := 0
-			size, pos = getInt(in, pos)
-			curNode.addFile(fsSize(size))
-			pos = nextLine(in, pos)
-		}
-	}
-	return nodesAllocated
-}
-
-type nodePool [180]node
-type nodeList []*node
+type nodeList []node
 
 type fsSize uint32
 
 type node struct {
 	totalFileSize fsSize
-	treeSize      fsSize
-	children      nodeList
+	subdirSize    fsSize
 }
 
-func (n *node) addChild(child *node) {
-	n.children = append(n.children, child)
-}
-func (n *node) addFile(size fsSize) {
-	n.totalFileSize += size
-}
-
-func (n *node) size() fsSize {
-	if n.treeSize > 0 {
-		return n.treeSize
-	}
-	size := n.totalFileSize
-	for _, child := range n.children {
-		size += child.size()
-	}
-	n.treeSize = size
-	return n.treeSize
-}
+func (n *node) addFile(size fsSize) { n.totalFileSize += size }
+func (n *node) size() fsSize        { return n.totalFileSize + n.subdirSize }
 
 func getInt(in []byte, pos int) (int, int) {
 	accumulator := 0
@@ -117,6 +95,22 @@ func getInt(in []byte, pos int) (int, int) {
 		accumulator += int(in[pos] & 0xf)
 	}
 	return accumulator, pos
+}
+
+func sumAllInts(in []byte) int {
+	sum := 0
+
+	accumulator := 0
+	for pos := 0; pos < len(in); pos++ {
+		if in[pos]&0xf0 != 0x30 {
+			sum += accumulator
+			accumulator = 0
+			continue
+		}
+		accumulator *= 10
+		accumulator += int(in[pos] & 0xf)
+	}
+	return sum
 }
 
 var benchmark = false
