@@ -3,12 +3,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -39,21 +37,29 @@ func solve() (fsSize, fsSize) {
 	return p1, p2
 }
 
-func buildTree(in string, nodes *nodePool) int {
-	stack := nodeList{}
+func nextLine(in []byte, pos int) int {
+	for ; in[pos] != '\n'; pos++ {
+	}
+	return pos + 1
+}
+
+func buildTree(in []byte, nodes *nodePool) int {
+	stack := make(nodeList, 10)
 	stackPos := -1
 	nodesAllocated := 0
 
 	var curNode *node
-	for _, line := range utils.GetLines(in) {
-		switch line[0] {
-		case '$': // command: cd or ls
-			if line[2] != 'c' {
+	for pos := 0; pos < len(in); {
+		switch in[pos] {
+		case '$':
+			if in[pos+2] != 'c' {
+				pos += 5
 				continue
 			}
-			if line[5] == '.' { // Traverse up
+			if in[pos+5] == '.' {
 				stackPos--
 				curNode = stack[stackPos]
+				pos += 8
 				continue
 			}
 			stackPos++
@@ -63,16 +69,19 @@ func buildTree(in string, nodes *nodePool) int {
 				stack[stackPos-1].addChild(curNode)
 			}
 			stack[stackPos] = curNode
-		case 'd': // Directory
-		default: // file size
-			curNode.addFile(fsSize(getInt(line)))
+			pos = nextLine(in, pos)
+		default:
+			size := 0
+			size, pos = getInt(in, pos)
+			curNode.addFile(fsSize(size))
+			pos = nextLine(in, pos)
 		}
 	}
 	return nodesAllocated
 }
 
 type nodePool [180]node
-type nodeList [10]*node
+type nodeList []*node
 
 type fsSize uint32
 
@@ -80,12 +89,10 @@ type node struct {
 	totalFileSize fsSize
 	treeSize      fsSize
 	children      nodeList
-	numChildren   byte
 }
 
 func (n *node) addChild(child *node) {
-	n.children[n.numChildren] = child
-	n.numChildren++
+	n.children = append(n.children, child)
 }
 func (n *node) addFile(size fsSize) {
 	n.totalFileSize += size
@@ -96,20 +103,20 @@ func (n *node) size() fsSize {
 		return n.treeSize
 	}
 	size := n.totalFileSize
-	for i := byte(0); i < n.numChildren; i++ {
-		size += n.children[i].size()
+	for _, child := range n.children {
+		size += child.size()
 	}
 	n.treeSize = size
 	return n.treeSize
 }
 
-func getInt(in string) int {
+func getInt(in []byte, pos int) (int, int) {
 	accumulator := 0
-	for pos := 0; pos < len(in) && in[pos] >= '0' && in[pos] <= '9'; pos++ {
+	for ; pos < len(in) && in[pos] >= '0' && in[pos] <= '9'; pos++ {
 		accumulator *= 10
 		accumulator += int(in[pos] & 0xf)
 	}
-	return accumulator
+	return accumulator, pos
 }
 
 var benchmark = false
