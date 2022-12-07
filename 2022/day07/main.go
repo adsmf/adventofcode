@@ -17,11 +17,12 @@ func main() {
 }
 
 func solve() (fsSize, fsSize) {
+	nodePool := [180]node{}
+	poolAllocated := 0
 	p1 := fsSize(0)
 	p2 := fsSize(70000000)
-	spaceNeeded := fsSize(sumAllInts(input) + 30000000 - 70000000)
 
-	stack := make(nodeList, 10)
+	stack := [10]*node{}
 	stackPos := -1
 
 	var curNode *node
@@ -30,14 +31,8 @@ func solve() (fsSize, fsSize) {
 		stackPos--
 		curNodeSize := curNode.size()
 		stack[stackPos].subdirSize += curNodeSize
-		if curNodeSize <= 100000 {
-			p1 += curNodeSize
-		}
-		if curNodeSize >= spaceNeeded && curNodeSize < p2 {
-			p2 = curNodeSize
-		}
 
-		curNode = &stack[stackPos]
+		curNode = stack[stackPos]
 	}
 
 	for pos := 0; pos < len(input); {
@@ -53,8 +48,9 @@ func solve() (fsSize, fsSize) {
 				continue
 			}
 			stackPos++
-			stack[stackPos] = node{}
-			curNode = &stack[stackPos]
+			stack[stackPos] = &nodePool[poolAllocated]
+			poolAllocated++
+			curNode = stack[stackPos]
 			pos = nextLine(input, pos)
 		default:
 			size := 0
@@ -66,6 +62,16 @@ func solve() (fsSize, fsSize) {
 	for stackPos > 0 {
 		completeDir()
 	}
+	spaceNeeded := fsSize(nodePool[0].size() + 30000000 - 70000000)
+	for n := 0; n < poolAllocated; n++ {
+		curNodeSize := nodePool[n].size()
+		if curNodeSize <= 100000 {
+			p1 += curNodeSize
+		}
+		if curNodeSize >= spaceNeeded && curNodeSize < p2 {
+			p2 = curNodeSize
+		}
+	}
 
 	return p1, p2
 }
@@ -75,8 +81,6 @@ func nextLine(in []byte, pos int) int {
 	}
 	return pos + 1
 }
-
-type nodeList []node
 
 type fsSize uint32
 
@@ -95,22 +99,6 @@ func getInt(in []byte, pos int) (int, int) {
 		accumulator += int(in[pos] & 0xf)
 	}
 	return accumulator, pos
-}
-
-func sumAllInts(in []byte) int {
-	sum := 0
-
-	accumulator := 0
-	for pos := 0; pos < len(in); pos++ {
-		if in[pos]&0xf0 != 0x30 {
-			sum += accumulator
-			accumulator = 0
-			continue
-		}
-		accumulator *= 10
-		accumulator += int(in[pos] & 0xf)
-	}
-	return sum
 }
 
 var benchmark = false
