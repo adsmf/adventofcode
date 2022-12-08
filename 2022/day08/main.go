@@ -33,8 +33,8 @@ func loadGrid() treeGrid {
 	}
 	return g
 }
-
-func (g treeGrid) tree(x, y int) tree { return tree(input[x+y*(g.width+1)]) }
+func (g treeGrid) treeAt(offset int) tree { return tree(input[offset]) }
+func (g treeGrid) offset(x, y int) int    { return x + y*(g.width+1) }
 
 func solve() (int, int) {
 	g := loadGrid()
@@ -42,11 +42,13 @@ func solve() (int, int) {
 	bestScore := 0
 	for x := 0; x < g.width; x++ {
 		for y := 0; y < g.width; y++ {
-			th := g.tree(x, y)
-			sL, eL := g.lookHorizontal(th, x, y, -1)
-			sR, eR := g.lookHorizontal(th, x, y, 1)
-			sU, eU := g.lookVertical(th, x, y, -1)
-			sD, eD := g.lookVertical(th, x, y, 1)
+			offset := g.offset(x, y)
+			th := g.treeAt(offset)
+
+			sL, eL := g.look(th, offset, -1, g.offset(-1, y))
+			sR, eR := g.look(th, offset, 1, g.offset(g.width, y))
+			sU, eU := g.look(th, offset, -g.width-1, g.offset(x, -1))
+			sD, eD := g.look(th, offset, g.width+1, g.offset(x, g.height))
 			if eL || eR || eU || eD {
 				edgeVisible++
 			}
@@ -59,38 +61,16 @@ func solve() (int, int) {
 	return edgeVisible, bestScore
 }
 
-func (g treeGrid) lookHorizontal(stopHeight tree, x, y, dx int) (int, bool) {
-	countLE, seesEdge := 0, true
-	bound := -1
-	if dx > 0 {
-		bound = g.height
-	}
-	for x += dx; x != bound; x += +dx {
-		countLE++
-		th := g.tree(x, y)
+func (g treeGrid) look(stopHeight tree, offset, inc, bound int) (int, bool) {
+	count := 0
+	for offset += inc; offset != bound; offset += inc {
+		count++
+		th := g.treeAt(offset)
 		if th >= tree(stopHeight) {
-			seesEdge = false
-			break
+			return count, false
 		}
 	}
-	return countLE, seesEdge
-}
-
-func (g treeGrid) lookVertical(stopHeight tree, x, y, dy int) (int, bool) {
-	countLE, seesEdge := 0, true
-	bound := -1
-	if dy > 0 {
-		bound = g.height
-	}
-	for y += dy; y != bound; y += +dy {
-		countLE++
-		th := g.tree(x, y)
-		if th >= tree(stopHeight) {
-			seesEdge = false
-			break
-		}
-	}
-	return countLE, seesEdge
+	return count, true
 }
 
 var benchmark = false
