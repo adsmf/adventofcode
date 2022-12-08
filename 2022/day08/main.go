@@ -11,21 +11,16 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
+func solve() (int, int) {
 	g := loadGrid()
-	return g.getVisible()
-}
-
-func part2() int {
-	g := loadGrid()
+	edgeVisible := g.getVisible()
 	bestScore := 0
 	for pos := range g.trees {
 		score := g.score(pos)
@@ -33,7 +28,7 @@ func part2() int {
 			bestScore = score
 		}
 	}
-	return bestScore
+	return edgeVisible, bestScore
 }
 
 type treeGrid struct {
