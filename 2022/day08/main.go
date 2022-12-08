@@ -16,11 +16,31 @@ func main() {
 	}
 }
 
-type treeGrid struct {
-	height, width int
-}
-
 type tree uint8
+
+func solve() (int, int) {
+	g := loadGrid()
+	edgeVisible, bestScore := 0, 0
+	maxY := g.height * (g.width + 1)
+	for offset := 0; offset < len(input); offset++ {
+		lineStart := offset
+		for x := 0; x < g.width; x, offset = x+1, offset+1 {
+			th := g.treeAt(offset)
+			sL, eL := g.look(th, offset, -1, lineStart-1)
+			sR, eR := g.look(th, offset, 1, lineStart+g.width)
+			sU, eU := g.look(th, offset, -g.width-1, x-g.width-1)
+			sD, eD := g.look(th, offset, g.width+1, x+maxY)
+			if eL || eR || eU || eD {
+				edgeVisible++
+			}
+			score := sL * sR * sU * sD
+			if score > bestScore {
+				bestScore = score
+			}
+		}
+	}
+	return edgeVisible, bestScore
+}
 
 func loadGrid() treeGrid {
 	g := treeGrid{}
@@ -33,40 +53,17 @@ func loadGrid() treeGrid {
 	}
 	return g
 }
-func (g treeGrid) treeAt(offset int) tree { return tree(input[offset]) }
 
-func solve() (int, int) {
-	g := loadGrid()
-	edgeVisible := 0
-	bestScore := 0
-	offset := 0
-	maxY := g.height * (g.width + 1)
-	for y := 0; y < g.width; y++ {
-		for x := 0; x < g.width; x++ {
-			th := g.treeAt(offset)
-			sL, eL := g.look(th, offset, -1, offset-x-1)
-			sR, eR := g.look(th, offset, 1, offset+g.width-x)
-			sU, eU := g.look(th, offset, -g.width-1, x-g.width-1)
-			sD, eD := g.look(th, offset, g.width+1, x+maxY)
-			if eL || eR || eU || eD {
-				edgeVisible++
-			}
-			score := sL * sR * sU * sD
-			if score > bestScore {
-				bestScore = score
-			}
-			offset++
-		}
-		offset++
-	}
-	return edgeVisible, bestScore
+type treeGrid struct {
+	height, width int
 }
 
-func (g treeGrid) look(stopHeight tree, offset, inc, bound int) (int, bool) {
+func (g treeGrid) treeAt(offset int) tree { return tree(input[offset]) }
+func (g treeGrid) look(stopHeight tree, pos, inc, bound int) (int, bool) {
 	count := 0
-	for offset += inc; offset != bound; offset += inc {
+	for pos += inc; pos != bound; pos += inc {
 		count++
-		th := g.treeAt(offset)
+		th := g.treeAt(pos)
 		if th >= tree(stopHeight) {
 			return count, false
 		}
