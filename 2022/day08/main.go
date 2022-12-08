@@ -3,8 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -22,17 +20,18 @@ func solve() (int, int) {
 	g := loadGrid()
 	edgeVisible := g.getVisible()
 	bestScore := 0
-	for pos := range g.trees {
-		score := g.score(pos)
-		if score > bestScore {
-			bestScore = score
+	for x := 0; x < g.width; x++ {
+		for y := 0; y < g.width; y++ {
+			score := g.score(x, y)
+			if score > bestScore {
+				bestScore = score
+			}
 		}
 	}
 	return edgeVisible, bestScore
 }
 
 type treeGrid struct {
-	trees         map[point]tree
 	height, width int
 }
 
@@ -42,30 +41,26 @@ type point struct {
 type tree int
 
 func loadGrid() treeGrid {
-	lines := utils.GetLines(input)
-	g := treeGrid{
-		height: len(lines),
-		width:  len(lines[0]),
+	g := treeGrid{}
+	for ; input[g.width] != '\n'; g.width++ {
 	}
-	g.trees = make(map[point]tree, g.height*g.width)
-	for y, line := range lines {
-		for x, ch := range line {
-			g.trees[point{x, y}] = tree(ch - '0')
-		}
-	}
+	g.height = len(input)/g.width - 1
 	return g
 }
 
+func (g treeGrid) tree(x, y int) tree {
+	return tree(input[x+y*(g.width+1)] & 0xf)
+}
+
 func (g treeGrid) getVisible() int {
-	visible := map[point]bool{}
+	visible := [100][100]bool{}
 	// From top
 	for x := 0; x < g.width; x++ {
 		maxHeight := tree(-1)
 		for y := 0; y < g.height; y++ {
-			pos := point{x, y}
-			treeHeight := g.trees[pos]
+			treeHeight := g.tree(x, y)
 			if treeHeight > maxHeight {
-				visible[pos] = true
+				visible[x][y] = true
 			}
 			if treeHeight > maxHeight {
 				maxHeight = treeHeight
@@ -79,10 +74,9 @@ func (g treeGrid) getVisible() int {
 	for x := 0; x < g.width; x++ {
 		maxHeight := tree(-1)
 		for y := g.height - 1; y >= 0; y-- {
-			pos := point{x, y}
-			treeHeight := g.trees[pos]
+			treeHeight := g.tree(x, y)
 			if treeHeight > maxHeight {
-				visible[pos] = true
+				visible[x][y] = true
 			}
 			if treeHeight > maxHeight {
 				maxHeight = treeHeight
@@ -96,10 +90,9 @@ func (g treeGrid) getVisible() int {
 	for y := 0; y < g.height; y++ {
 		maxHeight := tree(-1)
 		for x := 0; x < g.width; x++ {
-			pos := point{x, y}
-			treeHeight := g.trees[pos]
+			treeHeight := g.tree(x, y)
 			if treeHeight > maxHeight {
-				visible[pos] = true
+				visible[x][y] = true
 			}
 			if treeHeight > maxHeight {
 				maxHeight = treeHeight
@@ -113,10 +106,9 @@ func (g treeGrid) getVisible() int {
 	for y := 0; y < g.height; y++ {
 		maxHeight := tree(-1)
 		for x := g.width - 1; x >= 0; x-- {
-			pos := point{x, y}
-			treeHeight := g.trees[pos]
+			treeHeight := g.tree(x, y)
 			if treeHeight > maxHeight {
-				visible[pos] = true
+				visible[x][y] = true
 			}
 			if treeHeight > maxHeight {
 				maxHeight = treeHeight
@@ -126,45 +118,66 @@ func (g treeGrid) getVisible() int {
 			}
 		}
 	}
-	return len(visible)
+	count := 0
+	for x := 0; x < g.width; x++ {
+		for y := 0; y < g.height; y++ {
+			if visible[x][y] {
+				count++
+			}
+		}
+	}
+	return count
 }
 
-func (g treeGrid) score(pos point) int {
-	sU, sD, sL, sR := 0, 0, 0, 0
-	th := g.trees[pos]
-	for y := pos.y - 1; y >= 0; y-- {
-		check := point{pos.x, y}
-		checkHeight := g.trees[check]
-		sU++
-		if checkHeight >= th {
+func (g treeGrid) score(x, y int) int {
+	th := g.tree(x, y)
+	score := 1
+
+	dirScore := 0
+	for cy := y - 1; cy >= 0; cy-- {
+		dirScore++
+		if g.tree(x, cy) >= th {
 			break
 		}
 	}
-	for y := pos.y + 1; y < g.height; y++ {
-		check := point{pos.x, y}
-		checkHeight := g.trees[check]
-		sD++
-		if checkHeight >= th {
+	if dirScore == 0 {
+		return 0
+	}
+	score *= dirScore
+
+	dirScore = 0
+	for cy := y + 1; cy < g.height; cy++ {
+		dirScore++
+		if g.tree(x, cy) >= th {
 			break
 		}
 	}
-	for x := pos.x + 1; x < g.width; x++ {
-		check := point{x, pos.y}
-		checkHeight := g.trees[check]
-		sR++
-		if checkHeight >= th {
+	if dirScore == 0 {
+		return 0
+	}
+	score *= dirScore
+
+	dirScore = 0
+	for cx := x - 1; cx >= 0; cx-- {
+		dirScore++
+		if g.tree(cx, y) >= th {
 			break
 		}
 	}
-	for x := pos.x - 1; x >= 0; x-- {
-		check := point{x, pos.y}
-		checkHeight := g.trees[check]
-		sL++
-		if checkHeight >= th {
+	if dirScore == 0 {
+		return 0
+	}
+	score *= dirScore
+
+	dirScore = 0
+	for cx := x + 1; cx < g.width; cx++ {
+		dirScore++
+		if g.tree(cx, y) >= th {
 			break
 		}
 	}
-	return sU * sD * sL * sR
+	score *= dirScore
+	return score
 }
 
 var benchmark = false
