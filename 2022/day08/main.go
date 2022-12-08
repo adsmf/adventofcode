@@ -6,7 +6,7 @@ import (
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -16,13 +16,41 @@ func main() {
 	}
 }
 
+type treeGrid struct {
+	height, width int
+}
+
+type tree uint8
+
+func loadGrid() treeGrid {
+	g := treeGrid{}
+	for ; input[g.width] != '\n'; g.width++ {
+		input[g.width] &= 0xf
+	}
+	g.height = len(input)/g.width - 1
+	for i := g.width + 1; i < len(input); i++ {
+		input[i] &= 0xf
+	}
+	return g
+}
+
+func (g treeGrid) tree(x, y int) tree { return tree(input[x+y*(g.width+1)]) }
+
 func solve() (int, int) {
 	g := loadGrid()
-	edgeVisible := g.getVisible()
+	edgeVisible := 0
 	bestScore := 0
 	for x := 0; x < g.width; x++ {
 		for y := 0; y < g.width; y++ {
-			score := g.score(x, y)
+			th := g.tree(x, y)
+			sL, eL := g.lookHorizontal(th, x, y, -1)
+			sR, eR := g.lookHorizontal(th, x, y, 1)
+			sU, eU := g.lookVertical(th, x, y, -1)
+			sD, eD := g.lookVertical(th, x, y, 1)
+			if eL || eR || eU || eD {
+				edgeVisible++
+			}
+			score := sL * sR * sU * sD
 			if score > bestScore {
 				bestScore = score
 			}
@@ -31,153 +59,38 @@ func solve() (int, int) {
 	return edgeVisible, bestScore
 }
 
-type treeGrid struct {
-	height, width int
-}
-
-type point struct {
-	x, y int
-}
-type tree int
-
-func loadGrid() treeGrid {
-	g := treeGrid{}
-	for ; input[g.width] != '\n'; g.width++ {
+func (g treeGrid) lookHorizontal(stopHeight tree, x, y, dx int) (int, bool) {
+	countLE, seesEdge := 0, true
+	bound := -1
+	if dx > 0 {
+		bound = g.height
 	}
-	g.height = len(input)/g.width - 1
-	return g
-}
-
-func (g treeGrid) tree(x, y int) tree {
-	return tree(input[x+y*(g.width+1)] & 0xf)
-}
-
-func (g treeGrid) getVisible() int {
-	visible := [100][100]bool{}
-	// From top
-	for x := 0; x < g.width; x++ {
-		maxHeight := tree(-1)
-		for y := 0; y < g.height; y++ {
-			treeHeight := g.tree(x, y)
-			if treeHeight > maxHeight {
-				visible[x][y] = true
-			}
-			if treeHeight > maxHeight {
-				maxHeight = treeHeight
-			}
-			if treeHeight == 9 {
-				break
-			}
-		}
-	}
-	// From bottom
-	for x := 0; x < g.width; x++ {
-		maxHeight := tree(-1)
-		for y := g.height - 1; y >= 0; y-- {
-			treeHeight := g.tree(x, y)
-			if treeHeight > maxHeight {
-				visible[x][y] = true
-			}
-			if treeHeight > maxHeight {
-				maxHeight = treeHeight
-			}
-			if treeHeight == 9 {
-				break
-			}
-		}
-	}
-	// Left
-	for y := 0; y < g.height; y++ {
-		maxHeight := tree(-1)
-		for x := 0; x < g.width; x++ {
-			treeHeight := g.tree(x, y)
-			if treeHeight > maxHeight {
-				visible[x][y] = true
-			}
-			if treeHeight > maxHeight {
-				maxHeight = treeHeight
-			}
-			if treeHeight == 9 {
-				break
-			}
-		}
-	}
-	// Right
-	for y := 0; y < g.height; y++ {
-		maxHeight := tree(-1)
-		for x := g.width - 1; x >= 0; x-- {
-			treeHeight := g.tree(x, y)
-			if treeHeight > maxHeight {
-				visible[x][y] = true
-			}
-			if treeHeight > maxHeight {
-				maxHeight = treeHeight
-			}
-			if treeHeight == 9 {
-				break
-			}
-		}
-	}
-	count := 0
-	for x := 0; x < g.width; x++ {
-		for y := 0; y < g.height; y++ {
-			if visible[x][y] {
-				count++
-			}
-		}
-	}
-	return count
-}
-
-func (g treeGrid) score(x, y int) int {
-	th := g.tree(x, y)
-	score := 1
-
-	dirScore := 0
-	for cy := y - 1; cy >= 0; cy-- {
-		dirScore++
-		if g.tree(x, cy) >= th {
+	for x += dx; x != bound; x += +dx {
+		countLE++
+		th := g.tree(x, y)
+		if th >= tree(stopHeight) {
+			seesEdge = false
 			break
 		}
 	}
-	if dirScore == 0 {
-		return 0
-	}
-	score *= dirScore
+	return countLE, seesEdge
+}
 
-	dirScore = 0
-	for cy := y + 1; cy < g.height; cy++ {
-		dirScore++
-		if g.tree(x, cy) >= th {
+func (g treeGrid) lookVertical(stopHeight tree, x, y, dy int) (int, bool) {
+	countLE, seesEdge := 0, true
+	bound := -1
+	if dy > 0 {
+		bound = g.height
+	}
+	for y += dy; y != bound; y += +dy {
+		countLE++
+		th := g.tree(x, y)
+		if th >= tree(stopHeight) {
+			seesEdge = false
 			break
 		}
 	}
-	if dirScore == 0 {
-		return 0
-	}
-	score *= dirScore
-
-	dirScore = 0
-	for cx := x - 1; cx >= 0; cx-- {
-		dirScore++
-		if g.tree(cx, y) >= th {
-			break
-		}
-	}
-	if dirScore == 0 {
-		return 0
-	}
-	score *= dirScore
-
-	dirScore = 0
-	for cx := x + 1; cx < g.width; cx++ {
-		dirScore++
-		if g.tree(cx, y) >= th {
-			break
-		}
-	}
-	score *= dirScore
-	return score
+	return countLE, seesEdge
 }
 
 var benchmark = false
