@@ -45,12 +45,8 @@ func solve() (int, int) {
 func loadGrid() treeGrid {
 	g := treeGrid{}
 	for ; input[g.width] != '\n'; g.width++ {
-		input[g.width] &= 0xf
 	}
 	g.height = len(input)/g.width - 1
-	for i := g.width + 1; i < len(input); i++ {
-		input[i] &= 0xf
-	}
 	return g
 }
 
