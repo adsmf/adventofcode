@@ -34,21 +34,20 @@ func loadGrid() treeGrid {
 	return g
 }
 func (g treeGrid) treeAt(offset int) tree { return tree(input[offset]) }
-func (g treeGrid) offset(x, y int) int    { return x + y*(g.width+1) }
 
 func solve() (int, int) {
 	g := loadGrid()
 	edgeVisible := 0
 	bestScore := 0
-	for x := 0; x < g.width; x++ {
-		for y := 0; y < g.width; y++ {
-			offset := g.offset(x, y)
+	offset := 0
+	maxY := g.height * (g.width + 1)
+	for y := 0; y < g.width; y++ {
+		for x := 0; x < g.width; x++ {
 			th := g.treeAt(offset)
-
-			sL, eL := g.look(th, offset, -1, g.offset(-1, y))
-			sR, eR := g.look(th, offset, 1, g.offset(g.width, y))
-			sU, eU := g.look(th, offset, -g.width-1, g.offset(x, -1))
-			sD, eD := g.look(th, offset, g.width+1, g.offset(x, g.height))
+			sL, eL := g.look(th, offset, -1, offset-x-1)
+			sR, eR := g.look(th, offset, 1, offset+g.width-x)
+			sU, eU := g.look(th, offset, -g.width-1, x-g.width-1)
+			sD, eD := g.look(th, offset, g.width+1, x+maxY)
 			if eL || eR || eU || eD {
 				edgeVisible++
 			}
@@ -56,7 +55,9 @@ func solve() (int, int) {
 			if score > bestScore {
 				bestScore = score
 			}
+			offset++
 		}
+		offset++
 	}
 	return edgeVisible, bestScore
 }
