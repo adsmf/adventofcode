@@ -16,7 +16,7 @@ func main() {
 	}
 }
 
-func solve() (int, int) {
+func solve() (counter, counter) {
 	positions := [10]point{}
 	visited := visitMap{}
 	var dist int
@@ -57,8 +57,8 @@ func (v *visitMap) markVisited(p1 point, p2 point) {
 	v.vis[p2.x+visitBounds][p2.y+visitBounds] |= 2
 }
 
-func (v visitMap) counts() (int, int) {
-	c1, c2 := 0, 0
+func (v visitMap) counts() (counter, counter) {
+	c1, c2 := counter(0), counter(0)
 	min := point{v.min.x + visitBounds, v.min.y + visitBounds}
 	max := point{v.max.x + visitBounds, v.max.y + visitBounds}
 	for x := min.x; x <= max.x; x++ {
@@ -67,8 +67,8 @@ func (v visitMap) counts() (int, int) {
 			if vis == 0 {
 				continue
 			}
-			c1 += int(vis & 1)
-			c2 += int((vis & 2) >> 1)
+			c1 += counter(vis & 1)
+			c2 += counter(vis >> 1)
 		}
 	}
 	return c1, c2
@@ -120,5 +120,7 @@ func getInt(in []byte, pos int) (int, int) {
 	}
 	return accumulator, pos
 }
+
+type counter uint16
 
 var benchmark = false
