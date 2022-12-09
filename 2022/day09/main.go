@@ -18,8 +18,7 @@ func main() {
 
 func solve() (int, int) {
 	positions := [10]point{}
-	p1 := make(map[point]bool, 3000)
-	p2 := make(map[point]bool, 3000)
+	visited := visitMap{}
 	var dir byte
 	var dist int
 	for pos := 0; pos < len(input); pos++ {
@@ -30,14 +29,39 @@ func solve() (int, int) {
 			positions[0] = positions[0].add(headMove)
 			for i := 1; i < 10; i++ {
 				tailOffset := positions[i].sub(positions[i-1])
-				tailMove := tailOffset.reduce()
-				positions[i] = positions[i].add(tailMove)
+				positions[i] = positions[i].add(tailOffset.reduce())
 			}
-			p1[positions[1]] = true
-			p2[positions[9]] = true
+			visited.markVisited(positions[1], positions[9])
 		}
 	}
-	return len(p1), len(p2)
+	return visited.counts()
+}
+
+const visitBounds = 350
+const visitSize = visitBounds*2 + 1
+
+type visitMap struct {
+	vis      [visitSize][visitSize]byte
+	min, max point
+}
+
+func (v *visitMap) markVisited(p1 point, p2 point) {
+	v.min = minPoint(minPoint(v.min, p1), p2)
+	v.max = maxPoint(maxPoint(v.max, p1), p2)
+	v.vis[p1.x+visitBounds][p1.y+visitBounds] |= 1
+	v.vis[p2.x+visitBounds][p2.y+visitBounds] |= 2
+}
+
+func (v visitMap) counts() (int, int) {
+	c1, c2 := 0, 0
+	for x := v.min.x; x <= v.max.x; x++ {
+		for y := v.min.y; y <= v.max.y; y++ {
+			vis := v.vis[x+visitBounds][y+visitBounds]
+			c1 += int(vis & 1)
+			c2 += int((vis & 2) >> 1)
+		}
+	}
+	return c1, c2
 }
 
 var directions = map[byte]point{
@@ -45,6 +69,27 @@ var directions = map[byte]point{
 	'L': {-1, 0},
 	'U': {0, -1},
 	'D': {0, 1},
+}
+
+func minPoint(p1, p2 point) point {
+	res := p1
+	if p2.x < p1.x {
+		res.x = p2.x
+	}
+	if p2.y < p1.y {
+		res.y = p2.y
+	}
+	return res
+}
+func maxPoint(p1, p2 point) point {
+	res := p1
+	if p2.x > p1.x {
+		res.x = p2.x
+	}
+	if p2.y > p1.y {
+		res.y = p2.y
+	}
+	return res
 }
 
 type point struct {
