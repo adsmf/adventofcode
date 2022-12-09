@@ -97,29 +97,19 @@ func (p point) add(o point) point { return point{p.x + o.x, p.y + o.y} }
 func (p point) sub(o point) point { return point{p.x - o.x, p.y - o.y} }
 
 func (p point) reduce() (point, bool) {
-	if p.x > 1 {
-		return point{-1, crop1(-p.y)}, true
-	}
-	if p.x < -1 {
-		return point{1, crop1(-p.y)}, true
-	}
-	if p.y > 1 {
-		return point{crop1(-p.x), -1}, true
-	}
-	if p.y < -1 {
-		return point{crop1(-p.x), 1}, true
-	}
-	return point{}, false
+	var cX, cY bool
+	p.x, cX = reduceAxis(p.x)
+	p.y, cY = reduceAxis(p.y)
+	return p, cX || cY
 }
-
-func crop1(in int) int {
-	if in == 0 {
-		return 0
+func reduceAxis(v int) (int, bool) {
+	if v > 1 {
+		return -1, true
 	}
-	if in > 0 {
-		return 1
+	if v < -1 {
+		return 1, true
 	}
-	return -1
+	return -v, false
 }
 
 func getInt(in []byte, pos int) (int, int) {
