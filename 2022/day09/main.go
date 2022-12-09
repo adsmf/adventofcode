@@ -58,12 +58,10 @@ func (v *visitMap) markVisited(p1 point, p2 point) {
 
 func (v visitMap) counts() (int, int) {
 	c1, c2 := 0, 0
-	v.min.x += visitBounds
-	v.min.y += visitBounds
-	v.max.x += visitBounds
-	v.max.y += visitBounds
-	for x := v.min.x; x <= v.max.x; x++ {
-		for y := v.min.y; y <= v.max.y; y++ {
+	min := point{v.min.x + visitBounds, v.min.y + visitBounds}
+	max := point{v.max.x + visitBounds, v.max.y + visitBounds}
+	for x := min.x; x <= max.x; x++ {
+		for y := min.y; y <= max.y; y++ {
 			vis := v.vis[x][y]
 			if vis == 0 {
 				continue
@@ -75,12 +73,7 @@ func (v visitMap) counts() (int, int) {
 	return c1, c2
 }
 
-var directions = []point{
-	'R': {1, 0},
-	'L': {-1, 0},
-	'U': {0, -1},
-	'D': {0, 1},
-}
+var directions = []point{'R': {1, 0}, 'L': {-1, 0}, 'U': {0, -1}, 'D': {0, 1}}
 
 func minPoint(p1, p2 point) point {
 	res := p1
@@ -103,17 +96,10 @@ func maxPoint(p1, p2 point) point {
 	return res
 }
 
-type point struct {
-	x, y int
-}
+type point struct{ x, y int }
 
-func (p point) add(o point) point {
-	return point{p.x + o.x, p.y + o.y}
-}
-
-func (p point) sub(o point) point {
-	return point{p.x - o.x, p.y - o.y}
-}
+func (p point) add(o point) point { return point{p.x + o.x, p.y + o.y} }
+func (p point) sub(o point) point { return point{p.x - o.x, p.y - o.y} }
 
 func (p point) reduce() point {
 	if p.x > 1 {
