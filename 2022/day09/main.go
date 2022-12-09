@@ -75,7 +75,7 @@ func (v visitMap) counts() (int, int) {
 	return c1, c2
 }
 
-var directions = map[byte]point{
+var directions = []point{
 	'R': {1, 0},
 	'L': {-1, 0},
 	'U': {0, -1},
@@ -132,13 +132,13 @@ func (p point) reduce() point {
 }
 
 func crop1(in int) int {
-	if in > 1 {
+	if in == 0 {
+		return 0
+	}
+	if in > 0 {
 		return 1
 	}
-	if in < -1 {
-		return -1
-	}
-	return in
+	return -1
 }
 
 func getInt(in []byte, pos int) (int, int) {
