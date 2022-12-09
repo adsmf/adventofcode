@@ -19,21 +19,22 @@ func main() {
 func solve() (int, int) {
 	positions := [10]point{}
 	visited := visitMap{}
-	var dir byte
 	var dist int
 	for pos := 0; pos < len(input); pos++ {
-		dir = input[pos]
+		headMove := directions[input[pos]]
 		dist, pos = getInt(input, pos+2)
-		headMove := directions[dir]
 		for i := 0; i < dist; i++ {
 			positions[0] = positions[0].add(headMove)
+			head := positions[0]
 			for i := 1; i < 10; i++ {
-				tailOffset := positions[i].sub(positions[i-1])
-				tailMove := tailOffset.reduce()
-				if tailMove == (point{}) {
+				tail := positions[i]
+				tailOffset := tail.sub(head)
+				tailMove, moved := tailOffset.reduce()
+				if !moved {
 					break
 				}
-				positions[i] = positions[i].add(tailMove)
+				positions[i] = tail.add(tailMove)
+				head = positions[i]
 			}
 			visited.markVisited(positions[1], positions[9])
 		}
@@ -75,25 +76,19 @@ func (v visitMap) counts() (int, int) {
 
 var directions = []point{'R': {1, 0}, 'L': {-1, 0}, 'U': {0, -1}, 'D': {0, 1}}
 
-func minPoint(p1, p2 point) point {
-	res := p1
-	if p2.x < p1.x {
-		res.x = p2.x
+func minPoint(p1, p2 point) point { return point{min(p1.x, p2.x), min(p1.y, p2.y)} }
+func maxPoint(p1, p2 point) point { return point{max(p1.x, p2.x), max(p1.y, p2.y)} }
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	if p2.y < p1.y {
-		res.y = p2.y
-	}
-	return res
+	return b
 }
-func maxPoint(p1, p2 point) point {
-	res := p1
-	if p2.x > p1.x {
-		res.x = p2.x
+func max(a, b int) int {
+	if a > b {
+		return a
 	}
-	if p2.y > p1.y {
-		res.y = p2.y
-	}
-	return res
+	return b
 }
 
 type point struct{ x, y int }
@@ -101,20 +96,20 @@ type point struct{ x, y int }
 func (p point) add(o point) point { return point{p.x + o.x, p.y + o.y} }
 func (p point) sub(o point) point { return point{p.x - o.x, p.y - o.y} }
 
-func (p point) reduce() point {
+func (p point) reduce() (point, bool) {
 	if p.x > 1 {
-		return point{-1, crop1(-p.y)}
+		return point{-1, crop1(-p.y)}, true
 	}
 	if p.x < -1 {
-		return point{1, crop1(-p.y)}
+		return point{1, crop1(-p.y)}, true
 	}
 	if p.y > 1 {
-		return point{crop1(-p.x), -1}
+		return point{crop1(-p.x), -1}, true
 	}
 	if p.y < -1 {
-		return point{crop1(-p.x), 1}
+		return point{crop1(-p.x), 1}, true
 	}
-	return point{}
+	return point{}, false
 }
 
 func crop1(in int) int {
