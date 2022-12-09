@@ -39,62 +39,36 @@ func solve() (counter, counter) {
 			visited.markVisited(positions[1], positions[9])
 		}
 	}
-	return visited.counts()
+	return visited.c1, visited.c2
 }
 
 const visitBounds = 350
 const visitSize = visitBounds*2 + 1
 
 type visitMap struct {
-	vis      [visitSize][visitSize]byte
-	min, max point
+	vis    [visitSize * visitSize]byte
+	c1, c2 counter
 }
 
 func (v *visitMap) markVisited(p1 point, p2 point) {
-	v.min = minPoint(minPoint(v.min, p1), p2)
-	v.max = maxPoint(maxPoint(v.max, p1), p2)
-	v.vis[p1.x+visitBounds][p1.y+visitBounds] |= 1
-	v.vis[p2.x+visitBounds][p2.y+visitBounds] |= 2
-}
-
-func (v visitMap) counts() (counter, counter) {
-	c1, c2 := counter(0), counter(0)
-	min := point{v.min.x + visitBounds, v.min.y + visitBounds}
-	max := point{v.max.x + visitBounds, v.max.y + visitBounds}
-	for x := min.x; x <= max.x; x++ {
-		for y := min.y; y <= max.y; y++ {
-			vis := v.vis[x][y]
-			if vis == 0 {
-				continue
-			}
-			c1 += counter(vis & 1)
-			c2 += counter(vis >> 1)
-		}
+	p1id, p2id := p1.id(), p2.id()
+	if v.vis[p1id]&1 == 0 {
+		v.vis[p1id] |= 1
+		v.c1++
 	}
-	return c1, c2
+	if v.vis[p2id]>>1 == 0 {
+		v.vis[p2id] |= 2
+		v.c2++
+	}
 }
 
 var directions = []point{'R': {1, 0}, 'L': {-1, 0}, 'U': {0, -1}, 'D': {0, 1}}
-
-func minPoint(p1, p2 point) point { return point{min(p1.x, p2.x), min(p1.y, p2.y)} }
-func maxPoint(p1, p2 point) point { return point{max(p1.x, p2.x), max(p1.y, p2.y)} }
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
 
 type point struct{ x, y int }
 
 func (p point) add(o point) point { return point{p.x + o.x, p.y + o.y} }
 func (p point) sub(o point) point { return point{p.x - o.x, p.y - o.y} }
+func (p point) id() int           { return (p.y+visitBounds)*visitSize + (p.x + visitBounds) }
 
 func (p point) reduce() (point, bool) {
 	var cX, cY bool
