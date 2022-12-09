@@ -29,7 +29,11 @@ func solve() (int, int) {
 			positions[0] = positions[0].add(headMove)
 			for i := 1; i < 10; i++ {
 				tailOffset := positions[i].sub(positions[i-1])
-				positions[i] = positions[i].add(tailOffset.reduce())
+				tailMove := tailOffset.reduce()
+				if tailMove == (point{}) {
+					break
+				}
+				positions[i] = positions[i].add(tailMove)
 			}
 			visited.markVisited(positions[1], positions[9])
 		}
@@ -54,9 +58,16 @@ func (v *visitMap) markVisited(p1 point, p2 point) {
 
 func (v visitMap) counts() (int, int) {
 	c1, c2 := 0, 0
+	v.min.x += visitBounds
+	v.min.y += visitBounds
+	v.max.x += visitBounds
+	v.max.y += visitBounds
 	for x := v.min.x; x <= v.max.x; x++ {
 		for y := v.min.y; y <= v.max.y; y++ {
-			vis := v.vis[x+visitBounds][y+visitBounds]
+			vis := v.vis[x][y]
+			if vis == 0 {
+				continue
+			}
 			c1 += int(vis & 1)
 			c2 += int((vis & 2) >> 1)
 		}
