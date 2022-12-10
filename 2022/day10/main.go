@@ -27,7 +27,8 @@ func solve() (int, screenBuffer) {
 			countCycle += 40
 		}
 		hPos++
-		if hPos-regX >= 0 && hPos-regX <= 2 {
+		spriteOffset := hPos - regX
+		if spriteOffset >= 0 && spriteOffset <= 2 {
 			screen[screenPos] = '#'
 		} else {
 			screen[screenPos] = '.'
