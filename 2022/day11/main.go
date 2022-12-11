@@ -14,15 +14,15 @@ func main() {
 	for i := 1; i < len(monkeys); i++ {
 		monkeyLCM *= monkeys[i].testVal
 	}
-	p1 := keepAway(monkeys, 20, func(i monkeyItem) monkeyItem { return i / 3 })
-	p2 := keepAway(monkeys, 10000, func(i monkeyItem) monkeyItem { return i % monkeyLCM })
+	p1 := keepAway(monkeys, 20, func(i monkeyItem) monkeyItem { return i / 3 }, 1<<32)
+	p2 := keepAway(monkeys, 10000, func(i monkeyItem) monkeyItem { return i }, monkeyLCM)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func keepAway(monkeys tribe, rounds int, reduce transform) int {
+func keepAway(monkeys tribe, rounds int, reduce transform, lcm monkeyItem) int {
 	inspectCount := [8]int{}
 	inspections := [...]transform{
 		monkeys[0].inspectOp(),
@@ -41,7 +41,10 @@ func keepAway(monkeys tribe, rounds int, reduce transform) int {
 			for i := 0; i < monkey.numItems; i++ {
 				inspectCount[m]++
 				item := reduce(inspections[m](monkey.items[i]))
-				if (item % monkey.testVal) == 0 {
+				if item > lcm {
+					item %= lcm
+				}
+				if item >= monkey.testVal && (item%monkey.testVal) == 0 {
 					target = &monkeys[monkey.throwTrue]
 				} else {
 					target = &monkeys[monkey.throwFalse]
