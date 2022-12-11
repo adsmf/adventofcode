@@ -16,23 +16,23 @@ func main() {
 	for i := 1; i < len(monkeys); i++ {
 		monkeyLCM = utils.LowestCommonMultiplePair(monkeyLCM, monkeys[i].testVal)
 	}
-	p1 := keepAway(monkeys, 20, func(i int) int { return i / 3 })
-	p2 := keepAway(monkeys, 10000, func(i int) int { return i % monkeyLCM })
+	p1 := keepAway(monkeys, 20, func(i monkeyItem) monkeyItem { return i / 3 })
+	p2 := keepAway(monkeys, 10000, func(i monkeyItem) monkeyItem { return i % monkeyLCM })
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func keepAway(monkeys tribe, rounds int, reduce func(int) int) int {
+func keepAway(monkeys tribe, rounds int, reduce func(monkeyItem) monkeyItem) int {
 	inspectCount := [8]int{}
+	var target *monkeyInfo
 	for round := 0; round < rounds; round++ {
 		for m := 0; m < 8; m++ {
-			monkey := monkeys[m]
-			toThrow := monkey.items
+			monkey := &monkeys[m]
 			for i := 0; i < monkey.numItems; i++ {
 				inspectCount[m]++
-				item := toThrow[i]
+				item := monkey.items[i]
 				switch monkey.op.code {
 				case opAdd:
 					item += monkey.op.value
@@ -42,7 +42,6 @@ func keepAway(monkeys tribe, rounds int, reduce func(int) int) int {
 					item *= item
 				}
 				item = reduce(item)
-				var target *monkeyInfo
 				if (item % monkey.testVal) == 0 {
 					target = &monkeys[monkey.throwTrue]
 				} else {
@@ -51,7 +50,7 @@ func keepAway(monkeys tribe, rounds int, reduce func(int) int) int {
 				target.items[target.numItems] = item
 				target.numItems++
 			}
-			monkeys[m].numItems = 0
+			monkey.numItems = 0
 		}
 	}
 	w1, w2 := 0, 0
@@ -99,13 +98,13 @@ type monkeyInfo struct {
 	items      monkeyItems
 	numItems   int
 	op         inspectOperation
-	testVal    int
+	testVal    monkeyItem
 	throwTrue  byte
 	throwFalse byte
 }
 
 func (m *monkeyInfo) parseItems(input []byte, pos int) int {
-	accumulator := 0
+	accumulator := monkeyItem(0)
 	addItem := func() {
 		m.items[m.numItems] = accumulator
 		m.numItems++
@@ -115,7 +114,7 @@ func (m *monkeyInfo) parseItems(input []byte, pos int) int {
 		ch := input[pos]
 		if ch >= '0' {
 			accumulator *= 10
-			accumulator += int(ch & 0xf)
+			accumulator += monkeyItem(ch & 0xf)
 			continue
 		}
 		addItem()
@@ -125,20 +124,21 @@ func (m *monkeyInfo) parseItems(input []byte, pos int) int {
 	return pos + 1
 }
 
-func getInt(in []byte, pos int) (int, int) {
-	accumulator := 0
+func getInt(in []byte, pos int) (monkeyItem, int) {
+	accumulator := monkeyItem(0)
 	for ; in[pos] != '\n'; pos++ {
 		accumulator *= 10
-		accumulator += int(in[pos] & 0xf)
+		accumulator += monkeyItem(in[pos] & 0xf)
 	}
 	return accumulator, pos
 }
 
-type monkeyItems [30]int
+type monkeyItem uint
+type monkeyItems [30]monkeyItem
 
 type inspectOperation struct {
 	code  opCode
-	value int
+	value monkeyItem
 }
 
 type opCode int
