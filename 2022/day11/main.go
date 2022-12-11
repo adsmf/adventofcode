@@ -46,8 +46,7 @@ func keepAway(monkeys tribe, rounds int, reduce transform) int {
 				} else {
 					target = &monkeys[monkey.throwFalse]
 				}
-				target.items[target.numItems] = item
-				target.numItems++
+				target.catch(item)
 			}
 			monkey.numItems = 0
 		}
@@ -101,6 +100,11 @@ type monkeyInfo struct {
 	testVal    monkeyItem
 	throwTrue  byte
 	throwFalse byte
+}
+
+func (m *monkeyInfo) catch(item monkeyItem) {
+	m.items[m.numItems] = item
+	m.numItems++
 }
 
 func (m monkeyInfo) inspectOp() transform {
