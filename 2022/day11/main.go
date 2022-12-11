@@ -3,8 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -14,7 +12,7 @@ func main() {
 	monkeys := loadMonkeys()
 	monkeyLCM := monkeys[0].testVal
 	for i := 1; i < len(monkeys); i++ {
-		monkeyLCM = utils.LowestCommonMultiplePair(monkeyLCM, monkeys[i].testVal)
+		monkeyLCM *= monkeys[i].testVal
 	}
 	p1 := keepAway(monkeys, 20, func(i monkeyItem) monkeyItem { return i / 3 })
 	p2 := keepAway(monkeys, 10000, func(i monkeyItem) monkeyItem { return i % monkeyLCM })
