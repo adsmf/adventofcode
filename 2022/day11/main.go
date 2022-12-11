@@ -22,24 +22,25 @@ func main() {
 	}
 }
 
-func keepAway(monkeys tribe, rounds int, reduce func(monkeyItem) monkeyItem) int {
+func keepAway(monkeys tribe, rounds int, reduce transform) int {
 	inspectCount := [8]int{}
+	inspections := [...]transform{
+		monkeys[0].inspectOp(),
+		monkeys[1].inspectOp(),
+		monkeys[2].inspectOp(),
+		monkeys[3].inspectOp(),
+		monkeys[4].inspectOp(),
+		monkeys[5].inspectOp(),
+		monkeys[6].inspectOp(),
+		monkeys[7].inspectOp(),
+	}
 	var target *monkeyInfo
 	for round := 0; round < rounds; round++ {
 		for m := 0; m < 8; m++ {
 			monkey := &monkeys[m]
 			for i := 0; i < monkey.numItems; i++ {
 				inspectCount[m]++
-				item := monkey.items[i]
-				switch monkey.op.code {
-				case opAdd:
-					item += monkey.op.value
-				case opTimes:
-					item *= monkey.op.value
-				case opTimesSelf:
-					item *= item
-				}
-				item = reduce(item)
+				item := reduce(inspections[m](monkey.items[i]))
 				if (item % monkey.testVal) == 0 {
 					target = &monkeys[monkey.throwTrue]
 				} else {
@@ -90,6 +91,7 @@ func loadMonkeys() tribe {
 	return monkeys
 }
 
+type transform func(monkeyItem) monkeyItem
 type tribe [8]monkeyInfo
 
 type monkeyInfo struct {
@@ -99,6 +101,20 @@ type monkeyInfo struct {
 	testVal    monkeyItem
 	throwTrue  byte
 	throwFalse byte
+}
+
+func (m monkeyInfo) inspectOp() transform {
+	switch m.op.code {
+	case opAdd:
+		val := m.op.value
+		return func(item monkeyItem) monkeyItem { return item + val }
+	case opTimes:
+		val := m.op.value
+		return func(item monkeyItem) monkeyItem { return item * val }
+	case opTimesSelf:
+		return func(item monkeyItem) monkeyItem { return item * item }
+	}
+	return nil
 }
 
 func (m *monkeyInfo) parseItems(input []byte, pos int) int {
