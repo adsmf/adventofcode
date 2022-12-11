@@ -5,7 +5,11 @@ import (
 	"strconv"
 )
 
-func GreatestCommonDivisorInt(a, b int) int {
+type anyInteger interface {
+	int | int8 | int16 | int32 | int64
+}
+
+func GreatestCommonDivisorInt[T anyInteger](a, b T) T {
 	for b != 0 {
 		t := b
 		b = a % b
@@ -14,7 +18,12 @@ func GreatestCommonDivisorInt(a, b int) int {
 	return a
 }
 
-func LowestCommonMultipleInt(integers ...int) int {
+func LowestCommonMultiplePair[T anyInteger](a, b T) T {
+	g := GreatestCommonDivisorInt(a, b)
+	return a * b / g
+}
+
+func LowestCommonMultipleInt[T anyInteger](integers ...T) T {
 	if len(integers) < 2 {
 		return 0
 	}
@@ -34,15 +43,15 @@ func LowestCommonMultipleInt(integers ...int) int {
 	return result
 }
 
-func MustInt(input string) int {
+func MustInt[T anyInteger](input string) T {
 	val, err := strconv.Atoi(input)
 	if err != nil {
 		panic(fmt.Errorf("Error converting %s to int: %w", input, err))
 	}
-	return val
+	return T(val)
 }
 
-func IntAbs(v int) int {
+func IntAbs[T anyInteger](v T) T {
 	if v < 0 {
 		return -v
 	}

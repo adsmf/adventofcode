@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"sort"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -12,23 +11,26 @@ import (
 var input []byte
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	monkeys := loadMonkeys()
+	monkeyLCM := monkeys[0].testVal
+	for i := 1; i < len(monkeys); i++ {
+		monkeyLCM = utils.LowestCommonMultiplePair(monkeyLCM, monkeys[i].testVal)
+	}
+	p1 := keepAway(monkeys, 20, func(i int) int { return i / 3 })
+	p2 := keepAway(monkeys, 10000, func(i int) int { return i % monkeyLCM })
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	monkeys := loadMonkeys()
-	inspectCount := make([]int, 8)
-	for round := 0; round < 20; round++ {
+func keepAway(monkeys tribe, rounds int, reduce func(int) int) int {
+	inspectCount := [8]int{}
+	for round := 0; round < rounds; round++ {
 		for m := 0; m < 8; m++ {
 			monkey := monkeys[m]
 			toThrow := monkey.items
-			monkeys[m].items = monkey.items[:0]
-			for i := 0; i < len(toThrow); i++ {
+			for i := 0; i < monkey.numItems; i++ {
 				inspectCount[m]++
 				item := toThrow[i]
 				switch monkey.op.code {
@@ -39,62 +41,33 @@ func part1() int {
 				case opTimesSelf:
 					item *= item
 				}
-				item /= 3
+				item = reduce(item)
+				var target *monkeyInfo
 				if (item % monkey.testVal) == 0 {
-					monkeys[monkey.throwTrue].items = append(monkeys[monkey.throwTrue].items, item)
+					target = &monkeys[monkey.throwTrue]
 				} else {
-					monkeys[monkey.throwFalse].items = append(monkeys[monkey.throwFalse].items, item)
+					target = &monkeys[monkey.throwFalse]
 				}
+				target.items[target.numItems] = item
+				target.numItems++
+			}
+			monkeys[m].numItems = 0
+		}
+	}
+	w1, w2 := 0, 0
+	for i := 0; i < 8; i++ {
+		if inspectCount[i] > w1 {
+			w1 = inspectCount[i]
+			if w1 > w2 {
+				w1, w2 = w2, w1
 			}
 		}
 	}
-	sort.Ints(inspectCount)
-	worry := inspectCount[6] * inspectCount[7]
-	return worry
+	return int(w1 * w2)
 }
 
-func part2() int {
-	monkeys := loadMonkeys()
-	inspectCount := make([]int, 8)
-	monkeyTests := make([]int, 0, 8)
-	for _, monkey := range monkeys {
-		monkeyTests = append(monkeyTests, monkey.testVal)
-	}
-	monkeyLCM := utils.LowestCommonMultipleInt(monkeyTests...)
-	for round := 0; round < 10000; round++ {
-		for m := 0; m < 8; m++ {
-			monkey := monkeys[m]
-			toThrow := monkey.items
-			monkeys[m].items = monkey.items[:0]
-			for i := 0; i < len(toThrow); i++ {
-				inspectCount[m]++
-				item := toThrow[i]
-				switch monkey.op.code {
-				case opAdd:
-					item += monkey.op.value
-				case opTimes:
-					item *= monkey.op.value
-				case opTimesSelf:
-					item *= item
-				}
-				item %= monkeyLCM
-				if (item % monkey.testVal) == 0 {
-					monkeys[monkey.throwTrue].items = append(monkeys[monkey.throwTrue].items, item)
-				} else {
-					monkeys[monkey.throwFalse].items = append(monkeys[monkey.throwFalse].items, item)
-				}
-			}
-		}
-	}
-	sort.Ints(inspectCount)
-	worry := inspectCount[6] * inspectCount[7]
-	return worry
-}
-
-func loadMonkeys() [8]monkeyInfo {
-
-	monkeys := [8]monkeyInfo{}
-
+func loadMonkeys() tribe {
+	monkeys := tribe{}
 	for pos := 7; pos < len(input); {
 		monkeyID := input[pos] - '0'
 		monkey := &monkeys[monkeyID]
@@ -117,12 +90,14 @@ func loadMonkeys() [8]monkeyInfo {
 		monkey.throwFalse = input[pos+62] & 0xf
 		pos += 72
 	}
-
 	return monkeys
 }
 
+type tribe [8]monkeyInfo
+
 type monkeyInfo struct {
 	items      monkeyItems
+	numItems   int
 	op         inspectOperation
 	testVal    int
 	throwTrue  byte
@@ -131,6 +106,11 @@ type monkeyInfo struct {
 
 func (m *monkeyInfo) parseItems(input []byte, pos int) int {
 	accumulator := 0
+	addItem := func() {
+		m.items[m.numItems] = accumulator
+		m.numItems++
+		accumulator = 0
+	}
 	for ; input[pos] != '\n'; pos++ {
 		ch := input[pos]
 		if ch >= '0' {
@@ -138,32 +118,23 @@ func (m *monkeyInfo) parseItems(input []byte, pos int) int {
 			accumulator += int(ch & 0xf)
 			continue
 		}
-		m.items = append(m.items, accumulator)
-		accumulator = 0
+		addItem()
 		pos++
 	}
-	m.items = append(m.items, accumulator)
+	addItem()
 	return pos + 1
 }
 
 func getInt(in []byte, pos int) (int, int) {
 	accumulator := 0
-	negative := false
-	if in[pos] == '-' {
-		negative = true
-		pos++
-	}
 	for ; in[pos] != '\n'; pos++ {
 		accumulator *= 10
 		accumulator += int(in[pos] & 0xf)
 	}
-	if negative {
-		accumulator = -accumulator
-	}
 	return accumulator, pos
 }
 
-type monkeyItems []int
+type monkeyItems [30]int
 
 type inspectOperation struct {
 	code  opCode
