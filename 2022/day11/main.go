@@ -70,20 +70,20 @@ func loadMonkeys() tribe {
 		monkeyID := input[pos] - '0'
 		monkey := &monkeys[monkeyID]
 		pos = monkeys[monkeyID].parseItems(input, pos+21)
-		switch input[pos+23] {
+		switch input[pos+21] {
 		case '+':
 			monkey.op.code = opAdd
-			monkey.op.value, pos = getInt(input, pos+25)
+			monkey.op.value, pos = getInt(input, pos+23)
 		case '*':
-			if input[pos+25] == 'o' {
+			if input[pos+23] == 'o' {
 				monkey.op.code = opTimesSelf
-				pos += 28
+				pos += 26
 				break
 			}
 			monkey.op.code = opTimes
-			monkey.op.value, pos = getInt(input, pos+25)
+			monkey.op.value, pos = getInt(input, pos+23)
 		}
-		monkey.testVal, pos = getInt(input, pos+21)
+		monkey.testVal, pos = getInt(input, pos+22)
 		monkey.throwTrue = input[pos+30] & 0xf
 		monkey.throwFalse = input[pos+62] & 0xf
 		pos += 72
@@ -118,29 +118,16 @@ func (m monkeyInfo) inspectOp() transform {
 }
 
 func (m *monkeyInfo) parseItems(input []byte, pos int) int {
-	accumulator := monkeyItem(0)
-	addItem := func() {
-		m.items[m.numItems] = accumulator
+	for ; input[pos]&0xf0 == 0x30; pos += 2 {
+		m.items[m.numItems], pos = getInt(input, pos)
 		m.numItems++
-		accumulator = 0
 	}
-	for ; input[pos] != '\n'; pos++ {
-		ch := input[pos]
-		if ch >= '0' {
-			accumulator *= 10
-			accumulator += monkeyItem(ch & 0xf)
-			continue
-		}
-		addItem()
-		pos++
-	}
-	addItem()
 	return pos + 1
 }
 
 func getInt(in []byte, pos int) (monkeyItem, int) {
 	accumulator := monkeyItem(0)
-	for ; in[pos] != '\n'; pos++ {
+	for ; pos < len(in) && in[pos]&0xf0 == 0x30; pos++ {
 		accumulator *= 10
 		accumulator += monkeyItem(in[pos] & 0xf)
 	}
