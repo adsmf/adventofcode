@@ -113,11 +113,9 @@ func (m *monkeyInfo) catch(item monkeyItem) {
 func (m monkeyInfo) inspectOp() transform {
 	switch m.op.code {
 	case opAdd:
-		val := m.op.value
-		return func(item monkeyItem) monkeyItem { return item + val }
+		return func(item monkeyItem) monkeyItem { return item + m.op.value }
 	case opTimes:
-		val := m.op.value
-		return func(item monkeyItem) monkeyItem { return item * val }
+		return func(item monkeyItem) monkeyItem { return item * m.op.value }
 	case opTimesSelf:
 		return func(item monkeyItem) monkeyItem { return item * item }
 	}
