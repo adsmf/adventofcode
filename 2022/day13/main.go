@@ -12,34 +12,23 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	sum := 0
+func solve() (int, int) {
+	p1 := 0
+	toSort := make(listSort, 0, 300)
 	for i, block := range strings.Split(input, "\n\n") {
 		lines := strings.Split(block, "\n")
-		if compareLists(parse(lines[0]), parse(lines[1])) != cmpGreater {
-			sum += i + 1
+		parse1, parse2 := parse(lines[0]), parse(lines[1])
+		if compareLists(parse1, parse2) != cmpGreater {
+			p1 += i + 1
 		}
-	}
-	return sum
-}
-
-func part2() int {
-	lines := strings.Split(input, "\n")
-	toSort := make(listSort, 0, len(lines))
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		parsed := parse(line)
-		toSort = append(toSort, &parsed)
+		toSort = append(toSort, &parse1, &parse2)
 	}
 	divider1, divider2 := parse("[[2]]"), parse("[[6]]")
 	toSort = append(toSort, &divider1, &divider2)
@@ -56,7 +45,7 @@ func part2() int {
 			break
 		}
 	}
-	return i1 * i2
+	return p1, i1 * i2
 }
 
 type listSort []*interfaceList
