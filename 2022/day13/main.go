@@ -24,7 +24,7 @@ func part1() int {
 	sum := 0
 	for i, block := range strings.Split(input, "\n\n") {
 		lines := strings.Split(block, "\n")
-		if compare([]byte(lines[0]), []byte(lines[1])) {
+		if compareLists(parse(lines[0]), parse(lines[1])) != cmpGreater {
 			sum += i + 1
 		}
 	}
@@ -38,17 +38,18 @@ func part2() int {
 		if line == "" {
 			continue
 		}
-		toSort = append(toSort, line)
+		parsed := parse(line)
+		toSort = append(toSort, &parsed)
 	}
-	divider1, divider2 := "[[2]]", "[[6]]"
-	toSort = append(toSort, divider1, divider2)
+	divider1, divider2 := parse("[[2]]"), parse("[[6]]")
+	toSort = append(toSort, &divider1, &divider2)
 	sort.Sort(toSort)
 	i1, i2 := 0, 0
 	for index, entry := range toSort {
-		if entry == divider1 {
+		if entry == &divider1 {
 			i1 = index + 1
 		}
-		if entry == divider2 {
+		if entry == &divider2 {
 			i2 = index + 1
 		}
 		if i1 != 0 && i2 != 0 {
@@ -58,24 +59,21 @@ func part2() int {
 	return i1 * i2
 }
 
-type listSort []string
+type listSort []*interfaceList
 
 func (l listSort) Len() int           { return len(l) }
-func (l listSort) Less(i, j int) bool { return compare([]byte(l[i]), []byte(l[j])) }
+func (l listSort) Less(i, j int) bool { return compareLists(*l[i], *l[j]) != cmpGreater }
 func (l listSort) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
-func compare(l1, l2 []byte) bool {
-	v1 := []interface{}{}
-	v2 := []interface{}{}
+type interfaceList []interface{}
 
-	_ = json.Unmarshal(l1, &v1)
-	_ = json.Unmarshal(l2, &v2)
-
-	result := compareLists(v1, v2)
-	return result != cmpGreater
+func parse(item string) interfaceList {
+	val := interfaceList{}
+	_ = json.Unmarshal([]byte(item), &val)
+	return val
 }
 
-func compareLists(l1, l2 []interface{}) comparison {
+func compareLists(l1, l2 interfaceList) comparison {
 	min := len(l1)
 	if len(l2) < min {
 		min = len(l2)

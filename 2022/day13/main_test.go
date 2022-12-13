@@ -32,8 +32,8 @@ func TestPart1Examples(t *testing.T) {
 	for id, test := range tests {
 		t.Run(fmt.Sprintf("Part1-Test%d", id+1), func(t *testing.T) {
 			t.Logf("Test def:\n %v", test)
-			cmp := compare([]byte(test.list1), []byte(test.list2))
-			assert.Equal(t, test.expect, cmp)
+			p1, p2 := parse(test.list1), parse(test.list2)
+			assert.Equal(t, test.expect, compareLists(p1, p2) != cmpGreater)
 		})
 	}
 }
