@@ -18,16 +18,21 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
-func BenchmarkP1(b *testing.B) {
-	benchmark = true
+func BenchmarkLoad(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part1()
+		loadInput()
+	}
+}
+func BenchmarkP1(b *testing.B) {
+	g := loadInput()
+	for i := 0; i < b.N; i++ {
+		part1(g)
 	}
 }
 
 func BenchmarkP2(b *testing.B) {
-	benchmark = true
+	g := loadInput()
 	for i := 0; i < b.N; i++ {
-		part2()
+		part2(g)
 	}
 }
