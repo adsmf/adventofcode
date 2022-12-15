@@ -25,7 +25,7 @@ func part1(g grid) int {
 
 func part2(g grid) int {
 	type quad [4]int
-	x0quads := make([]quad, g.len)
+	x0quads := [30]quad{}
 	for i := 0; i < g.len; i++ {
 		pair := g.data[i]
 		dist := pair.sensorPos.manhattan(pair.beaconPos)
@@ -136,23 +136,14 @@ func (g grid) countExcluded(row int) int {
 	ranges := &excludeRanges{}
 	g.locateExcluded(row, ranges)
 	count := 0
-	ignorePoints := map[int]bool{}
-	for i := 0; i < g.len; i++ {
-		sensor := g.data[i].sensorPos
-		beacon := g.data[i].beaconPos
-		if sensor.y == row {
-			ignorePoints[sensor.x] = true
-		}
-		if beacon.y == row {
-			ignorePoints[beacon.x] = true
-		}
-	}
 	for i := 0; i < ranges.len; i++ {
 		exclude := ranges.get(i)
 		count += exclude.end - exclude.start + 1
-		for ignore := range ignorePoints {
-			if ignore >= exclude.start && ignore <= exclude.end {
+		for beaconIdx := 0; beaconIdx < g.len; beaconIdx++ {
+			beaconX := g.data[beaconIdx].beaconPos.x
+			if beaconX >= exclude.start && beaconX <= exclude.end {
 				count--
+				break
 			}
 		}
 	}
