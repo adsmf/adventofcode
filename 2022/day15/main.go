@@ -95,21 +95,10 @@ func loadInput() grid {
 	return g
 }
 
-func getInt(in []byte, pos int) (int, int) {
-	accumulator := 0
-	negative := false
-	if in[pos] == '-' {
-		negative = true
-		pos++
-	}
-	for ; in[pos] >= '0' && in[pos] <= '9'; pos++ {
-		accumulator *= 10
-		accumulator += int(in[pos] & 0xf)
-	}
-	if negative {
-		accumulator = -accumulator
-	}
-	return accumulator, pos
+type sensorData struct {
+	sensorPos point
+	beaconPos point
+	dist      int
 }
 
 type grid struct {
@@ -128,44 +117,6 @@ func (g grid) potentialBeacon(pos point) bool {
 		}
 	}
 	return true
-}
-
-type sensorData struct {
-	sensorPos point
-	beaconPos point
-	dist      int
-}
-
-type excludeRange struct{ start, end int }
-type excludeRanges struct {
-	ranges [25]excludeRange
-	len    int
-}
-
-func (e *excludeRanges) add(exclude excludeRange) {
-	e.ranges[e.len] = exclude
-	e.len++
-}
-func (e excludeRanges) get(index int) excludeRange { return e.ranges[index] }
-func (e *excludeRanges) reset()                    { e.len = 0 }
-func (e excludeRanges) Len() int                   { return e.len }
-func (e excludeRanges) Less(i, j int) bool         { return e.ranges[i].start < e.ranges[j].start }
-func (e *excludeRanges) Swap(i, j int)             { e.ranges[i], e.ranges[j] = e.ranges[j], e.ranges[i] }
-
-func (e *excludeRanges) consolidate() {
-	sort.Sort(e)
-	curRange := 0
-	for i := 0; i < e.len; i++ {
-		if e.ranges[curRange].end >= e.ranges[i].start {
-			if e.ranges[i].end > e.ranges[curRange].end {
-				e.ranges[curRange].end = e.ranges[i].end
-			}
-		} else {
-			curRange++
-			e.ranges[curRange] = e.ranges[i]
-		}
-	}
-	e.len = curRange + 1
 }
 func (g grid) locateExcluded(row int, ranges *excludeRanges) {
 	for i := 0; i < g.len; i++ {
@@ -208,6 +159,38 @@ func (g grid) countExcluded(row int) int {
 	return count
 }
 
+type excludeRange struct{ start, end int }
+type excludeRanges struct {
+	ranges [25]excludeRange
+	len    int
+}
+
+func (e *excludeRanges) add(exclude excludeRange) {
+	e.ranges[e.len] = exclude
+	e.len++
+}
+func (e excludeRanges) get(index int) excludeRange { return e.ranges[index] }
+func (e *excludeRanges) reset()                    { e.len = 0 }
+func (e excludeRanges) Len() int                   { return e.len }
+func (e excludeRanges) Less(i, j int) bool         { return e.ranges[i].start < e.ranges[j].start }
+func (e *excludeRanges) Swap(i, j int)             { e.ranges[i], e.ranges[j] = e.ranges[j], e.ranges[i] }
+
+func (e *excludeRanges) consolidate() {
+	sort.Sort(e)
+	curRange := 0
+	for i := 0; i < e.len; i++ {
+		if e.ranges[curRange].end >= e.ranges[i].start {
+			if e.ranges[i].end > e.ranges[curRange].end {
+				e.ranges[curRange].end = e.ranges[i].end
+			}
+		} else {
+			curRange++
+			e.ranges[curRange] = e.ranges[i]
+		}
+	}
+	e.len = curRange + 1
+}
+
 func intAbs(v int) int {
 	if v < 0 {
 		return v * -1
@@ -221,6 +204,23 @@ func (p point) sub(o point) point { return point{p.x - o.x, p.y - o.y} }
 func (p point) manhattan(o point) int {
 	diff := p.sub(o)
 	return intAbs(diff.x) + intAbs(diff.y)
+}
+
+func getInt(in []byte, pos int) (int, int) {
+	accumulator := 0
+	negative := false
+	if in[pos] == '-' {
+		negative = true
+		pos++
+	}
+	for ; in[pos] >= '0' && in[pos] <= '9'; pos++ {
+		accumulator *= 10
+		accumulator += int(in[pos] & 0xf)
+	}
+	if negative {
+		accumulator = -accumulator
+	}
+	return accumulator, pos
 }
 
 var benchmark = false
