@@ -24,16 +24,48 @@ func part1(g grid) int {
 }
 
 func part2(g grid) int {
-	maxVal := 4000000
-	excluded := &excludeRanges{}
-	for y := 0; y <= maxVal; y++ {
-		excluded.reset()
-		g.locateExcluded(y, excluded)
-		if excluded.len > 1 {
-			for i := 0; i < excluded.len-1; i++ {
-				gap := excluded.get(i).end + 1
-				if gap > 0 && gap <= maxVal {
-					return 4000000*gap + y
+	type quad [4]int
+	x0quads := make([]quad, g.len)
+	for i := 0; i < g.len; i++ {
+		pair := g.data[i]
+		dist := pair.sensorPos.manhattan(pair.beaconPos)
+		x0tl := pair.sensorPos.y - dist - 1 - pair.sensorPos.x
+		x0br := pair.sensorPos.y + dist + 1 - pair.sensorPos.x
+
+		x0tr := pair.sensorPos.y - dist - 1 + pair.sensorPos.x
+		x0bl := pair.sensorPos.y + dist + 1 + pair.sensorPos.x
+		x0quads[i] = quad{x0tl, x0br, x0tr, x0bl}
+	}
+	testMerge := func(x0pos, x0neg int) (bool, point) {
+		if x0neg < x0pos {
+			return false, point{}
+		}
+		diff := x0neg - x0pos
+		if diff&1 == 1 {
+			return false, point{}
+		}
+		diff >>= 1
+		mergePos := point{diff, x0pos + (diff)}
+		return g.potentialBeacon(mergePos), mergePos
+	}
+	for q1idx := 0; q1idx < g.len-1; q1idx++ {
+		q1 := x0quads[q1idx]
+		for q2idx := q1idx + 1; q2idx < g.len; q2idx++ {
+			q2 := x0quads[q2idx]
+			pairs := [8][2]int{
+				{q1[0], q2[2]},
+				{q1[0], q2[3]},
+				{q1[1], q2[2]},
+				{q1[1], q2[3]},
+				{q2[0], q1[2]},
+				{q2[0], q1[3]},
+				{q2[1], q1[2]},
+				{q2[1], q1[3]},
+			}
+			for _, pair := range pairs {
+				valid, pos := testMerge(pair[0], pair[1])
+				if valid {
+					return 4000000*pos.x + pos.y
 				}
 			}
 		}
@@ -50,9 +82,12 @@ func loadInput() grid {
 		sY, pos = getInt(input, pos+4)
 		bX, pos = getInt(input, pos+25)
 		bY, pos = getInt(input, pos+4)
+		sensor := point{sX, sY}
+		beacon := point{bX, bY}
 		g.data[id] = sensorData{
-			sensorPos: point{sX, sY},
-			beaconPos: point{bX, bY},
+			sensorPos: sensor,
+			beaconPos: beacon,
+			dist:      sensor.manhattan(beacon),
 		}
 		g.len++
 		id++
@@ -82,9 +117,23 @@ type grid struct {
 	data [30]sensorData
 }
 
+func (g grid) potentialBeacon(pos point) bool {
+	for i := 0; i < g.len; i++ {
+		data := g.data[i]
+		if pos == data.beaconPos || pos == data.sensorPos {
+			return false
+		}
+		if data.sensorPos.manhattan(pos) <= data.dist {
+			return false
+		}
+	}
+	return true
+}
+
 type sensorData struct {
 	sensorPos point
 	beaconPos point
+	dist      int
 }
 
 type excludeRange struct{ start, end int }
