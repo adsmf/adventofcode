@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"sort"
 )
 
 //go:embed input.txt
@@ -20,7 +19,32 @@ func main() {
 }
 
 func part1(g grid) int {
-	return g.countExcluded(2000000)
+	row := 2000000
+	excludes := excludeRanges{}
+	for i := 0; i < g.len; i++ {
+		sensor := g.data[i].sensorPos
+		coverage := g.data[i].dist
+		if sensor.y+coverage >= row && sensor.y-coverage <= row {
+			excludeDist := coverage - sensor.manhattan(point{sensor.x, row})
+			exclude := excludeRange{sensor.x - excludeDist, sensor.x + excludeDist}
+			excludes.ranges[excludes.len] = exclude
+			excludes.len++
+		}
+	}
+	excludes = consolidateRanges(excludes)
+	count := 0
+	for i := 0; i < excludes.len; i++ {
+		exclude := excludes.get(i)
+		count += exclude.end - exclude.start + 1
+		for beaconIdx := 0; beaconIdx < g.len; beaconIdx++ {
+			beaconX := g.data[beaconIdx].beaconPos.x
+			if beaconX >= exclude.start && beaconX <= exclude.end {
+				count--
+				break
+			}
+		}
+	}
+	return count
 }
 
 func part2(g grid) int {
@@ -28,12 +52,11 @@ func part2(g grid) int {
 	x0quads := [30]quad{}
 	for i := 0; i < g.len; i++ {
 		pair := g.data[i]
-		dist := pair.sensorPos.manhattan(pair.beaconPos)
-		x0tl := pair.sensorPos.y - dist - 1 - pair.sensorPos.x
-		x0br := pair.sensorPos.y + dist + 1 - pair.sensorPos.x
+		x0tl := pair.sensorPos.y - pair.dist - 1 - pair.sensorPos.x
+		x0br := pair.sensorPos.y + pair.dist + 1 - pair.sensorPos.x
 
-		x0tr := pair.sensorPos.y - dist - 1 + pair.sensorPos.x
-		x0bl := pair.sensorPos.y + dist + 1 + pair.sensorPos.x
+		x0tr := pair.sensorPos.y - pair.dist - 1 + pair.sensorPos.x
+		x0bl := pair.sensorPos.y + pair.dist + 1 + pair.sensorPos.x
 		x0quads[i] = quad{x0tl, x0br, x0tr, x0bl}
 	}
 	testMerge := func(x0pos, x0neg int) (bool, point) {
@@ -118,37 +141,6 @@ func (g grid) potentialBeacon(pos point) bool {
 	}
 	return true
 }
-func (g grid) locateExcluded(row int, ranges *excludeRanges) {
-	for i := 0; i < g.len; i++ {
-		sensor := g.data[i].sensorPos
-		beacon := g.data[i].beaconPos
-		coverage := sensor.manhattan(beacon)
-		if sensor.y+coverage >= row && sensor.y-coverage <= row {
-			excludeDist := coverage - sensor.manhattan(point{sensor.x, row})
-			exclude := excludeRange{sensor.x - excludeDist, sensor.x + excludeDist}
-			ranges.add(exclude)
-		}
-	}
-	ranges.consolidate()
-}
-
-func (g grid) countExcluded(row int) int {
-	ranges := &excludeRanges{}
-	g.locateExcluded(row, ranges)
-	count := 0
-	for i := 0; i < ranges.len; i++ {
-		exclude := ranges.get(i)
-		count += exclude.end - exclude.start + 1
-		for beaconIdx := 0; beaconIdx < g.len; beaconIdx++ {
-			beaconX := g.data[beaconIdx].beaconPos.x
-			if beaconX >= exclude.start && beaconX <= exclude.end {
-				count--
-				break
-			}
-		}
-	}
-	return count
-}
 
 type excludeRange struct{ start, end int }
 type excludeRanges struct {
@@ -156,30 +148,31 @@ type excludeRanges struct {
 	len    int
 }
 
-func (e *excludeRanges) add(exclude excludeRange) {
-	e.ranges[e.len] = exclude
-	e.len++
-}
 func (e excludeRanges) get(index int) excludeRange { return e.ranges[index] }
-func (e *excludeRanges) reset()                    { e.len = 0 }
-func (e excludeRanges) Len() int                   { return e.len }
-func (e excludeRanges) Less(i, j int) bool         { return e.ranges[i].start < e.ranges[j].start }
-func (e *excludeRanges) Swap(i, j int)             { e.ranges[i], e.ranges[j] = e.ranges[j], e.ranges[i] }
 
-func (e *excludeRanges) consolidate() {
-	sort.Sort(e)
+func consolidateRanges(excludes excludeRanges) excludeRanges {
+	for moved := true; moved; {
+		moved = false
+		for i := 0; i < excludes.len-1; i++ {
+			if excludes.ranges[i].start > excludes.ranges[i+1].start {
+				excludes.ranges[i], excludes.ranges[i+1] = excludes.ranges[i+1], excludes.ranges[i]
+				moved = true
+			}
+		}
+	}
 	curRange := 0
-	for i := 0; i < e.len; i++ {
-		if e.ranges[curRange].end >= e.ranges[i].start {
-			if e.ranges[i].end > e.ranges[curRange].end {
-				e.ranges[curRange].end = e.ranges[i].end
+	for i := 0; i < excludes.len; i++ {
+		if excludes.ranges[curRange].end >= excludes.ranges[i].start {
+			if excludes.ranges[i].end > excludes.ranges[curRange].end {
+				excludes.ranges[curRange].end = excludes.ranges[i].end
 			}
 		} else {
 			curRange++
-			e.ranges[curRange] = e.ranges[i]
+			excludes.ranges[curRange] = excludes.ranges[i]
 		}
 	}
-	e.len = curRange + 1
+	excludes.len = curRange + 1
+	return excludes
 }
 
 func intAbs(v int) int {
