@@ -41,25 +41,26 @@ func part2(valves valveSet, startValve int, costs routeCosts) int {
 }
 
 func findBest(initialState searchEntry, valves valveSet, startValve int, routes routeCosts, withElephant bool) int {
-
-	openSet := []searchEntry{initialState}
+	openSet := searchSet{}
+	openSet.push(initialState)
 	maxFlowRate := 0
 	for _, valve := range valves {
 		maxFlowRate += valve.rate
 	}
 	best := 0
-	visited := map[dfsEntry]int{}
-	for len(openSet) > 0 {
-		var curState searchEntry
-		curState, openSet = openSet[len(openSet)-1], openSet[0:len(openSet)-1]
-		for _, nextState := range curState.nextStates(valves, routes, withElephant) {
-			dfsState := dfsEntry{
-				time:       nextState.time,
-				othTime:    nextState.othTime,
-				valve:      nextState.valve,
-				othValve:   nextState.valve,
-				valvesOpen: nextState.valvesOpen,
-			}
+	cap := 50000
+	if withElephant {
+		cap *= 30
+	}
+	visited := make(map[dfsEntry]int, cap)
+	nextStates := searchSet{}
+	for openSet.numEntries > 0 {
+		curState := openSet.pop()
+		nextStates.reset()
+		curState.nextStates(valves, routes, withElephant, &nextStates)
+		for nextStates.numEntries > 0 {
+			nextState := nextStates.pop()
+			dfsState := toDFSEntry(nextState)
 			if curState.cumulativeFlow > 0 && visited[dfsState] >= curState.cumulativeFlow {
 				continue
 			}
@@ -71,16 +72,31 @@ func findBest(initialState searchEntry, valves valveSet, startValve int, routes 
 			if maxAchieveable < best {
 				continue
 			}
-			openSet = append(openSet, nextState)
+			openSet.push(nextState)
 		}
 	}
 	return best
 }
 
-type dfsEntry struct {
-	valvesOpen      uint64
-	valve, othValve int
-	time, othTime   int
+type dfsEntry uint64
+
+func toDFSEntry(s searchEntry) dfsEntry {
+	return dfsEntry(s.valvesOpen) | dfsEntry(s.valve)<<40 | dfsEntry(s.othValve)<<48 | dfsEntry(s.time)<<56
+}
+
+type searchSet struct {
+	entries    [100]searchEntry
+	numEntries int
+}
+
+func (s *searchSet) reset() { s.numEntries = 0 }
+func (s *searchSet) push(entry searchEntry) {
+	s.entries[s.numEntries] = entry
+	s.numEntries++
+}
+func (s *searchSet) pop() searchEntry {
+	s.numEntries--
+	return s.entries[s.numEntries]
 }
 
 type searchEntry struct {
@@ -90,33 +106,50 @@ type searchEntry struct {
 	cumulativeFlow  int
 }
 
-func (s searchEntry) nextStates(valves valveSet, routes routeCosts, withElephant bool) []searchEntry {
-	nextStates := []searchEntry{}
-
-	for nextValve, cost := range routes[s.valve] {
-		if s.time+cost > 30 {
+func (s searchEntry) nextStates(valves valveSet, routes routeCosts, withElephant bool, nextStates *searchSet) {
+	for i := 0; i < routes[s.valve].count; i++ {
+		route := routes[s.valve].routes[i]
+		if route.cost == 0 {
 			continue
 		}
-		if s.valvesOpen&(1<<nextValve) > 0 {
+		if s.time+route.cost > 30 {
+			continue
+		}
+		if s.valvesOpen&(1<<route.target) > 0 {
 			continue
 		}
 		nextState := s
-		nextState.valve = nextValve
-		stepTime := nextState.time + cost + 1
-		nextState.valvesOpen |= 1 << nextValve
+		nextState.valve = route.target
+		stepTime := nextState.time + route.cost + 1
+		nextState.valvesOpen |= 1 << route.target
 		nextState.time = stepTime
-		nextState.cumulativeFlow += (30 - stepTime) * valves[nextValve].rate
+		nextState.cumulativeFlow += (30 - stepTime) * valves[route.target].rate
 		if withElephant && nextState.time > nextState.othTime {
 			nextState.time, nextState.othTime = nextState.othTime, nextState.time
 			nextState.valve, nextState.othValve = nextState.othValve, nextState.valve
 		}
-		nextStates = append(nextStates, nextState)
+		nextStates.push(nextState)
 	}
-
-	return nextStates
 }
 
-type routeCosts map[int]map[int]int
+const maxValve = 60
+const maxRoute = 20
+
+type routeCosts [maxValve]routesInfo
+type routesInfo struct {
+	count  int
+	routes [maxRoute]routeInfo
+}
+
+func (r *routesInfo) add(route routeInfo) {
+	r.routes[r.count] = route
+	r.count++
+}
+
+type routeInfo struct {
+	target int
+	cost   int
+}
 
 func calcRoutes(valves valveSet, startValve int) routeCosts {
 	costs := routeCosts{}
@@ -127,14 +160,13 @@ func calcRoutes(valves valveSet, startValve int) routeCosts {
 		}
 		openSet = openSet[0:0]
 		nextOpen = nextOpen[0:0]
-		visited := [60]bool{}
+		visited := [maxValve]bool{}
 		visited[fromId] = true
 		openSet = append(openSet, fromId)
-		costs[fromId] = map[int]int{}
 		for steps := 0; len(openSet) > 0; steps++ {
 			for _, curValve := range openSet {
 				if valves[curValve].rate > 0 {
-					costs[fromId][curValve] = steps
+					costs[fromId].add(routeInfo{target: curValve, cost: steps})
 				}
 				for i := 0; i < int(valves[curValve].numNext); i++ {
 					next := valves[curValve].nextValves[i]
@@ -151,7 +183,7 @@ func calcRoutes(valves valveSet, startValve int) routeCosts {
 	return costs
 }
 
-type valveSet [60]valveInfo
+type valveSet [maxValve]valveInfo
 type valveInfo struct {
 	rate       int
 	nextValves [5]int
