@@ -12,53 +12,35 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	valves, startValve := loadValves()
+	costs := calcRoutes(valves, startValve)
+
+	p1 := part1(valves, startValve, costs)
+	p2 := part2(valves, startValve, costs)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
-func part1() int {
-	valves, startValve := loadValves()
-	costs := calcRoutes(valves, startValve)
-	openSet, nextOpen := []searchEntry{{valve: startValve}}, []searchEntry{}
-	best := 0
-	for len(openSet) > 0 {
-		nextOpen = nextOpen[0:0]
-		for _, curState := range openSet {
-			for next, cost := range costs[curState.valve] {
-				if curState.time+cost > 29 {
-					continue
-				}
-				if curState.valvesOpen[next] {
-					continue
-				}
-				nextState := curState
-				nextState.valve = next
-				nextState.valvesOpen[next] = true
-				nextState.time += cost + 1
-				nextState.cumulativeFlow += (30 - nextState.time) * valves[next].rate
-				if nextState.cumulativeFlow > best {
-					best = nextState.cumulativeFlow
-				}
-				nextOpen = append(nextOpen, nextState)
-			}
-		}
-		openSet, nextOpen = nextOpen, openSet
+
+func part1(valves valveSet, startValve int, costs routeCosts) int {
+	initialState := searchEntry{
+		valve: startValve,
 	}
-	return best
+	return findBest(initialState, valves, startValve, costs, false)
 }
 
-func part2() int {
-	valves, startValve := loadValves()
-	routes := calcRoutes(valves, startValve)
+func part2(valves valveSet, startValve int, costs routeCosts) int {
 	initialState := searchEntry{
 		valve:    startValve,
 		othValve: startValve,
 		time:     4,
 		othTime:  4,
 	}
+	return findBest(initialState, valves, startValve, costs, true)
+}
+
+func findBest(initialState searchEntry, valves valveSet, startValve int, routes routeCosts, withElephant bool) int {
 
 	openSet := []searchEntry{initialState}
 	maxFlowRate := 0
@@ -70,7 +52,7 @@ func part2() int {
 	for len(openSet) > 0 {
 		var curState searchEntry
 		curState, openSet = openSet[len(openSet)-1], openSet[0:len(openSet)-1]
-		for _, nextState := range curState.nextStates(valves, routes) {
+		for _, nextState := range curState.nextStates(valves, routes, withElephant) {
 			dfsState := dfsEntry{
 				time:       nextState.time,
 				othTime:    nextState.othTime,
@@ -96,35 +78,35 @@ func part2() int {
 }
 
 type dfsEntry struct {
-	valvesOpen      [60]bool
+	valvesOpen      uint64
 	valve, othValve int
 	time, othTime   int
 }
 
 type searchEntry struct {
-	valvesOpen      [60]bool
+	valvesOpen      uint64
 	valve, othValve int
 	time, othTime   int
 	cumulativeFlow  int
 }
 
-func (s searchEntry) nextStates(valves valveSet, routes routeCosts) []searchEntry {
+func (s searchEntry) nextStates(valves valveSet, routes routeCosts, withElephant bool) []searchEntry {
 	nextStates := []searchEntry{}
 
 	for nextValve, cost := range routes[s.valve] {
 		if s.time+cost > 30 {
 			continue
 		}
-		if s.valvesOpen[nextValve] {
+		if s.valvesOpen&(1<<nextValve) > 0 {
 			continue
 		}
 		nextState := s
 		nextState.valve = nextValve
 		stepTime := nextState.time + cost + 1
-		nextState.valvesOpen[nextValve] = true
+		nextState.valvesOpen |= 1 << nextValve
 		nextState.time = stepTime
 		nextState.cumulativeFlow += (30 - stepTime) * valves[nextValve].rate
-		if nextState.time > nextState.othTime {
+		if withElephant && nextState.time > nextState.othTime {
 			nextState.time, nextState.othTime = nextState.othTime, nextState.time
 			nextState.valve, nextState.othValve = nextState.othValve, nextState.valve
 		}
