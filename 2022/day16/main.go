@@ -78,7 +78,7 @@ func findBest(initialState searchEntry, valves valveSet, startValve int, routes 
 	return best
 }
 
-type dfsEntry uint64
+type dfsEntry = uint64
 
 func toDFSEntry(s searchEntry) dfsEntry {
 	return dfsEntry(s.valvesOpen) | dfsEntry(s.valve)<<40 | dfsEntry(s.othValve)<<48 | dfsEntry(s.time)<<56
