@@ -41,23 +41,25 @@ func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
 	}
 	bestInterim := 0
 	bestGeodes := 0
-	visited := map[searchState]bool{}
+	visited := map[fnvHash]bool{}
 	openSet, nextOpen := []searchState{initialState}, []searchState{}
-	search := func(state searchState, set *[]searchState) {
-		if visited[state] {
+	search := func(state searchState) {
+		hash := state.fnvHash()
+		if visited[hash] {
 			return
 		}
-		if state.holding.geode < bestGeodes-1 {
+		if int(state.holding.geode) < bestGeodes-1 {
 			return
 		}
-		*set = append(*set, state)
-		visited[state] = true
+		nextOpen = append(nextOpen, state)
+		visited[hash] = true
 	}
 	maxCost := materialSet{}
 	maxCost = maxCost.max(bp.ore)
 	maxCost = maxCost.max(bp.obsidian)
 	maxCost = maxCost.max(bp.clay)
 	maxCost = maxCost.max(bp.geode)
+	maxCostSquared := maxCost.square()
 	for step := 0; step < maxStep; step++ {
 		if step == recordStep {
 			bestInterim = bestGeodes
@@ -66,37 +68,38 @@ func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
 		for _, base := range openSet {
 			initialHolding := base.holding
 			base.holding = base.holding.add(base.robots)
+			base.holding = base.holding.capResources(maxCostSquared)
 			base.robots = base.robots.capResources(maxCost)
-			if base.holding.geode > bestGeodes {
-				bestGeodes = base.holding.geode
+			if int(base.holding.geode) > bestGeodes {
+				bestGeodes = int(base.holding.geode)
 			}
-			search(base, &nextOpen)
+			search(base)
 			if initialHolding.greater(bp.ore) && base.robots.ore < maxCost.ore {
 				buy := base
 				buy.holding = buy.holding.sub(bp.ore)
 				buy.robots.ore++
-				search(buy, &nextOpen)
+				search(buy)
 			}
 
 			if initialHolding.greater(bp.obsidian) && base.robots.obsidian < maxCost.obsidian {
 				buy := base
 				buy.holding = buy.holding.sub(bp.obsidian)
 				buy.robots.obsidian++
-				search(buy, &nextOpen)
+				search(buy)
 			}
 
 			if initialHolding.greater(bp.clay) && base.robots.clay < maxCost.clay {
 				buy := base
 				buy.holding = buy.holding.sub(bp.clay)
 				buy.robots.clay++
-				search(buy, &nextOpen)
+				search(buy)
 			}
 
 			if initialHolding.greater(bp.geode) {
 				buy := base
 				buy.holding = buy.holding.sub(bp.geode)
 				buy.robots.geode++
-				search(buy, &nextOpen)
+				search(buy)
 			}
 		}
 		openSet, nextOpen = nextOpen, openSet
@@ -109,15 +112,31 @@ type searchState struct {
 	robots  materialSet
 }
 
+func (s searchState) fnvHash() fnvHash {
+	hash := fnvo32
+	hash ^= fnvHash(s.holding.hash())
+	hash *= fnvp32
+	hash ^= fnvHash(s.robots.hash())
+	hash *= fnvp32
+	return hash
+}
+
+type fnvHash uint32
+
+const (
+	fnvp32 fnvHash = 0x01000193
+	fnvo32 fnvHash = 0x811c9dc5
+)
+
 func loadBlueprints() blueprintBook {
 	blueprints := blueprintBook{}
 	for _, line := range utils.GetLines(input) {
 		vals := utils.GetInts(line)
 		blueprints = append(blueprints, blueprint{
-			ore:      materialSet{ore: vals[1]},
-			clay:     materialSet{ore: vals[2]},
-			obsidian: materialSet{ore: vals[3], clay: vals[4]},
-			geode:    materialSet{ore: vals[5], obsidian: vals[6]},
+			ore:      materialSet{ore: materialCount(vals[1])},
+			clay:     materialSet{ore: materialCount(vals[2])},
+			obsidian: materialSet{ore: materialCount(vals[3]), clay: materialCount(vals[4])},
+			geode:    materialSet{ore: materialCount(vals[5]), obsidian: materialCount(vals[6])},
 		})
 	}
 	return blueprints
@@ -132,10 +151,19 @@ type blueprint struct {
 }
 
 type materialSet struct {
-	ore      int
-	obsidian int
-	clay     int
-	geode    int
+	ore      materialCount
+	obsidian materialCount
+	clay     materialCount
+	geode    materialCount
+}
+
+type materialCount uint8
+
+func (m materialSet) hash() uint32 {
+	return uint32(m.ore) |
+		uint32(m.obsidian)<<8 |
+		uint32(m.clay)<<16 |
+		uint32(m.geode)<<24
 }
 
 func (m materialSet) add(oth materialSet) materialSet {
@@ -178,14 +206,22 @@ func (m materialSet) capResources(cap materialSet) materialSet {
 		geode:    m.geode,
 	}
 }
+func (m materialSet) square() materialSet {
+	return materialSet{
+		ore:      m.ore * m.ore,
+		obsidian: m.obsidian * m.obsidian,
+		clay:     m.clay * m.clay,
+		geode:    m.geode * m.geode,
+	}
+}
 
-func min(a, b int) int {
+func min(a, b materialCount) materialCount {
 	if a < b {
 		return a
 	}
 	return b
 }
-func max(a, b int) int {
+func max(a, b materialCount) materialCount {
 	if a > b {
 		return a
 	}
