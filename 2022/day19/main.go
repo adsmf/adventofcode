@@ -3,37 +3,40 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
-	blueprints := loadBlueprints()
-	p1, p2 := solve(blueprints)
+	book := loadBlueprints()
+	p1, p2 := solve(book)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func solve(blueprints blueprintBook) (int, int) {
+type visitMap map[fnvHash]bool
+
+func solve(book blueprintBook) (int, int) {
+	visited := make(visitMap, 500000)
 	p1, p2 := 0, 1
-	for i, bp := range blueprints[:3] {
-		g1, g2 := runBlueprint(bp, 24, 32)
+	for i := 0; i < 3; i++ {
+		bp := book.blueprints[i]
+		g1, g2 := runBlueprint(bp, 24, 32, &visited)
 		p1 += g1 * (i + 1)
 		p2 *= g2
 	}
-	for i, bp := range blueprints[3:] {
-		_, g1 := runBlueprint(bp, 24, 24)
-		p1 += g1 * (i + 4)
+	for i := 3; i < book.numBlueprints; i++ {
+		bp := book.blueprints[i]
+		_, g1 := runBlueprint(bp, 24, 24, &visited)
+		p1 += g1 * (i + 1)
 	}
 	return p1, p2
 }
 
-func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
+func runBlueprint(bp blueprint, recordStep, maxStep int, visited *visitMap) (int, int) {
 	initialState := searchState{
 		robots: materialSet{
 			ore: 1,
@@ -41,18 +44,25 @@ func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
 	}
 	bestInterim := 0
 	bestGeodes := 0
-	visited := map[fnvHash]bool{}
-	openSet, nextOpen := []searchState{initialState}, []searchState{}
+	for key := range *visited {
+		delete(*visited, key)
+	}
+	const maxOpen = 160000
+	openSet, nextOpen := [maxOpen]searchState{initialState}, [maxOpen]searchState{}
+	openCount, nextCount := 1, 0
 	search := func(state searchState) {
-		hash := state.fnvHash()
-		if visited[hash] {
-			return
-		}
 		if int(state.holding.geode) < bestGeodes-1 {
 			return
 		}
-		nextOpen = append(nextOpen, state)
-		visited[hash] = true
+		const foldSize = 21
+		hash := state.fnvHash()
+		hash = (hash ^ hash>>foldSize) & (1<<foldSize - 1)
+		if (*visited)[hash] {
+			return
+		}
+		nextOpen[nextCount] = state
+		nextCount++
+		(*visited)[hash] = true
 	}
 	maxCost := materialSet{}
 	maxCost = maxCost.max(bp.ore)
@@ -64,8 +74,8 @@ func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
 		if step == recordStep {
 			bestInterim = bestGeodes
 		}
-		nextOpen = nextOpen[0:0]
-		for _, base := range openSet {
+		for i := 0; i < openCount; i++ {
+			base := openSet[i]
 			initialHolding := base.holding
 			base.holding = base.holding.add(base.robots)
 			base.holding = base.holding.capResources(maxCostSquared)
@@ -103,6 +113,7 @@ func runBlueprint(bp blueprint, recordStep, maxStep int) (int, int) {
 			}
 		}
 		openSet, nextOpen = nextOpen, openSet
+		openCount, nextCount = nextCount, 0
 	}
 	return bestInterim, bestGeodes
 }
@@ -129,20 +140,38 @@ const (
 )
 
 func loadBlueprints() blueprintBook {
-	blueprints := blueprintBook{}
-	for _, line := range utils.GetLines(input) {
-		vals := utils.GetInts(line)
-		blueprints = append(blueprints, blueprint{
-			ore:      materialSet{ore: materialCount(vals[1])},
-			clay:     materialSet{ore: materialCount(vals[2])},
-			obsidian: materialSet{ore: materialCount(vals[3]), clay: materialCount(vals[4])},
-			geode:    materialSet{ore: materialCount(vals[5]), obsidian: materialCount(vals[6])},
-		})
+	book := blueprintBook{}
+	bpNum := 0
+	for pos := 0; pos < len(input); pos++ {
+		bp := blueprint{}
+		_, pos = getInt(input, pos+10)
+		bp.ore.ore, pos = getInt(input, pos+23)
+		bp.clay.ore, pos = getInt(input, pos+28)
+		bp.obsidian.ore, pos = getInt(input, pos+32)
+		bp.obsidian.clay, pos = getInt(input, pos+9)
+		bp.geode.ore, pos = getInt(input, pos+30)
+		bp.geode.obsidian, pos = getInt(input, pos+9)
+		pos += 10
+		book.blueprints[bpNum] = bp
+		bpNum++
+		book.numBlueprints = bpNum
 	}
-	return blueprints
+	return book
 }
 
-type blueprintBook []blueprint
+func getInt(in []byte, pos int) (materialCount, int) {
+	accumulator := materialCount(0)
+	for ; in[pos] >= '0' && in[pos] <= '9'; pos++ {
+		accumulator *= 10
+		accumulator += materialCount(in[pos] & 0xf)
+	}
+	return accumulator, pos
+}
+
+type blueprintBook struct {
+	blueprints    [30]blueprint
+	numBlueprints int
+}
 type blueprint struct {
 	ore      materialSet
 	clay     materialSet
