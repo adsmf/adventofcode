@@ -9,9 +9,9 @@ import (
 var input []byte
 
 func main() {
-	ints := getInts(input)
-	p1 := run(ints, 1, 1)
-	p2 := run(ints, 811589153, 10)
+	ints, numInts := getInts(input)
+	p1 := run(ints, numInts, 1, 1)
+	p2 := run(ints, numInts, 811589153, 10)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
@@ -24,12 +24,9 @@ type entry struct {
 	next  int
 }
 
-func run(ints intList, decryptionKey, iterations int) int {
+func run(ints intList, numInts, decryptionKey, iterations int) int {
 	var zeroPos int
 	lookup := ringList{}
-	lenInt := len(ints)
-	half := lenInt / 2
-	_ = half
 	for pos := range ints {
 		ints[pos] *= decryptionKey
 		lookup[pos].value = ints[pos]
@@ -37,7 +34,7 @@ func run(ints intList, decryptionKey, iterations int) int {
 			zeroPos = pos
 		}
 		next := pos + 1
-		if next == len(ints) {
+		if next == numInts {
 			next = 0
 		}
 		lookup[pos].next = next
@@ -62,7 +59,7 @@ func run(ints intList, decryptionKey, iterations int) int {
 
 	for i := 0; i < iterations; i++ {
 		for pos, val := range ints {
-			moveBy := val % (len(ints) - 1)
+			moveBy := val % (numInts - 1)
 			lookup[lookup[pos].prev].next, lookup[lookup[pos].next].prev = lookup[pos].next, lookup[pos].prev
 
 			newPrev := move(lookup[pos].prev, moveBy)
@@ -84,16 +81,16 @@ func run(ints intList, decryptionKey, iterations int) int {
 type intList [5000]int
 type ringList [5000]entry
 
-func getInts(input []byte) intList {
+func getInts(input []byte) (intList, int) {
 	ints := intList{}
-
-	for pos, idx := 0, 0; pos < len(input); pos, idx = pos+1, idx+1 {
+	idx := 0
+	for pos := 0; pos < len(input); pos, idx = pos+1, idx+1 {
 		var val int
 		val, pos = getInt(input, pos)
 		ints[idx] = val
 	}
 
-	return ints
+	return ints, idx
 }
 
 func getInt(in []byte, pos int) (int, int) {

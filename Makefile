@@ -10,7 +10,7 @@ benchmarks/benchmarks.md: $(benchmarkFiles) benchmarks/main.go
 benchmarks/results/%-ns benchmarks/results/%-mem-b: %/main.go %/main_test.go
 	@mkdir -p $(@D)
 	$(eval resultPrefix := ../../benchmarks/results/$*)
-	cd $* && go test -bench=BenchmarkMain -benchmem . | grep "BenchmarkMain-" | awk '{print $$3>"$(resultPrefix)-ns"}{print $$5>"$(resultPrefix)-mem-b"}' || rm $(resultPrefix)-ns $(resultPrefix)-mem-b
+	cd $* && go test -bench=BenchmarkMain -benchmem -memprofilerate 1 . | grep "BenchmarkMain-" | awk '{print $$3>"$(resultPrefix)-ns"}{print $$5>"$(resultPrefix)-mem-b"}' || rm $(resultPrefix)-ns $(resultPrefix)-mem-b
 
 
 benchmarks/benchmarks.snippet.md: $(benchmarkFiles) | benchmarks
