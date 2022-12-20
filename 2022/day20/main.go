@@ -26,10 +26,10 @@ type entry struct {
 
 func run(ints intList, numInts, decryptionKey, iterations int) int {
 	var zeroPos int
-	lookup := ringList{}
+	ring := ringList{}
 	for pos := range ints {
 		ints[pos] *= decryptionKey
-		lookup[pos].value = ints[pos]
+		ring[pos].value = ints[pos]
 		if ints[pos] == 0 {
 			zeroPos = pos
 		}
@@ -37,8 +37,8 @@ func run(ints intList, numInts, decryptionKey, iterations int) int {
 		if next == numInts {
 			next = 0
 		}
-		lookup[pos].next = next
-		lookup[next].prev = pos
+		ring[pos].next = next
+		ring[next].prev = pos
 	}
 
 	move := func(pos, by int) int {
@@ -47,12 +47,12 @@ func run(ints intList, numInts, decryptionKey, iterations int) int {
 		}
 		if by < 0 {
 			for i := 0; i > by; i-- {
-				pos = lookup[pos].prev
+				pos = ring[pos].prev
 			}
 			return pos
 		}
 		for i := 0; i < by; i++ {
-			pos = lookup[pos].next
+			pos = ring[pos].next
 		}
 		return pos
 	}
@@ -60,21 +60,21 @@ func run(ints intList, numInts, decryptionKey, iterations int) int {
 	for i := 0; i < iterations; i++ {
 		for pos, val := range ints {
 			moveBy := val % (numInts - 1)
-			lookup[lookup[pos].prev].next, lookup[lookup[pos].next].prev = lookup[pos].next, lookup[pos].prev
+			ring[ring[pos].prev].next, ring[ring[pos].next].prev = ring[pos].next, ring[pos].prev
 
-			newPrev := move(lookup[pos].prev, moveBy)
-			newNext := lookup[newPrev].next
-			lookup[newPrev].next = pos
-			lookup[newNext].prev = pos
-			lookup[pos].prev = newPrev
-			lookup[pos].next = newNext
+			newPrev := move(ring[pos].prev, moveBy)
+			newNext := ring[newPrev].next
+			ring[newPrev].next = pos
+			ring[newNext].prev = pos
+			ring[pos].prev = newPrev
+			ring[pos].next = newNext
 		}
 	}
 
 	sum := 0
-	sum += lookup[move(zeroPos, 1000)].value
-	sum += lookup[move(zeroPos, 2000)].value
-	sum += lookup[move(zeroPos, 3000)].value
+	sum += ring[move(zeroPos, 1000)].value
+	sum += ring[move(zeroPos, 2000)].value
+	sum += ring[move(zeroPos, 3000)].value
 	return sum
 }
 
