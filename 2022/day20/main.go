@@ -20,17 +20,19 @@ func main() {
 }
 
 func run(ints intList, decryptionKey, iterations int) int {
-	r := ring.New(len(ints))
 	var zero *ring.Ring
 	lookup := ringList{}
 	for pos, val := range ints {
 		*val *= decryptionKey
-		r.Value = val
+		lookup[pos].Value = val
 		if *val == 0 {
-			zero = r
+			zero = &lookup[pos]
 		}
-		lookup[pos] = r
-		r = r.Next()
+		next := pos + 1
+		if next == len(ints) {
+			next = 0
+		}
+		lookup[pos].Link(&lookup[next])
 	}
 
 	for i := 0; i < iterations; i++ {
@@ -50,7 +52,7 @@ func run(ints intList, decryptionKey, iterations int) int {
 }
 
 type intList [5000]*int
-type ringList [5000]*ring.Ring
+type ringList [5000]ring.Ring
 
 func getInts(input []byte) intList {
 	ints := intList{}
