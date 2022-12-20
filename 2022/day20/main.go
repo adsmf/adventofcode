@@ -11,44 +11,15 @@ var input []byte
 
 func main() {
 	ints := getInts(input)
-	p1 := part1(ints)
-	p2 := part2(ints)
+	p1 := run(ints, 1, 1)
+	p2 := run(ints, 811589153, 10)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1(ints intList) int {
-	r := ring.New(len(ints))
-	var zero *ring.Ring
-	lookup := ringList{}
-	for pos, val := range ints {
-		r.Value = val
-		if *val == 0 {
-			zero = r
-		}
-		lookup[pos] = r
-		r = r.Next()
-	}
-
-	for pos, val := range ints {
-		prev := lookup[pos].Prev()
-		moveBy := *val % (len(ints) - 1)
-		toMove := prev.Unlink(1)
-		moveTo := prev.Move(moveBy)
-		moveTo.Link(toMove)
-	}
-
-	val1k := zero.Move(1000).Value.(*int)
-	val2k := zero.Move(2000).Value.(*int)
-	val3k := zero.Move(3000).Value.(*int)
-	return *val1k + *val2k + *val3k
-}
-
-func part2(ints intList) int {
-	decryptionKey := 811589153
-
+func run(ints intList, decryptionKey, iterations int) int {
 	r := ring.New(len(ints))
 	var zero *ring.Ring
 	lookup := ringList{}
@@ -62,7 +33,7 @@ func part2(ints intList) int {
 		r = r.Next()
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < iterations; i++ {
 		for pos, val := range ints {
 			prev := lookup[pos].Prev()
 			moveBy := *val % (len(ints) - 1)
