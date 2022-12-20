@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/ring"
 	_ "embed"
 	"fmt"
 )
@@ -19,40 +18,71 @@ func main() {
 	}
 }
 
+type entry struct {
+	value int
+	prev  int
+	next  int
+}
+
 func run(ints intList, decryptionKey, iterations int) int {
-	var zero *ring.Ring
+	var zeroPos int
 	lookup := ringList{}
-	for pos, val := range ints {
-		*val *= decryptionKey
-		lookup[pos].Value = val
-		if *val == 0 {
-			zero = &lookup[pos]
+	lenInt := len(ints)
+	half := lenInt / 2
+	_ = half
+	for pos := range ints {
+		ints[pos] *= decryptionKey
+		lookup[pos].value = ints[pos]
+		if ints[pos] == 0 {
+			zeroPos = pos
 		}
 		next := pos + 1
 		if next == len(ints) {
 			next = 0
 		}
-		lookup[pos].Link(&lookup[next])
+		lookup[pos].next = next
+		lookup[next].prev = pos
+	}
+
+	move := func(pos, by int) int {
+		if by == 0 {
+			return pos
+		}
+		if by < 0 {
+			for i := 0; i > by; i-- {
+				pos = lookup[pos].prev
+			}
+			return pos
+		}
+		for i := 0; i < by; i++ {
+			pos = lookup[pos].next
+		}
+		return pos
 	}
 
 	for i := 0; i < iterations; i++ {
 		for pos, val := range ints {
-			prev := lookup[pos].Prev()
-			moveBy := *val % (len(ints) - 1)
-			toMove := prev.Unlink(1)
-			moveTo := prev.Move(moveBy)
-			moveTo.Link(toMove)
+			moveBy := val % (len(ints) - 1)
+			lookup[lookup[pos].prev].next, lookup[lookup[pos].next].prev = lookup[pos].next, lookup[pos].prev
+
+			newPrev := move(lookup[pos].prev, moveBy)
+			newNext := lookup[newPrev].next
+			lookup[newPrev].next = pos
+			lookup[newNext].prev = pos
+			lookup[pos].prev = newPrev
+			lookup[pos].next = newNext
 		}
 	}
 
-	val1k := zero.Move(1000).Value.(*int)
-	val2k := zero.Move(2000).Value.(*int)
-	val3k := zero.Move(3000).Value.(*int)
-	return *val1k + *val2k + *val3k
+	sum := 0
+	sum += lookup[move(zeroPos, 1000)].value
+	sum += lookup[move(zeroPos, 2000)].value
+	sum += lookup[move(zeroPos, 3000)].value
+	return sum
 }
 
-type intList [5000]*int
-type ringList [5000]ring.Ring
+type intList [5000]int
+type ringList [5000]entry
 
 func getInts(input []byte) intList {
 	ints := intList{}
@@ -60,7 +90,7 @@ func getInts(input []byte) intList {
 	for pos, idx := 0, 0; pos < len(input); pos, idx = pos+1, idx+1 {
 		var val int
 		val, pos = getInt(input, pos)
-		ints[idx] = &val
+		ints[idx] = val
 	}
 
 	return ints
