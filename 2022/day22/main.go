@@ -144,13 +144,7 @@ func (g groveMap) moveCube(spaces int) groveMap {
 				newFacing = headingLeft
 			}
 		}
-		if newPos.x < 0 || newPos.x >= maxX || newPos.y < 0 || newPos.y >= maxY {
-			panic(fmt.Sprint("BOUNDS:", pos, newPos, facing, newFacing))
-		}
 		newTile := g.tiles[newPos.x][newPos.y]
-		if newTile == tileNothing {
-			panic(fmt.Sprint("EMPTY:", pos, newPos, facing, newFacing))
-		}
 		if newTile == tileWall {
 			break
 		}
@@ -265,8 +259,6 @@ func load() (groveMap, int) {
 		case ' ':
 			lastWasNewline = false
 			x++
-		default:
-			panic("Whut?")
 		}
 	}
 	g = g.move(1)
