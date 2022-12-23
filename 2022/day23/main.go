@@ -23,11 +23,11 @@ func solve() (int, int) {
 	g := load()
 	for i := 0; ; i++ {
 		moved := scatter(g, i%4)
-		if !moved {
+		if moved == 0 {
 			return p1, i + 1
 		}
 		if i == 9 {
-			min, max := pointAt(9999, 9999), pointAt(-9999, -9999)
+			min, max := pointAt(axisMax, axisMax), pointAt(axisMin, axisMin)
 			for pos := range g {
 				min = min.minBound(pos)
 				max = max.maxBound(pos)
@@ -49,8 +49,8 @@ func checkAll(g groveMap, elf point) byte {
 	return result
 }
 
-func scatter(g groveMap, startChoice int) bool {
-	targets := map[point]*target{}
+func scatter(g groveMap, startChoice int) int {
+	targets := [1 << (axisBits * 2)]*target{}
 	for elf := range g {
 		neighbours := checkAll(g, elf)
 		if neighbours == 0 {
@@ -69,12 +69,15 @@ func scatter(g groveMap, startChoice int) bool {
 			break
 		}
 	}
-	moved := false
+	moved := 0
 	for to, from := range targets {
+		if from == nil {
+			continue
+		}
 		if from.valid {
 			delete(g, from.pos)
-			g[to] = true
-			moved = true
+			g[point(to)] = true
+			moved++
 		}
 	}
 	return moved
@@ -121,19 +124,22 @@ var surrounding = [...]point{
 	dirSW: pointAt(-1, 1), dirS: pointAt(0, 1), dirSE: pointAt(1, 1),
 }
 
-type point uint32
+type point uint16
 
 const (
-	axisBits = 11
-	mask     = (1 << (axisBits + 1)) - 1
+	axisBits = 8
+	axisMax  = (1 << (axisBits - 1)) - 1
+	axisMin  = (1 << (axisBits - 1)) * -1
+	offset   = 1 << (axisBits - 1)
+	mask     = (1 << axisBits) - 1
 )
 
-func pointAt(x, y int16) point {
-	return point(x) + 1<<axisBits + (point(y+1<<axisBits) << (axisBits + 2))
+func pointAt(x, y int) point {
+	return ((point(x+offset) & mask) | ((point(y+offset) & mask) << axisBits))
 }
 
-func (p point) x() int16 { return int16((p & mask) - 1<<axisBits) }
-func (p point) y() int16 { return int16((p>>(axisBits+2))&mask - 1<<axisBits) }
+func (p point) x() int { return int((p & mask)) - offset }
+func (p point) y() int { return int((p>>axisBits)&mask) - offset }
 
 func (p point) add(o point) point { return pointAt(p.x()+o.x(), p.y()+o.y()) }
 func (p point) minBound(o point) point {
@@ -160,7 +166,7 @@ type groveMap map[point]bool
 
 func load() groveMap {
 	g := make(groveMap, 75*75)
-	x, y := int16(0), int16(0)
+	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '\n':
