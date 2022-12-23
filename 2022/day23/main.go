@@ -4,44 +4,35 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	g := load()
-	numElves := len(g)
-	for i := 0; i < 10; i++ {
-		g, _ = scatter(g, i%4)
-	}
-	min, max := point{999999, 999999}, point{-99999, -99999}
-	for pos := range g {
-		min = min.minBound(pos)
-		max = max.maxBound(pos)
-	}
-	area := (max.x - min.x + 1) * (max.y - min.y + 1)
-	return area - numElves
-}
-
-func part2() int {
+func solve() (int, int) {
+	p1 := 0
 	g := load()
 	for i := 0; ; i++ {
-		var moved int
-		g, moved = scatter(g, i%4)
-		if moved == 0 {
-			return i + 1
+		moved := scatter(g, i%4)
+		if !moved {
+			return p1, i + 1
+		}
+		if i == 9 {
+			min, max := point{9999, 9999}, point{-9999, -9999}
+			for pos := range g {
+				min = min.minBound(pos)
+				max = max.maxBound(pos)
+			}
+			area := (max.x - min.x + 1) * (max.y - min.y + 1)
+			p1 = area - len(g)
 		}
 	}
 }
@@ -64,7 +55,7 @@ func checkAll(g groveMap, elf point) bool {
 	return false
 }
 
-func scatter(g groveMap, startChoice int) (groveMap, int) {
+func scatter(g groveMap, startChoice int) bool {
 	targets := map[point][]point{}
 	for elf := range g {
 		if !checkAll(g, elf) {
@@ -86,15 +77,15 @@ func scatter(g groveMap, startChoice int) (groveMap, int) {
 			break
 		}
 	}
-	moved := 0
+	moved := false
 	for to, from := range targets {
 		if len(from) == 1 {
 			delete(g, from[0])
 			g[to] = true
-			moved++
+			moved = true
 		}
 	}
-	return g, moved
+	return moved
 }
 
 var look = [...][3]point{
@@ -151,13 +142,18 @@ func (g groveMap) String() string {
 }
 
 func load() groveMap {
-	g := groveMap{}
-
-	for y, line := range utils.GetLines(input) {
-		for x, ch := range line {
-			if ch == '#' {
-				g[point{x, y}] = true
-			}
+	g := make(groveMap, 75*75)
+	x, y := 0, 0
+	for pos := 0; pos < len(input); pos++ {
+		switch input[pos] {
+		case '\n':
+			y++
+			x = 0
+		case '#':
+			g[point{x, y}] = true
+			x++
+		default:
+			x++
 		}
 	}
 	return g
