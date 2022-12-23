@@ -3,7 +3,8 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 //go:embed input.txt
@@ -26,13 +27,13 @@ func solve() (int, int) {
 			return p1, i + 1
 		}
 		if i == 9 {
-			min, max := point{9999, 9999}, point{-9999, -9999}
+			min, max := pointAt(9999, 9999), pointAt(-9999, -9999)
 			for pos := range g {
 				min = min.minBound(pos)
 				max = max.maxBound(pos)
 			}
-			area := (max.x - min.x + 1) * (max.y - min.y + 1)
-			p1 = area - len(g)
+			area := (max.x() - min.x() + 1) * (max.y() - min.y() + 1)
+			p1 = int(area) - len(g)
 		}
 	}
 }
@@ -89,30 +90,51 @@ func scatter(g groveMap, startChoice int) bool {
 }
 
 var look = [...][3]point{
-	{{-1, -1}, {0, -1}, {1, -1}}, // North
-	{{-1, 1}, {0, 1}, {1, 1}},    // South
-	{{-1, -1}, {-1, 0}, {-1, 1}}, // West
-	{{1, -1}, {1, 0}, {1, 1}},    // East
+	{pointAt(-1, -1), pointAt(0, -1), pointAt(1, -1)}, // North
+	{pointAt(-1, 1), pointAt(0, 1), pointAt(1, 1)},    // South
+	{pointAt(-1, -1), pointAt(-1, 0), pointAt(-1, 1)}, // West
+	{pointAt(1, -1), pointAt(1, 0), pointAt(1, 1)},    // East
 }
-var allAround = [...]point{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+var allAround = [...]point{
+	pointAt(-1, -1),
+	pointAt(0, -1),
+	pointAt(1, -1),
+	pointAt(-1, 0),
+	pointAt(1, 0),
+	pointAt(-1, 1),
+	pointAt(0, 1),
+	pointAt(1, 1),
+}
 
-type point struct{ x, y int }
+type point uint32
 
-func (p point) add(o point) point { return point{p.x + o.x, p.y + o.y} }
+const (
+	axisBits = 11
+	mask     = (1 << (axisBits + 1)) - 1
+)
+
+func pointAt(x, y int16) point {
+	return point(x) + 1<<axisBits + (point(y+1<<axisBits) << (axisBits + 2))
+}
+
+func (p point) x() int16 { return int16((p & mask) - 1<<axisBits) }
+func (p point) y() int16 { return int16((p>>(axisBits+2))&mask - 1<<axisBits) }
+
+func (p point) add(o point) point { return pointAt(p.x()+o.x(), p.y()+o.y()) }
 func (p point) minBound(o point) point {
-	return point{min(p.x, o.x), min(p.y, o.y)}
+	return pointAt(min(p.x(), o.x()), min(p.y(), o.y()))
 }
 func (p point) maxBound(o point) point {
-	return point{max(p.x, o.x), max(p.y, o.y)}
+	return pointAt(max(p.x(), o.x()), max(p.y(), o.y()))
 }
 
-func min(a, b int) int {
+func min[T constraints.Integer](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
-func max(a, b int) int {
+func max[T constraints.Integer](a, b T) T {
 	if a > b {
 		return a
 	}
@@ -121,36 +143,16 @@ func max(a, b int) int {
 
 type groveMap map[point]bool
 
-func (g groveMap) String() string {
-	min, max := point{999999, 999999}, point{-99999, -99999}
-	for pos := range g {
-		min = min.minBound(pos)
-		max = max.maxBound(pos)
-	}
-	sb := strings.Builder{}
-	for y := min.y; y <= max.y; y++ {
-		for x := min.x; x <= max.x; x++ {
-			if g[point{x, y}] {
-				sb.WriteByte('#')
-			} else {
-				sb.WriteByte('.')
-			}
-		}
-		sb.WriteByte('\n')
-	}
-	return sb.String()
-}
-
 func load() groveMap {
 	g := make(groveMap, 75*75)
-	x, y := 0, 0
+	x, y := int16(0), int16(0)
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '\n':
 			y++
 			x = 0
 		case '#':
-			g[point{x, y}] = true
+			g[pointAt(x, y)] = true
 			x++
 		default:
 			x++
