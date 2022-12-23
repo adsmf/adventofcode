@@ -25,8 +25,14 @@ func TestPoints(t *testing.T) {
 	type testData struct{ x, y int }
 	tests := []testData{
 		{0, 0},
-		{1, 1},
 		{-1, -1},
+		{0, -1},
+		{1, -1},
+		{-1, 0},
+		{1, 0},
+		{-1, 1},
+		{0, 1},
+		{1, 1},
 		{(1<<(axisBits-1) - 18), (1<<(axisBits-1) - 27)},
 		{(1<<(axisBits-1) - 18) * -1, (1<<(axisBits-1) - 27) * -1},
 	}

@@ -22,37 +22,41 @@ func solve() (int, int) {
 	p1 := 0
 	g := load()
 	for i := 0; ; i++ {
-		moved := scatter(g, i%4)
+		moved := 0
+		g, moved = scatter(g, i%4)
 		if moved == 0 {
 			return p1, i + 1
 		}
 		if i == 9 {
 			min, max := pointAt(axisMax, axisMax), pointAt(axisMin, axisMin)
-			for pos := range g {
-				min = min.minBound(pos)
-				max = max.maxBound(pos)
+			for elfID := 0; elfID < g.numElves; elfID++ {
+				elfPos := g.elves[elfID]
+				min = min.minBound(elfPos)
+				max = max.maxBound(elfPos)
 			}
 			area := (max.x() - min.x() + 1) * (max.y() - min.y() + 1)
-			p1 = int(area) - len(g)
+			p1 = int(area) - g.numElves
 		}
 	}
 }
 
-func checkAll(g groveMap, elf point) byte {
+func checkAll(g *groveMap, elf point) byte {
 	result := byte(0)
 	for i := 1; i < 1<<8; i <<= 1 {
 		pos := surrounding[i]
-		if g[elf.add(pos)] {
+		if g.occupied[elf.add(pos)] {
 			result |= byte(i)
 		}
 	}
 	return result
 }
 
-func scatter(g groveMap, startChoice int) int {
-	targets := [1 << (axisBits * 2)]*target{}
-	for elf := range g {
-		neighbours := checkAll(g, elf)
+func scatter(g groveMap, startChoice int) (groveMap, int) {
+	targets := [gridSize]byte{}
+	newPositions := elfList{}
+	for elfID := 0; elfID < g.numElves; elfID++ {
+		elfPos := g.elves[elfID]
+		neighbours := checkAll(&g, elfPos)
 		if neighbours == 0 {
 			continue
 		}
@@ -64,37 +68,24 @@ func scatter(g groveMap, startChoice int) int {
 			if neighbours&choices[choice] > 0 {
 				continue
 			}
-			moveTo := elf.add(moveDir[choice])
-			targets[moveTo] = targets[moveTo].set(elf)
+			moveTo := elfPos.add(moveDir[choice])
+			targets[moveTo]++
+			newPositions[elfID] = moveTo
 			break
 		}
 	}
 	moved := 0
-	for to, from := range targets {
-		if from == nil {
-			continue
-		}
-		if from.valid {
-			delete(g, from.pos)
-			g[point(to)] = true
+	for elfID := 0; elfID < g.numElves; elfID++ {
+		fromPos := g.elves[elfID]
+		toPos := newPositions[elfID]
+		if targets[toPos] == 1 {
+			g.occupied[fromPos] = false
+			g.occupied[toPos] = true
+			g.elves[elfID] = toPos
 			moved++
 		}
 	}
-	return moved
-}
-
-type target struct {
-	pos   point
-	valid bool
-}
-
-func (t *target) set(elf point) *target {
-	if t == nil {
-		t = &target{valid: true, pos: elf}
-	} else {
-		t.valid = false
-	}
-	return t
+	return g, moved
 }
 
 var choices = [...]byte{
@@ -128,10 +119,11 @@ type point uint16
 
 const (
 	axisBits = 8
-	axisMax  = (1 << (axisBits - 1)) - 1
-	axisMin  = (1 << (axisBits - 1)) * -1
 	offset   = 1 << (axisBits - 1)
 	mask     = (1 << axisBits) - 1
+	axisMax  = (1 << (axisBits - 1)) - 1
+	axisMin  = (1 << (axisBits - 1)) * -1
+	gridSize = 1 << (axisBits * 2)
 )
 
 func pointAt(x, y int) point {
@@ -162,10 +154,15 @@ func max[T constraints.Integer](a, b T) T {
 	return b
 }
 
-type groveMap map[point]bool
+type elfList [3000]point
+type groveMap struct {
+	occupied [gridSize]bool
+	elves    elfList
+	numElves int
+}
 
 func load() groveMap {
-	g := make(groveMap, 75*75)
+	g := groveMap{}
 	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
@@ -173,7 +170,10 @@ func load() groveMap {
 			y++
 			x = 0
 		case '#':
-			g[pointAt(x, y)] = true
+			pos := pointAt(x, y)
+			g.occupied[pos] = true
+			g.elves[g.numElves] = pos
+			g.numElves++
 			x++
 		default:
 			x++
