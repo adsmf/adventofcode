@@ -50,7 +50,7 @@ func checkAll(g groveMap, elf point) byte {
 }
 
 func scatter(g groveMap, startChoice int) bool {
-	targets := map[point][]point{}
+	targets := map[point]*target{}
 	for elf := range g {
 		neighbours := checkAll(g, elf)
 		if neighbours == 0 {
@@ -65,19 +65,33 @@ func scatter(g groveMap, startChoice int) bool {
 				continue
 			}
 			moveTo := elf.add(moveDir[choice])
-			targets[moveTo] = append(targets[moveTo], elf)
+			targets[moveTo] = targets[moveTo].set(elf)
 			break
 		}
 	}
 	moved := false
 	for to, from := range targets {
-		if len(from) == 1 {
-			delete(g, from[0])
+		if from.valid {
+			delete(g, from.pos)
 			g[to] = true
 			moved = true
 		}
 	}
 	return moved
+}
+
+type target struct {
+	pos   point
+	valid bool
+}
+
+func (t *target) set(elf point) *target {
+	if t == nil {
+		t = &target{valid: true, pos: elf}
+	} else {
+		t.valid = false
+	}
+	return t
 }
 
 var choices = [...]byte{
