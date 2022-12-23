@@ -38,42 +38,33 @@ func solve() (int, int) {
 	}
 }
 
-func checkDir(g groveMap, elf point, dirs [3]point) bool {
-	for _, pos := range dirs {
+func checkAll(g groveMap, elf point) byte {
+	result := byte(0)
+	for i := 1; i < 1<<8; i <<= 1 {
+		pos := surrounding[i]
 		if g[elf.add(pos)] {
-			return true
+			result |= byte(i)
 		}
 	}
-	return false
-}
-
-func checkAll(g groveMap, elf point) bool {
-	for _, pos := range allAround {
-		if g[elf.add(pos)] {
-			return true
-		}
-	}
-	return false
+	return result
 }
 
 func scatter(g groveMap, startChoice int) bool {
 	targets := map[point][]point{}
 	for elf := range g {
-		if !checkAll(g, elf) {
+		neighbours := checkAll(g, elf)
+		if neighbours == 0 {
 			continue
 		}
-
 		for i := 0; i < 4; i++ {
 			choice := (i + startChoice)
 			if choice >= 4 {
 				choice -= 4
 			}
-			checkDirs := look[choice]
-			found := checkDir(g, elf, checkDirs)
-			if found {
+			if neighbours&choices[choice] > 0 {
 				continue
 			}
-			moveTo := elf.add(checkDirs[1])
+			moveTo := elf.add(moveDir[choice])
 			targets[moveTo] = append(targets[moveTo], elf)
 			break
 		}
@@ -89,21 +80,31 @@ func scatter(g groveMap, startChoice int) bool {
 	return moved
 }
 
-var look = [...][3]point{
-	{pointAt(-1, -1), pointAt(0, -1), pointAt(1, -1)}, // North
-	{pointAt(-1, 1), pointAt(0, 1), pointAt(1, 1)},    // South
-	{pointAt(-1, -1), pointAt(-1, 0), pointAt(-1, 1)}, // West
-	{pointAt(1, -1), pointAt(1, 0), pointAt(1, 1)},    // East
+var choices = [...]byte{
+	dirNW + dirN + dirNE, // North
+	dirSW + dirS + dirSE, // South
+	dirNW + dirW + dirSW, // West
+	dirNE + dirE + dirSE, // East
 }
-var allAround = [...]point{
-	pointAt(-1, -1),
-	pointAt(0, -1),
-	pointAt(1, -1),
-	pointAt(-1, 0),
-	pointAt(1, 0),
-	pointAt(-1, 1),
-	pointAt(0, 1),
-	pointAt(1, 1),
+
+type direction = byte
+
+const (
+	dirNW direction = 1 << iota
+	dirN
+	dirNE
+	dirW
+	dirE
+	dirSW
+	dirS
+	dirSE
+)
+
+var moveDir = [...]point{surrounding[dirN], surrounding[dirS], surrounding[dirW], surrounding[dirE]}
+var surrounding = [...]point{
+	dirNW: pointAt(-1, -1), dirN: pointAt(0, -1), dirNE: pointAt(1, -1),
+	dirW: pointAt(-1, 0) /*      Centre      */, dirE: pointAt(1, 0),
+	dirSW: pointAt(-1, 1), dirS: pointAt(0, 1), dirSE: pointAt(1, 1),
 }
 
 type point uint32
