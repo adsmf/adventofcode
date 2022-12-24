@@ -26,19 +26,27 @@ func solve(v valleyData) (int, int) {
 		tick: 0,
 	}
 	openset, nextopen := []searchEntry{initialState}, []searchEntry{}
-	visited := map[searchEntry]bool{initialState: true}
+	visited := map[searchHash]bool{}
+	visited[initialState.hash()] = true
 
 	search := func(state searchEntry) {
-		if visited[state] {
+		hash := state.hash()
+		if visited[hash] {
 			return
 		}
-		visited[state] = true
+		visited[hash] = true
 		nextopen = append(nextopen, state)
 	}
 
 	goals := []point{v.end, v.start, v.end}
 
+	doTick := true
 	for len(openset) > 0 {
+
+		if doTick {
+			v.tick()
+		}
+		doTick = true
 		nextopen = nextopen[0:0]
 		for _, state := range openset {
 			if state.pos == goals[0] {
@@ -52,25 +60,22 @@ func solve(v valleyData) (int, int) {
 					for s := range visited {
 						delete(visited, s)
 					}
+					doTick = false
 					break
 				}
 				return p1, state.tick
 			}
 			nextTick := state.tick + 1
-			if !v.isBlizzard(state.pos, nextTick) {
-				search(searchEntry{state.pos, nextTick})
-			}
-			if !v.isBlizzard(state.pos.up(), nextTick) {
-				search(searchEntry{state.pos.up(), nextTick})
-			}
-			if !v.isBlizzard(state.pos.down(), nextTick) {
-				search(searchEntry{state.pos.down(), nextTick})
-			}
-			if !v.isBlizzard(state.pos.left(), nextTick) {
-				search(searchEntry{state.pos.left(), nextTick})
-			}
-			if !v.isBlizzard(state.pos.right(), nextTick) {
-				search(searchEntry{state.pos.right(), nextTick})
+			for _, pos := range []point{
+				state.pos,
+				state.pos.up(),
+				state.pos.down(),
+				state.pos.left(),
+				state.pos.right(),
+			} {
+				if !v.isBlizzard(pos) {
+					search(searchEntry{pos, nextTick})
+				}
 			}
 		}
 		openset, nextopen = nextopen, openset
@@ -78,9 +83,15 @@ func solve(v valleyData) (int, int) {
 	return p1, -1
 }
 
+type searchHash uint32
+
 type searchEntry struct {
 	pos  point
 	tick int
+}
+
+func (s searchEntry) hash() searchHash {
+	return searchHash(s.pos.x) + searchHash(s.pos.y)<<8 + searchHash(s.tick)<<16
 }
 
 type point struct{ x, y int }
@@ -97,7 +108,32 @@ type valleyData struct {
 	start, end    point
 }
 
-func (v valleyData) isBlizzard(pos point, tick int) bool {
+func (v *valleyData) tick() {
+	for y := 0; y < v.height; y++ {
+		for i, b := range v.blizzardH[y] {
+			next := b.start + b.offset
+			if next >= v.width {
+				next = 0
+			} else if next < 0 {
+				next = v.width - 1
+			}
+			v.blizzardH[y][i].start = next
+		}
+	}
+	for x := 0; x < v.width; x++ {
+		for i, b := range v.blizzardV[x] {
+			next := b.start + b.offset
+			if next >= v.height {
+				next = 0
+			} else if next < 0 {
+				next = v.height - 1
+			}
+			v.blizzardV[x][i].start = next
+		}
+	}
+}
+
+func (v valleyData) isBlizzard(pos point) bool {
 	if pos.x < 0 || pos.x >= v.width || pos.y < 0 || pos.y >= v.height {
 		if pos == v.end || pos == v.start {
 			return false
@@ -105,20 +141,12 @@ func (v valleyData) isBlizzard(pos point, tick int) bool {
 		return true
 	}
 	for _, b := range v.blizzardH[pos.y] {
-		bPos := (b.start + b.offset*tick) % v.width
-		if bPos < 0 {
-			bPos += v.width
-		}
-		if bPos == pos.x {
+		if b.start == pos.x {
 			return true
 		}
 	}
 	for _, b := range v.blizzardV[pos.x] {
-		bPos := (b.start + b.offset*tick) % v.height
-		if bPos < 0 {
-			bPos += v.height
-		}
-		if bPos == pos.y {
+		if b.start == pos.y {
 			return true
 		}
 	}
