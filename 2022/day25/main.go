@@ -16,8 +16,7 @@ func main() {
 	}
 }
 
-var chars = map[int]byte{-2: '=', -1: '-', 0: '0', 1: '1', 2: '2'}
-var vals = [...]int{'=': -2, '-': -1, '0': 0, '1': 1, '2': 2}
+var vals = [...]int8{'=': -2, '-': -1, '0': 0, '1': 1, '2': 2}
 
 func part1() snafuDigits {
 	sum := snafuDigits{}
@@ -32,7 +31,6 @@ func part1() snafuDigits {
 				sum[len-accPos] += accumulator[accPos]
 				accPos--
 			}
-
 			accPos = 0
 			accumulator = snafuDigits{}
 			continue
@@ -53,9 +51,9 @@ func part1() snafuDigits {
 	return sum
 }
 
-const maxDigits = 25
+const maxDigits = 20
 
-type snafuDigits [maxDigits]int
+type snafuDigits [maxDigits]int8
 
 func (s snafuDigits) String() string {
 	sb := strings.Builder{}
@@ -66,7 +64,16 @@ func (s snafuDigits) String() string {
 			continue
 		}
 		leadingZero = false
-		sb.WriteByte(chars[digit])
+		switch digit {
+		case 0, 1, 2:
+			sb.WriteByte(byte(digit) + '0')
+		case -1:
+			sb.WriteByte('-')
+		case -2:
+			sb.WriteByte('=')
+		default:
+			sb.WriteByte('?')
+		}
 	}
 	return sb.String()
 }
