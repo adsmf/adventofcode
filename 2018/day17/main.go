@@ -252,7 +252,7 @@ func rangeInts(input string) []int {
 	}
 	ordinals := strings.Split(input, "..")
 	ints := []int{}
-	for i := utils.MustInt(ordinals[0]); i <= utils.MustInt(ordinals[1]); i++ {
+	for i := utils.MustInt[int](ordinals[0]); i <= utils.MustInt[int](ordinals[1]); i++ {
 		ints = append(ints, i)
 	}
 	return ints

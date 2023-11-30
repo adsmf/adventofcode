@@ -128,7 +128,7 @@ func load(filename string) ([]instructionSpec, int) {
 		parts := strings.Split(line, " ")
 		args := make([]int, len(parts)-1)
 		for idx, arg := range parts[1:] {
-			args[idx] = utils.MustInt(arg)
+			args[idx] = utils.MustInt[int](arg)
 		}
 		instructions = append(instructions, instructionSpec{
 			op:   parts[0],

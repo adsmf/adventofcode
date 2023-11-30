@@ -384,11 +384,11 @@ func groupFromLine(id int, line string) group {
 	parts := matcher.FindStringSubmatch(line)
 	g := group{
 		id:         id,
-		units:      utils.MustInt(parts[1]),
-		hp:         utils.MustInt(parts[2]),
-		damage:     utils.MustInt(parts[5]),
+		units:      utils.MustInt[int](parts[1]),
+		hp:         utils.MustInt[int](parts[2]),
+		damage:     utils.MustInt[int](parts[5]),
 		damageType: parts[6],
-		initiative: utils.MustInt(parts[7]),
+		initiative: utils.MustInt[int](parts[7]),
 		weaknesses: map[string]bool{},
 		immunities: map[string]bool{},
 	}

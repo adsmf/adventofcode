@@ -135,8 +135,8 @@ func load(filename string) []adapterInfo {
 	for _, line := range utils.ReadInputLines(filename) {
 		parts := strings.Split(line, "/")
 		a := adapterInfo{
-			p1: utils.MustInt(parts[0]),
-			p2: utils.MustInt(parts[1]),
+			p1: utils.MustInt[int](parts[0]),
+			p2: utils.MustInt[int](parts[1]),
 		}
 		adapters = append(adapters, a)
 	}

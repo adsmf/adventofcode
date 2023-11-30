@@ -96,7 +96,7 @@ func decode(input []string) []instruction {
 			instructions = append(instructions, instruction{
 				op:  opJNZ,
 				p1s: parts[1],
-				p2i: utils.MustInt(parts[2]),
+				p2i: utils.MustInt[int](parts[2]),
 			})
 		}
 	}

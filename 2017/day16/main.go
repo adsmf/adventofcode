@@ -79,7 +79,7 @@ func choreograph(filename string) []operation {
 	for _, op := range strings.Split(strings.TrimSpace(string(inputBytes)), ",") {
 		switch op[0] {
 		case 's':
-			size := utils.MustInt(op[1:])
+			size := utils.MustInt[int](op[1:])
 			operations = append(operations, operation{
 				op:   opSpin,
 				arg1: size,

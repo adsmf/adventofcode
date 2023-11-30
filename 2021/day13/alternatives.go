@@ -37,7 +37,7 @@ func load(in string) (grid, []foldInstruction) {
 		if line[11] == 'y' {
 			horizontal = true
 		}
-		axis := utils.MustInt(line[13:])
+		axis := utils.MustInt[int](line[13:])
 		folds = append(folds, foldInstruction{horizontal: horizontal, axis: axis})
 	}
 

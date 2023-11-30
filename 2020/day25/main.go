@@ -17,8 +17,8 @@ func main() {
 
 func part1() int {
 	keys := utils.ReadInputLines("input.txt")
-	cardPubKey := utils.MustInt(keys[0])
-	doorPubKey := utils.MustInt(keys[1])
+	cardPubKey := utils.MustInt[int](keys[0])
+	doorPubKey := utils.MustInt[int](keys[1])
 	doorLoop := findLoopBSGS(doorPubKey)
 	return genKeyBig(cardPubKey, doorLoop)
 }

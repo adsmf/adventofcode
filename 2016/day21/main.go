@@ -50,7 +50,7 @@ func process(seed string, operations []string) string {
 		switch parts[0] {
 		case "swap":
 			if parts[1] == "position" {
-				p1, p2 := utils.MustInt(parts[2]), utils.MustInt(parts[5])
+				p1, p2 := utils.MustInt[int](parts[2]), utils.MustInt[int](parts[5])
 				result[p1], result[p2] = result[p2], result[p1]
 			} else {
 				c1, c2 := parts[2][0], parts[5][0]
@@ -63,17 +63,17 @@ func process(seed string, operations []string) string {
 				}
 			}
 		case "reverse":
-			start, end := utils.MustInt(parts[2]), utils.MustInt(parts[4])
+			start, end := utils.MustInt[int](parts[2]), utils.MustInt[int](parts[4])
 			for i := 0; start+i < end-i; i++ {
 				result[start+i], result[end-i] = result[end-i], result[start+i]
 			}
 		case "rotate":
 			switch parts[1] {
 			case "left":
-				by := utils.MustInt(parts[2])
+				by := utils.MustInt[int](parts[2])
 				result = append(result[by:], result[:by]...)
 			case "right":
-				by := len(result) - utils.MustInt(parts[2])
+				by := len(result) - utils.MustInt[int](parts[2])
 				result = append(result[by:], result[:by]...)
 			case "based":
 				by := bytes.IndexByte(result, parts[6][0])
@@ -86,7 +86,7 @@ func process(seed string, operations []string) string {
 				result = append(result[by:], result[:by]...)
 			}
 		case "move":
-			from, to := utils.MustInt(parts[2]), utils.MustInt(parts[5])
+			from, to := utils.MustInt[int](parts[2]), utils.MustInt[int](parts[5])
 			char := result[from]
 			interim := make([]byte, len(result))
 			copy(interim, result)
