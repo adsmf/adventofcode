@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/adsmf/adventofcode/utils/intcode"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
