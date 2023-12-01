@@ -29,13 +29,13 @@ func calibrate(allowWords bool) int {
 			if ch >= '0' && ch <= '9' {
 				digit = int(ch - '0')
 			} else if allowWords {
-				for word, value := range wordValues {
+				for idx, word := range words {
 					end := start + len(word)
 					if len(line) < end {
 						continue
 					}
 					if line[start:end] == word {
-						digit = value
+						digit = idx + 1
 					}
 				}
 			}
@@ -56,16 +56,16 @@ func calibrate(allowWords bool) int {
 
 const unset = -1
 
-var wordValues = map[string]int{
-	"one":   1,
-	"two":   2,
-	"three": 3,
-	"four":  4,
-	"five":  5,
-	"six":   6,
-	"seven": 7,
-	"eight": 8,
-	"nine":  9,
+var words = []string{
+	"one",
+	"two",
+	"three",
+	"four",
+	"five",
+	"six",
+	"seven",
+	"eight",
+	"nine",
 }
 
 var benchmark = false
