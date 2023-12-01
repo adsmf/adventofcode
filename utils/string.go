@@ -37,6 +37,25 @@ func GetLines(input string) []string {
 	return strings.Split(strings.TrimSpace(input), "\n")
 }
 
+type LineIterator func(line string) (done bool)
+
+func EachLine(input string, callback LineIterator) {
+	pos := 0
+	start := 0
+	for ; pos < len(input); pos++ {
+		if input[pos] == '\n' {
+			done := callback(input[start:pos])
+			if done {
+				return
+			}
+			start = pos + 1
+		}
+	}
+	if start != len(input) {
+		callback(input[start:pos])
+	}
+}
+
 func SumInts(input string) int {
 	accumulator := 0
 	negative := false

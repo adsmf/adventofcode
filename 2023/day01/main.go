@@ -21,10 +21,9 @@ func main() {
 
 func calibrate(allowWords bool) int {
 	totalCalibration := 0
-	for _, line := range utils.GetLines(input) {
+	utils.EachLine(input, func(line string) (done bool) {
 		first, last := unset, unset
 		for start, ch := range line {
-
 			digit := unset
 			if ch >= '0' && ch <= '9' {
 				digit = int(ch - '0')
@@ -50,7 +49,8 @@ func calibrate(allowWords bool) int {
 			last = digit
 		}
 		totalCalibration += first*10 + last
-	}
+		return false
+	})
 	return totalCalibration
 }
 
