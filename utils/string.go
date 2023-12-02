@@ -37,22 +37,28 @@ func GetLines(input string) []string {
 	return strings.Split(strings.TrimSpace(input), "\n")
 }
 
-type LineIterator func(line string) (done bool)
+type StringIterator func(index int, section string) (done bool)
 
-func EachLine(input string, callback LineIterator) {
+func EachLine(input string, callback StringIterator) {
+	EachSection(input, '\n', callback)
+}
+
+func EachSection(input string, separator byte, callback StringIterator) {
+	index := 0
 	pos := 0
 	start := 0
 	for ; pos < len(input); pos++ {
-		if input[pos] == '\n' {
-			done := callback(input[start:pos])
+		if input[pos] == separator {
+			done := callback(index, input[start:pos])
 			if done {
 				return
 			}
 			start = pos + 1
+			index++
 		}
 	}
 	if start != len(input) {
-		callback(input[start:pos])
+		callback(index, input[start:pos])
 	}
 }
 

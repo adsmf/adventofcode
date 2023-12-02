@@ -12,91 +12,91 @@ import (
 var input string
 
 func main() {
-	games := loadGames()
-	p1 := part1(games)
-	p2 := part2(games)
+	p1, p2 := analyse()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1(games gameList) int {
+func analyse() (int, int) {
 	sumID := 0
-	for _, game := range games {
-		if game.valid() {
-			sumID += game.id
-		}
-	}
-	return sumID
-}
-
-func part2(games gameList) int {
 	totalPower := 0
-	for _, game := range games {
-		totalPower += game.power()
-	}
-	return totalPower
-}
 
-func loadGames() gameList {
-	games := gameList{}
-	utils.EachLine(input, func(line string) (done bool) {
-		game := gameInfo{}
-
-		split := strings.Split(line, ": ")
-		game.id = utils.GetInts(split[0])[0]
-		for _, roundStr := range strings.Split(split[1], "; ") {
+	utils.EachLine(input, func(index int, line string) (done bool) {
+		validGame := true
+		maxPulled := roundInfo{}
+		start := strings.Index(line, ": ") + 1
+		utils.EachSection(line[start:], ';', func(index int, roundStr string) (done bool) {
 			round := roundInfo{}
-			var color string
-			var count int
-			for _, pull := range strings.Split(roundStr, ", ") {
-				_, err := fmt.Sscanf(pull, "%d %s", &count, &color)
-				if err != nil {
-					panic(err)
-				}
-				round[color] = count
+			utils.EachSection(roundStr, ',', func(index int, pull string) (done bool) {
+				colour, count := parsePull(pull)
+				round.set(colour, count)
+				return false
+			})
+			if !round.valid() {
+				validGame = false
 			}
-			game.rounds = append(game.rounds, round)
+			maxPulled = maxPulled.extend(round)
+			return false
+		})
+		if validGame {
+			sumID += index + 1
 		}
-		games = append(games, game)
+		totalPower += maxPulled.power()
 		return false
 	})
-	return games
+	return sumID, totalPower
 }
 
-type gameList []gameInfo
-
-type gameInfo struct {
-	id     int
-	rounds []roundInfo
-}
-
-func (g gameInfo) valid() bool {
-	for _, round := range g.rounds {
-		if round["red"] > 12 || round["green"] > 13 || round["blue"] > 14 {
-			return false
+func parsePull(pull string) (string, int) {
+	count := 0
+	var colour string
+	for pos := 0; pos < len(pull); pos++ {
+		ch := pull[pos]
+		if ch == ' ' && count > 0 {
+			colour = pull[pos+1:]
+			break
+		}
+		if ch >= '0' && ch <= '9' {
+			count *= 10
+			count += int(ch - '0')
 		}
 	}
-	return true
+	return colour, count
 }
 
-func (g gameInfo) power() int {
-	minCubes := map[string]int{}
-	for _, round := range g.rounds {
-		for color, count := range round {
-			if minCubes[color] < count {
-				minCubes[color] = count
-			}
-		}
-	}
-	power := 1
-	for _, count := range minCubes {
-		power *= count
-	}
-	return power
+type roundInfo struct {
+	red   int
+	green int
+	blue  int
 }
 
-type roundInfo map[string]int
+func (r *roundInfo) set(colour string, count int) {
+	switch colour {
+	case "red":
+		r.red = count
+	case "green":
+		r.green = count
+	case "blue":
+		r.blue = count
+	}
+}
+
+func (r roundInfo) power() int  { return r.red * r.green * r.blue }
+func (r roundInfo) valid() bool { return !(r.red > 12 || r.green > 13 || r.blue > 14) }
+
+func (r roundInfo) extend(other roundInfo) roundInfo {
+	if other.red > r.red {
+		r.red = other.red
+	}
+	if other.green > r.green {
+		r.green = other.green
+	}
+	if other.blue > r.blue {
+		r.blue = other.blue
+	}
+	return r
+}
 
 var benchmark = false

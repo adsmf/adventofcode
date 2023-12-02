@@ -21,7 +21,7 @@ func main() {
 
 func calibrate(allowWords bool) int {
 	totalCalibration := 0
-	utils.EachLine(input, func(line string) (done bool) {
+	utils.EachLine(input, func(_ int, line string) (done bool) {
 		first, last := unset, unset
 		for start, ch := range line {
 			digit := unset
