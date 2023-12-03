@@ -78,8 +78,11 @@ func (s schematic) getPartNums() []partNum {
 			part.points = append(part.points, curPos)
 			delete(toSearch, curPos)
 		}
-		part.calcNumber()
 		part.calcNeighbours()
+		if !part.valid() {
+			continue
+		}
+		part.calcNumber()
 		parts = append(parts, part)
 	}
 	return parts
