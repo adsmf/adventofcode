@@ -22,29 +22,30 @@ func main() {
 
 func analyse() (int, int) {
 	totalPoints := 0
-	cardCopies := map[int]int{}
+	cardCopies := make(map[int]int, 200+numWinningNumbers)
 	maxCard := 0
 	utils.EachLine(input, func(index int, line string) (done bool) {
-		values := utils.GetInts(line)
-		cardNum, winningNumbers, haveNumbers := values[0], values[1:numWinningNumbers+1], values[numWinningNumbers+1:]
+		var cardNum int
+		winMap := [100]int{}
+
+		numMatches := 0
+		utils.EachInteger(line, func(index, value int) (done bool) {
+			switch {
+			case index == 0:
+				cardNum = value
+			case index <= numWinningNumbers:
+				winMap[value] = 1
+			default:
+				numMatches += winMap[value]
+			}
+			return false
+		})
 
 		if cardNum > maxCard {
 			maxCard = cardNum
 		}
 		cardCopies[cardNum]++
 
-		winMap := make(map[int]bool, len(winningNumbers))
-		for _, val := range winningNumbers {
-			winMap[val] = true
-		}
-
-		numMatches := 0
-		for _, have := range haveNumbers {
-			if !winMap[have] {
-				continue
-			}
-			numMatches++
-		}
 		if numMatches == 0 {
 			return false
 		}

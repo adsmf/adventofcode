@@ -7,29 +7,10 @@ import (
 func GetInts(input string) []int {
 	ints := make([]int, 0, len(input)/2)
 
-	accumulator := 0
-	negative := false
-	started := false
-
-	for _, char := range append([]byte(input), '\n') {
-		switch {
-		case !started && char == '-':
-			negative = true
-		case char >= '0' && char <= '9':
-			accumulator = accumulator*10 + int(char-'0')
-			started = true
-		default:
-			if started {
-				if negative {
-					accumulator *= -1
-				}
-				ints = append(ints, accumulator)
-				accumulator = 0
-				started = false
-			}
-			negative = false
-		}
-	}
+	EachInteger(input, func(index, value int) (done bool) {
+		ints = append(ints, value)
+		return false
+	})
 	return ints
 }
 
@@ -37,13 +18,13 @@ func GetLines(input string) []string {
 	return strings.Split(strings.TrimSpace(input), "\n")
 }
 
-type StringIterator func(index int, section string) (done bool)
+type Callback[T any] func(index int, value T) (done bool)
 
-func EachLine(input string, callback StringIterator) {
+func EachLine(input string, callback Callback[string]) {
 	EachSection(input, '\n', callback)
 }
 
-func EachSection(input string, separator byte, callback StringIterator) {
+func EachSection(input string, separator byte, callback Callback[string]) {
 	index := 0
 	pos := 0
 	start := 0
@@ -60,6 +41,37 @@ func EachSection(input string, separator byte, callback StringIterator) {
 	if start != len(input) {
 		callback(index, input[start:pos])
 	}
+}
+
+func EachInteger(input string, callback Callback[int]) {
+	accumulator := 0
+	negative := false
+	started := false
+	index := 0
+	send := func() {
+		if started {
+			if negative {
+				accumulator *= -1
+			}
+			callback(index, accumulator)
+			index++
+			accumulator = 0
+			started = false
+		}
+		negative = false
+	}
+	for _, char := range []byte(input) {
+		switch {
+		case !started && char == '-':
+			negative = true
+		case char >= '0' && char <= '9':
+			accumulator = accumulator*10 + int(char-'0')
+			started = true
+		default:
+			send()
+		}
+	}
+	send()
 }
 
 func SumInts(input string) int {

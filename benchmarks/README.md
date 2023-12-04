@@ -8,7 +8,7 @@ The following are the benchmarks for the Go implementations of solutions for eac
 Day 1 | 88.7µs | 102µs | 46.4µs | 19ms | - | 396µs | 14.4µs | 13.9µs | 584µs
 Day 2 | 390µs | 176µs | 47.8µs | 76.4ms | - | 3.06ms | 1.22µs | 4.18µs | 22.3µs
 Day 3 | 1.53ms | 507µs | 2ns | 45.7ms | - | 83.5µs | 48.2µs | 65.7µs | **🔴 2.78ms**
-Day 4 | 2.24s | 23ms | 1.3ms | 745µs | - | 927µs | 692µs | 23.4µs | 177µs
+Day 4 | 2.24s | 23ms | 1.3ms | 745µs | - | 927µs | 692µs | 23.4µs | 84.8µs
 Day 5 | 2.1ms | 15.8s | 70.5ms | 112ms | - | 28µs | 704µs | 15.7µs | -
 Day 6 | 5.73s | 183µs | 11.4ms | 37.5ms | - | 1.34ms | 656ns | 14.5µs | -
 Day 7 | 22.9ms | 5.81ms | 2.4ms | 3.2ms | - | 1.25ms | 57.1µs | 13.2µs | -
@@ -30,7 +30,7 @@ Day 22 | 1.36s | 2.65s | 654ms | 1.71s | - | 288ms | 16.7ms | 172ms | -
 Day 23 | 81.4µs | 5.53ms | 4.65ms | 8.02ms | - | **🔴 682ms** | **🔴 142ms** | 154ms | -
 Day 24 | **🔴 31.9s** | 211ms | 438ms | 101ms | - | 101ms | 1.42ms | 190ms | -
 Day 25 | 69.9ms | 432ms | 561ms | 31.7ms | - | 179µs | 139ms | 4.48µs | -
-*Total* | *1m2s* | *1m19.8s* | *5.06s* | *44.5s* | *0s* | *2.01s* | *707ms* | *4.75s* | *3.57ms*
+*Total* | *1m2s* | *1m19.8s* | *5.06s* | *44.5s* | *0s* | *2.01s* | *707ms* | *4.75s* | *3.47ms*
 
 ## Heap memory
 
@@ -39,7 +39,7 @@ Day 25 | 69.9ms | 432ms | 561ms | 31.7ms | - | 179µs | 139ms | 4.48µs | -
 Day 1 | 17.0 KB | 97.4 KB | 4.9 KB | 6.8 MB | - | 15.0 KB | None | None | None
 Day 2 | 372 KB | 12.5 KB | 17.6 KB | 18.9 MB | - | 545 KB | None | None | None
 Day 3 | 513 KB | 659 KB | None | 57.3 MB | - | 55.0 KB | 24.6 KB | None | **🔴 2.8 MB**
-Day 4 | 454 MB | 10.9 MB | 504 KB | 360 KB | - | 488 KB | 391 KB | None | 185 KB
+Day 4 | 454 MB | 10.9 MB | 504 KB | 360 KB | - | 488 KB | 391 KB | None | 10.3 KB
 Day 5 | 1.5 MB | 3.8 GB | 66.7 KB | 129 MB | - | 9.8 KB | 45.9 KB | None | -
 Day 6 | 218 MB | 31.1 KB | 1.7 MB | 14.3 KB | - | 535 KB | None | None | -
 Day 7 | 9.9 MB | 3.3 MB | 922 KB | 170 KB | - | 710 KB | 61.5 KB | None | -
@@ -61,4 +61,4 @@ Day 22 | 483 MB | 5.3 GB | 6.2 MB | 329 MB | - | 110 MB | 868 KB | 2.0 B | -
 Day 23 | 13.5 KB | 3.9 MB | 2.0 MB | 9.1 MB | - | 8.0 MB | 16.1 MB | None | -
 Day 24 | 19.4 MB | 35.9 MB | **🔴 1.0 GB** | 188 MB | - | 58.4 MB | 105 KB | 1.0 B | -
 Day 25 | None | 290 MB | 430 KB | 1.4 MB | - | 166 KB | 21.4 MB | None | -
-*Total* | *8.0 GB* | *35.8 GB* | *1.4 GB* | *2.9 GB* | *None* | *1.6 GB* | *224 MB* | *51.1 MB* | *3.0 MB*
+*Total* | *8.0 GB* | *35.8 GB* | *1.4 GB* | *2.9 GB* | *None* | *1.6 GB* | *224 MB* | *51.1 MB* | *2.8 MB*
