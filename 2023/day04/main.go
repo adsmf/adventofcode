@@ -22,17 +22,26 @@ func main() {
 
 func analyse() (int, int) {
 	totalPoints := 0
-	cardCopies := make(map[int]int, 200+numWinningNumbers)
-	maxCard := 0
+	totalCards := 0
+	extraCopies := [numWinningNumbers + 1]int{}
+
+	shiftExtraCopies := func() int {
+		first := extraCopies[0]
+		for i := 0; i < numWinningNumbers; i++ {
+			extraCopies[i] = extraCopies[i+1]
+		}
+		extraCopies[numWinningNumbers] = 0
+		return first
+	}
+
 	utils.EachLine(input, func(index int, line string) (done bool) {
-		var cardNum int
 		winMap := [100]int{}
 
 		numMatches := 0
 		utils.EachInteger(line, func(index, value int) (done bool) {
 			switch {
 			case index == 0:
-				cardNum = value
+				// Ignore card number
 			case index <= numWinningNumbers:
 				winMap[value] = 1
 			default:
@@ -41,28 +50,21 @@ func analyse() (int, int) {
 			return false
 		})
 
-		if cardNum > maxCard {
-			maxCard = cardNum
-		}
-		cardCopies[cardNum]++
+		copies := 1 + shiftExtraCopies()
+		totalCards += copies
 
 		if numMatches == 0 {
 			return false
 		}
 
 		totalPoints += (1 << numMatches) >> 1
-		copies := cardCopies[cardNum]
-		for i := cardNum + 1; i <= cardNum+numMatches; i++ {
-			cardCopies[i] += copies
+		for i := 0; i < numMatches; i++ {
+			extraCopies[i] += copies
 		}
 
 		return false
 	})
 
-	totalCards := 0
-	for i := 1; i <= maxCard; i++ {
-		totalCards += cardCopies[i]
-	}
 	return totalPoints, totalCards
 }
 
