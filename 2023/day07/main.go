@@ -13,16 +13,18 @@ import (
 var input string
 
 func main() {
-	p1 := calcWinnings(false)
-	p2 := calcWinnings(true)
+	hands := load()
+	p1 := calcWinnings(hands, false)
+	hands.clearCache()
+	p2 := calcWinnings(hands, true)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func calcWinnings(jWild bool) int {
-	hands := []handInfo{}
+func load() handList {
+	hands := handList{}
 	utils.EachLine(input, func(index int, line string) (done bool) {
 		bid, _ := strconv.Atoi(line[6:])
 		hand := handInfo{
@@ -32,6 +34,10 @@ func calcWinnings(jWild bool) int {
 		hands = append(hands, hand)
 		return false
 	})
+	return hands
+}
+
+func calcWinnings(hands handList, jWild bool) int {
 	localRanks := cardRanks
 	if jWild {
 		localRanks['J'] = -1
@@ -55,6 +61,14 @@ func calcWinnings(jWild bool) int {
 		winnings += (i + 1) * hands[i].bid
 	}
 	return winnings
+}
+
+type handList []handInfo
+
+func (h handList) clearCache() {
+	for idx := range h {
+		h[idx].cached = handUnscored
+	}
 }
 
 type handInfo struct {
