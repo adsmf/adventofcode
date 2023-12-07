@@ -86,36 +86,36 @@ func (h *handInfo) score(jWild bool) handType {
 	for _, card := range h.cards {
 		cardCounts[cardRanks[byte(card)]]++
 	}
-	countRanks := [6][]int{}
+	countRanks := [6]int{}
 	for rank, count := range cardCounts {
 		if rank == jokerRank && jWild {
 			jokers += count
 		} else {
-			countRanks[count] = append(countRanks[count], rank)
+			countRanks[count]++
 		}
 	}
 	if jokers > 0 {
 		for i := len(countRanks) - 1; i >= 0; i-- {
-			if len(countRanks[i]) == 0 {
+			if countRanks[i] == 0 {
 				continue
 			}
-			countRanks[i], countRanks[i+jokers] = countRanks[i][1:], []int{countRanks[i][0]}
+			countRanks[i], countRanks[i+jokers] = countRanks[i]-1, 1
 			break
 		}
 	}
 	rank := handUnscored
 	switch {
-	case len(countRanks[5]) == 1:
+	case countRanks[5] == 1:
 		rank = handFiveOfKind
-	case len(countRanks[4]) == 1:
+	case countRanks[4] == 1:
 		rank = handFourOfKind
-	case len(countRanks[3]) == 1 && len(countRanks[2]) == 1:
+	case countRanks[3] == 1 && countRanks[2] == 1:
 		rank = handFullHouse
-	case len(countRanks[3]) == 1:
+	case countRanks[3] == 1:
 		rank = handThreeOfKind
-	case len(countRanks[2]) == 2:
+	case countRanks[2] == 2:
 		rank = handTwoPair
-	case len(countRanks[2]) == 1:
+	case countRanks[2] == 1:
 		rank = handOnePair
 	default:
 		rank = handHighCard
