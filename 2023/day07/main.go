@@ -80,12 +80,12 @@ func (h *handInfo) score(jWild bool) handType {
 			countCards[count] = append(countCards[count], card)
 		}
 	}
-	for j := 0; j < jokers; j++ {
+	if jokers > 0 {
 		for i := len(countCards) - 1; i >= 0; i-- {
 			if len(countCards[i]) == 0 {
 				continue
 			}
-			countCards[i], countCards[i+1] = countCards[i][1:], []int{countCards[i][0]}
+			countCards[i], countCards[i+jokers] = countCards[i][1:], []int{countCards[i][0]}
 			break
 		}
 	}
