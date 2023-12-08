@@ -11,31 +11,23 @@ import (
 var input string
 
 func main() {
-	inst, nodes := load()
-	p1 := part1(inst, nodes)
-	p2 := part2(inst, nodes)
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1(inst string, nodes nodeSet) int {
-	return minSteps(inst, nodeName([]byte("AAA")), nodes)
-}
-
-func part2(inst string, nodes nodeSet) int {
-	startNodes := []nodeName{}
+func solve() (int, int) {
+	inst, nodes := load()
+	aaa := minSteps(inst, makeName("AAA"), nodes)
+	lcm := aaa
 	for n := range nodes {
-		if n[2] == 'A' {
-			startNodes = append(startNodes, n)
+		if n[2] == 'A' && n != makeName("AAA") {
+			lcm = utils.LowestCommonMultiplePair(lcm, minSteps(inst, n, nodes))
 		}
 	}
-	mins := make([]int, 0, len(startNodes))
-	for _, start := range startNodes {
-		mins = append(mins, minSteps(inst, start, nodes))
-	}
-	return utils.LowestCommonMultipleInt(mins...)
+	return aaa, lcm
 }
 
 func minSteps(inst string, start nodeName, nodes nodeSet) int {
@@ -46,9 +38,9 @@ func minSteps(inst string, start nodeName, nodes nodeSet) int {
 			steps++
 			switch ch {
 			case 'L':
-				curNode = nodes[curNode].l
+				curNode = nodes[curNode].left
 			case 'R':
-				curNode = nodes[curNode].r
+				curNode = nodes[curNode].right
 			}
 			if curNode[2] == 'Z' {
 				return steps
@@ -59,7 +51,7 @@ func minSteps(inst string, start nodeName, nodes nodeSet) int {
 
 func load() (string, nodeSet) {
 	instructions := ""
-	nodes := nodeSet{}
+	nodes := make(nodeSet, 720)
 	utils.EachLine(input, func(index int, line string) (done bool) {
 		if index == 0 {
 			instructions = line
@@ -68,12 +60,12 @@ func load() (string, nodeSet) {
 		if len(line) < 16 {
 			return false
 		}
-		parName := nodeName([]byte(line[0:3]))
-		c1Name := nodeName([]byte(line[7:10]))
-		c2Name := nodeName([]byte(line[12:15]))
-		nodes[parName] = node{
-			l: c1Name,
-			r: c2Name,
+		parent := makeName(line[0:3])
+		left := makeName(line[7:10])
+		right := makeName(line[12:15])
+		nodes[parent] = node{
+			left:  left,
+			right: right,
 		}
 		return false
 	})
@@ -82,8 +74,10 @@ func load() (string, nodeSet) {
 
 type nodeSet map[nodeName]node
 
-type node struct{ l, r [3]byte }
+type node struct{ left, right nodeName }
 
 type nodeName [3]byte
+
+func makeName(in string) nodeName { return nodeName([]byte(in)) }
 
 var benchmark = false
