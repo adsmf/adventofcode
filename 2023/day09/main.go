@@ -20,15 +20,18 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
+	diffStack := [][]int{{}}
 	utils.EachLine(input, func(index int, line string) (done bool) {
 		initial := utils.GetInts(line)
 
-		orderDiffs := append([]int{}, initial...)
-		diffStack := [][]int{initial}
+		diffStack = append(diffStack[0:0], initial)
+		var orderDiffs []int
+		listLen := len(initial) - 1
 
-		for !allZero(orderDiffs) {
+		for orderDiffs == nil || !allZero(orderDiffs) {
 			lastOrder := diffStack[len(diffStack)-1]
-			orderDiffs = []int{}
+			orderDiffs = make([]int, 0, listLen)
+			listLen--
 			for i := 0; i < len(lastOrder)-1; i++ {
 				diff := lastOrder[i+1] - lastOrder[i]
 				orderDiffs = append(orderDiffs, diff)
