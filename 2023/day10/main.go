@@ -19,22 +19,24 @@ func main() {
 }
 
 func solve() (int, int) {
-	pipes, start, max := loadMap()
-	visited := make(map[point]bool, max.x*max.y/2)
+	pipes := make(pipeMap, 140*140)
+	start, max := pipes.load()
+	visited := make(map[point]bool, max.x*max.y)
 	step := -1
 	current := []point{start}
+	next := []point{}
 	for len(current) > 0 {
 		step++
-		next := []point{}
+		next = next[0:0]
 		for _, pos := range current {
-			for _, neighbour := range pipes.validNeighbours(pos) {
+			pipes.eachValidNeighbour(pos, func(neighbour point) {
 				if !visited[neighbour] {
 					next = append(next, neighbour)
 					visited[neighbour] = true
 				}
-			}
+			})
 		}
-		current = next
+		current, next = next, current
 	}
 	p1 := step
 	insideCount := 0
@@ -50,9 +52,6 @@ func solve() (int, int) {
 				continue
 			}
 			if !inLoop {
-				if inside {
-					insideCount++
-				}
 				continue
 			}
 			switch tile {
@@ -74,19 +73,16 @@ func solve() (int, int) {
 	return p1, insideCount
 }
 
-func part2() int {
-	return -1
-}
+type pipeMap map[point]tileType
 
-func loadMap() (pipeMap, point, point) {
+func (p *pipeMap) load() (point, point) {
 	start := point{}
-	pipes := pipeMap{}
 	max := point{}
 	utils.EachLine(input, func(index int, line string) (done bool) {
 		max.y = index
 		for x, ch := range line {
 			pos := point{x, index}
-			pipes[pos] = symbols[byte(ch)]
+			(*p)[pos] = symbols[byte(ch)]
 			if ch == 'S' {
 				start = pos
 			}
@@ -96,27 +92,23 @@ func loadMap() (pipeMap, point, point) {
 		}
 		return false
 	})
-	return pipes, start, max
+	return start, max
 }
 
-type pipeMap map[point]tileType
-
-func (p pipeMap) validNeighbours(pos point) []point {
+func (p pipeMap) eachValidNeighbour(pos point, callback func(pos point)) {
 	initial := p[pos]
-	neighbours := []point{}
 	if pipeTypeConnections[initial].up && pipeTypeConnections[p[pos.up()]].down {
-		neighbours = append(neighbours, pos.up())
+		callback(pos.up())
 	}
 	if pipeTypeConnections[initial].down && pipeTypeConnections[p[pos.down()]].up {
-		neighbours = append(neighbours, pos.down())
+		callback(pos.down())
 	}
 	if pipeTypeConnections[initial].left && pipeTypeConnections[p[pos.left()]].right {
-		neighbours = append(neighbours, pos.left())
+		callback(pos.left())
 	}
 	if pipeTypeConnections[initial].right && pipeTypeConnections[p[pos.right()]].left {
-		neighbours = append(neighbours, pos.right())
+		callback(pos.right())
 	}
-	return neighbours
 }
 
 type point struct{ x, y int }
