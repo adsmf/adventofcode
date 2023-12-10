@@ -21,7 +21,8 @@ func main() {
 func solve() (int, int) {
 	pipes := make(pipeMap, 140*140)
 	start, max := pipes.load()
-	visited := make(map[point]bool, max.x*max.y)
+	visited := make([]bool, (max.x+1)*(max.y+1))
+	index := func(pos point) int { return pos.x + (max.x+1)*pos.y }
 	step := -1
 	current := []point{start}
 	next := []point{}
@@ -30,9 +31,10 @@ func solve() (int, int) {
 		next = next[0:0]
 		for _, pos := range current {
 			pipes.eachValidNeighbour(pos, func(neighbour point) {
-				if !visited[neighbour] {
+				idx := index(neighbour)
+				if !visited[idx] {
 					next = append(next, neighbour)
-					visited[neighbour] = true
+					visited[idx] = true
 				}
 			})
 		}
@@ -46,7 +48,7 @@ func solve() (int, int) {
 		for x := 0; x <= max.x; x++ {
 			pos := point{x, y}
 			tile := pipes[pos]
-			inLoop := visited[pos]
+			inLoop := visited[index(pos)]
 			if inside && !inLoop {
 				insideCount++
 				continue
