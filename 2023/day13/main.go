@@ -70,6 +70,9 @@ func findReflection(section string, lineBuffer []string, ignore int) int {
 	}
 	for row, line := range sectionLines {
 		for x := 1; x < len(line); x++ {
+			if notMirrorCols&(1<<x) > 0 {
+				continue
+			}
 			match := true
 			for i := 0; i < x && (i+x) < len(line); i++ {
 				if line[x+i] != line[x-i-1] {
