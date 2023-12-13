@@ -21,8 +21,9 @@ func main() {
 
 func solve() (int, int) {
 	totalP1, totalP2 := 0, 0
+	lineBuffer := make([]string, 0, 18)
 	utils.EachSectionMB(input, "\n\n", func(sectionNum int, section string) (done bool) {
-		mirror := findReflection(section, 0)
+		mirror := findReflection(section, lineBuffer, 0)
 		totalP1 += mirror
 		copy := []byte(section)
 		flip := func(offset int) bool {
@@ -39,7 +40,7 @@ func solve() (int, int) {
 		for i := 0; i < len(section); i++ {
 			alt := 0
 			if flip(i) {
-				alt = findReflection(string(copy), mirror)
+				alt = findReflection(string(copy), lineBuffer, mirror)
 
 				if alt > 0 {
 					totalP2 += alt
@@ -53,8 +54,12 @@ func solve() (int, int) {
 	return totalP1, totalP2
 }
 
-func findReflection(section string, ignore int) int {
-	sectionLines := utils.GetLines(section)
+func findReflection(section string, lineBuffer []string, ignore int) int {
+	sectionLines := lineBuffer[0:0]
+	utils.EachLine(section, func(index int, line string) (done bool) {
+		sectionLines = append(sectionLines, line)
+		return false
+	})
 	possMirrorCols := 0
 	notMirrorCols := 0
 	ignoreRow := 0
