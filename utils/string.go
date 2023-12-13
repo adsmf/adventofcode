@@ -43,6 +43,25 @@ func EachSection(input string, separator byte, callback Callback[string]) {
 	}
 }
 
+func EachSectionMB(input string, separator string, callback Callback[string]) {
+	index := 0
+	pos := 0
+	start := 0
+	for ; pos < len(input); pos++ {
+		if strings.HasPrefix(input[pos:], separator) {
+			done := callback(index, input[start:pos])
+			if done {
+				return
+			}
+			start = pos + len(separator)
+			index++
+		}
+	}
+	if start != len(input) {
+		callback(index, input[start:pos])
+	}
+}
+
 func EachInteger(input string, callback Callback[int]) {
 	accumulator := 0
 	negative := false
