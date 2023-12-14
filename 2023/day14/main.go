@@ -28,28 +28,28 @@ func solve() (int, int) {
 	for i := 0; i < target; i++ {
 		m.tilt(dirNorth)
 		if i == 0 {
-			p1score, _ = m.eval()
+			p1score = m.score()
 		}
 		m.tilt(dirWest)
 		m.tilt(dirSouth)
 		m.tilt(dirEast)
-		score, h := m.eval()
+		h := m.hash()
 		if prev, found := seen[h]; found {
 			return p1score, scores[((target-prev)%(i-prev))+prev-1]
 		}
-		scores = append(scores, score)
+		scores = append(scores, m.score())
 		seen[h] = i
 	}
 	return p1score, -1
 }
 
 func load() mapInfo {
-	gm := mapInfo{items: map[point]itemType{}}
+	gm := mapInfo{}
 	utils.EachLine(input, func(y int, line string) (done bool) {
-		gm.maxScore = y + 1
-		for x, ch := range line {
-			pos := point{x: x, y: y}
-			gm.items[pos] = itemType(ch)
+		gm.max.y = y + 1
+		gm.max.x = len(line)
+		for _, ch := range line {
+			gm.items = append(gm.items, itemType(ch))
 		}
 		return false
 	})
@@ -57,32 +57,52 @@ func load() mapInfo {
 }
 
 type mapInfo struct {
-	items    map[point]itemType
-	maxScore int
+	items []itemType
+	max   point
 }
 
-func (m mapInfo) eval() (int, uint64) {
+func (m mapInfo) score() int {
 	score := 0
-	hash := fnv.New64a()
 	for pos, item := range m.items {
 		if item != itemRoundRock {
 			continue
 		}
-		score += m.maxScore - pos.y
-		hash.Write([]byte{byte(pos.x), byte(pos.y)})
+		score += m.max.y - pos/m.max.x
 	}
-	return score, hash.Sum64()
+	return score
+}
+
+func (m mapInfo) hash() uint64 {
+	hash := fnv.New64a()
+	hash.Write(m.items)
+	return hash.Sum64()
+}
+
+func (m mapInfo) point(offset int, dir direction) (int, bool) {
+	switch dir {
+	case dirNorth:
+		next := offset - m.max.x
+		return next, next > 0
+	case dirSouth:
+		next := offset + m.max.x
+		return next, next < m.max.x*m.max.y
+	case dirEast:
+		return offset + 1, (offset+1)%m.max.x != 0
+	case dirWest:
+		return offset - 1, (offset)%m.max.x != 0
+	}
+	return -1, false
 }
 
 func (m *mapInfo) tilt(dir direction) {
-	tiltDir := directions[dir]
 	for start, item := range m.items {
 		switch item {
 		case itemCubeRock, itemSpace:
 			continue
 		}
 		lastGood := start
-		for tryPos := start; ; tryPos = tryPos.add(tiltDir) {
+		valid := true
+		for tryPos := start; valid; tryPos, valid = m.point(tryPos, dir) {
 			newItem := m.items[tryPos]
 			if newItem == itemNone || newItem == itemCubeRock {
 				break
@@ -114,14 +134,7 @@ const (
 	dirEast
 )
 
-var directions = map[direction]point{
-	dirNorth: {0, -1},
-	dirEast:  {1, 0},
-	dirSouth: {0, 1},
-	dirWest:  {-1, 0},
-}
-
-type itemType byte
+type itemType = byte
 
 const (
 	itemNone      itemType = 0
