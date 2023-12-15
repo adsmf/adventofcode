@@ -11,32 +11,18 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	sum := 0
-	utils.EachSection(input, ',', func(index int, instruction string) (done bool) {
-		val := hashString(instruction)
-		sum += val
-		return false
-	})
-	return sum
-}
-
-type lens struct {
-	label string
-	value int
-}
-
-func part2() int {
+func solve() (int, int) {
+	totalHash := 0
 	boxes := [256][]lens{}
 	utils.EachSection(input, ',', func(index int, instruction string) (done bool) {
+		totalHash += hashString(instruction)
 		label := ""
 		oper := '?'
 		value := 0
@@ -51,7 +37,7 @@ func part2() int {
 		}
 		box := hashString(string(label))
 		if boxes[box] == nil {
-			boxes[box] = []lens{}
+			boxes[box] = make([]lens, 0, 2)
 		}
 		switch oper {
 		case '-':
@@ -79,13 +65,18 @@ func part2() int {
 		}
 		return false
 	})
-	total := 0
+	focusPower := 0
 	for box, lenses := range boxes {
 		for slot, lens := range lenses {
-			total += (box + 1) * (slot + 1) * (lens.value)
+			focusPower += (box + 1) * (slot + 1) * (lens.value)
 		}
 	}
-	return total
+	return totalHash, focusPower
+}
+
+type lens struct {
+	label string
+	value int
 }
 
 func hashString(in string) int {
