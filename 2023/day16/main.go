@@ -24,7 +24,7 @@ type mapInfo struct {
 	max      point
 	open     []searchItem
 	nextOpen []searchItem
-	seen     map[searchItem]bool
+	seen     []direction
 }
 
 func (m mapInfo) maxEnergised() (int, int) {
@@ -57,11 +57,11 @@ func (m mapInfo) maxEnergised() (int, int) {
 
 func (m *mapInfo) countEnergised(initial searchItem) int {
 	if m.seen == nil {
-		m.seen = map[searchItem]bool{initial: true}
+		m.seen = make([]direction, len(m.tiles))
 	} else {
 		clear(m.seen)
-		m.seen[initial] = true
 	}
+	m.seen[m.pointIndex(initial.pos)] = initial.dir
 	m.open = append(m.open[0:0], initial)
 	m.nextOpen = m.nextOpen[0:0]
 	addSearch := func(curPos point, dir direction) {
@@ -69,8 +69,9 @@ func (m *mapInfo) countEnergised(initial searchItem) int {
 			m.pointNext(curPos, dir),
 			dir,
 		}
-		if m.tile(next.pos) != tileNone && !m.seen[next] {
-			m.seen[next] = true
+		posIdx := m.pointIndex(next.pos)
+		if m.tile(next.pos) != tileNone && m.seen[posIdx]&dir == 0 {
+			m.seen[posIdx] |= dir
 			m.nextOpen = append(m.nextOpen, next)
 		}
 	}
@@ -106,11 +107,13 @@ func (m *mapInfo) countEnergised(initial searchItem) int {
 		}
 		m.nextOpen, m.open = m.open[0:0], m.nextOpen
 	}
-	pointsEnergised := map[point]bool{}
-	for s := range m.seen {
-		pointsEnergised[s.pos] = true
+	pointsEnergised := 0
+	for _, dirs := range m.seen {
+		if dirs > 0 {
+			pointsEnergised++
+		}
 	}
-	return len(pointsEnergised)
+	return pointsEnergised
 }
 
 func (m mapInfo) tile(pos point) tileType {
@@ -174,11 +177,13 @@ func (p point) add(a point) point { return point{x: p.x + a.x, y: p.y + a.y} }
 type direction int
 
 const (
-	dirUp direction = iota
+	dirUp direction = 1 << iota
 	dirRight
 	dirDown
 	dirLeft
+
 	dirMAX
+	dirMask = dirMAX - 1
 )
 
 type tileType byte
