@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math/bits"
+	"sync"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -21,63 +22,67 @@ func main() {
 }
 
 type mapInfo struct {
-	tiles    []tileType
-	max      point
-	open     []searchItem
-	nextOpen []searchItem
-	seen     []direction
+	tiles []tileType
+	max   point
 }
 
 func (m mapInfo) maxEnergised() (int, int) {
 	p1, best := 0, 0
+
+	l := sync.Mutex{}
+	record := func(result int) {
+		l.Lock()
+		if result > best {
+			best = result
+		}
+		l.Unlock()
+	}
+
+	queue := make(chan searchItem, 100)
+	wg := sync.WaitGroup{}
+	for id := 0; id < 100; id++ {
+		wg.Add(1)
+		go func() {
+			for s := range queue {
+				record(m.countEnergised(s))
+			}
+			wg.Done()
+		}()
+	}
+
 	for x := 0; x < m.max.x; x++ {
-		down := m.countEnergised(searchItem{point{x, 0}, dirDown})
-		up := m.countEnergised(searchItem{point{x, m.max.y - 1}, dirUp})
-		if down > best {
-			best = down
-		}
-		if up > best {
-			best = up
-		}
+		queue <- searchItem{point{x, 0}, dirDown}
+		queue <- searchItem{point{x, m.max.y - 1}, dirUp}
 	}
-	for y := 0; y < m.max.y; y++ {
-		right := m.countEnergised(searchItem{point{0, y}, dirRight})
-		left := m.countEnergised(searchItem{point{m.max.x - 1, y}, dirLeft})
-		if y == 0 {
-			p1 = right
-		}
-		if right > best {
-			best = right
-		}
-		if left > best {
-			best = left
-		}
+	for y := 1; y < m.max.y; y++ {
+		queue <- searchItem{point{0, y}, dirRight}
+		queue <- searchItem{point{m.max.x - 1, y}, dirLeft}
 	}
+	p1 = m.countEnergised(searchItem{point{0, 0}, dirRight})
+	record(p1)
+	close(queue)
+	wg.Wait()
 	return p1, best
 }
 
 func (m *mapInfo) countEnergised(initial searchItem) int {
-	if m.seen == nil {
-		m.seen = make([]direction, len(m.tiles))
-	} else {
-		clear(m.seen)
-	}
-	m.seen[m.pointIndex(initial.pos)] = initial.dir
-	m.open = append(m.open[0:0], initial)
-	m.nextOpen = m.nextOpen[0:0]
+	seen := make([]direction, len(m.tiles))
+	seen[m.pointIndex(initial.pos)] = initial.dir
+	open := []searchItem{initial}
+	nextOpen := []searchItem{}
 	addSearch := func(curPos point, dir direction) {
 		next := searchItem{
 			m.pointNext(curPos, dir),
 			dir,
 		}
 		posIdx := m.pointIndex(next.pos)
-		if m.tile(next.pos) != tileNone && m.seen[posIdx]&dir == 0 {
-			m.seen[posIdx] |= dir
-			m.nextOpen = append(m.nextOpen, next)
+		if m.tile(next.pos) != tileNone && seen[posIdx]&dir == 0 {
+			seen[posIdx] |= dir
+			nextOpen = append(nextOpen, next)
 		}
 	}
-	for len(m.open) > 0 {
-		for _, cur := range m.open {
+	for len(open) > 0 {
+		for _, cur := range open {
 			tile := m.tile(cur.pos)
 			outDirs := emitterMap[tile][cur.dir]
 			if bits.OnesCount(uint(outDirs)) == 1 {
@@ -90,10 +95,10 @@ func (m *mapInfo) countEnergised(initial searchItem) int {
 				}
 			}
 		}
-		m.nextOpen, m.open = m.open[0:0], m.nextOpen
+		nextOpen, open = open[0:0], nextOpen
 	}
 	pointsEnergised := 0
-	for _, dirs := range m.seen {
+	for _, dirs := range seen {
 		if dirs > 0 {
 			pointsEnergised++
 		}
