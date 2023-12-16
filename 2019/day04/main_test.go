@@ -50,10 +50,17 @@ func TestDay2Examples(t *testing.T) {
 }
 
 func TestAnswers(t *testing.T) {
-	assert.Equal(t, 921, day1())
-	assert.Equal(t, 603, day2())
+	assert.Equal(t, 921, part1())
+	assert.Equal(t, 603, part2())
 }
 
 func TestMainRuns(t *testing.T) {
 	assert.NotPanics(t, func() { main() })
+}
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
 }

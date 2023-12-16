@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2()[0])
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -18,10 +22,10 @@ func part1() int {
 	return outputs[len(outputs)-1]
 }
 
-func part2() []int {
+func part2() int {
 	inputString := loadInputString()
 	outputs := gatherOutputs(inputString, 2)
-	return outputs
+	return outputs[0]
 }
 
 func gatherOutputs(program string, in int) []int {
@@ -48,3 +52,5 @@ func loadInputString() string {
 	return string(inputRaw)
 
 }
+
+var benchmark = false

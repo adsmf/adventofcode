@@ -73,9 +73,16 @@ func TestDay2Examples(t *testing.T) {
 	}
 }
 func TestDay1Answer(t *testing.T) {
-	assert.Equal(t, 5319, day1())
+	assert.Equal(t, 5319, part1())
 }
 
 func TestDay2Answer(t *testing.T) {
-	assert.Equal(t, 122514, day2())
+	assert.Equal(t, 122514, part2())
+}
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
 }

@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %s\n", part1())
-	fmt.Printf("Part 2: %s\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %s\n", p1)
+		fmt.Printf("Part 2: %s\n", p2)
+	}
 }
 
 func part1() string {
@@ -123,3 +127,5 @@ func splitString(input string) signal {
 	}
 	return sig
 }
+
+var benchmark = false

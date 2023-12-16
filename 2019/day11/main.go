@@ -6,8 +6,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2:\n%s\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2:\n%s\n", p2)
+	}
 }
 
 func part1() int {
@@ -160,3 +164,5 @@ func runPainter(program string, startingPanel int64) shipHull {
 	wg.Wait()
 	return hull
 }
+
+var benchmark = false

@@ -32,3 +32,10 @@ func ExampleMain() {
 	// Part 1: 252
 	// Part 2: 350
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

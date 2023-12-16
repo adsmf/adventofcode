@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/adsmf/adventofcode/utils"
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -38,13 +43,9 @@ func render(img image, w, h int) int {
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			if img[0][y*w+x] == 1 {
-				fmt.Print("#")
 				checksum++
-			} else {
-				fmt.Print(" ")
 			}
 		}
-		fmt.Println()
 	}
 	return checksum
 }
@@ -99,3 +100,5 @@ func parseImage(data string, w, h int) image {
 	}
 	return img
 }
+
+var benchmark = false

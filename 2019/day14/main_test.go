@@ -59,3 +59,10 @@ func BenchmarkPart2(b *testing.B) {
 		calcMaxHold(1000000000000, reactions)
 	}
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

@@ -10,9 +10,11 @@ import (
 func main() {
 	inputLines := utils.ReadInputLines("input.txt")
 	fuel := calculateTotalFuel(inputLines, false)
-	fmt.Printf("Part 1: %d\n", fuel)
 	fuelR := calculateTotalFuel(inputLines, true)
-	fmt.Printf("Part 2: %d\n", fuelR)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", fuel)
+		fmt.Printf("Part 2: %d\n", fuelR)
+	}
 }
 
 func calculateTotalFuel(modules []string, recursive bool) int {
@@ -51,3 +53,5 @@ func calculateFuelRecursive(mass int) int {
 		}
 	}
 }
+
+var benchmark = false

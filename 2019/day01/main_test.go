@@ -37,3 +37,10 @@ func TestPart2Examples(t *testing.T) {
 		assert.Equal(t, fuel, calculateFuelRecursive(mass))
 	}
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

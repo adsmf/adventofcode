@@ -39,3 +39,10 @@ func ExampleMain() {
 	//Part 1: 3063082071
 	//Part 2: 81348
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

@@ -55,3 +55,10 @@ func BenchmarkPart2(b *testing.B) {
 		part2()
 	}
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

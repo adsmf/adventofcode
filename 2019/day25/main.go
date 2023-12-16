@@ -256,3 +256,5 @@ func loadInput(filename string) string {
 	prog := utils.ReadInputLines(filename)[0]
 	return prog
 }
+
+var benchmark = false

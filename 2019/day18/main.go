@@ -9,8 +9,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -277,10 +281,10 @@ type point struct {
 
 func (p point) neighbours() []point {
 	return []point{
-		point{p.x - 1, p.y},
-		point{p.x + 1, p.y},
-		point{p.x, p.y - 1},
-		point{p.x, p.y + 1},
+		{p.x - 1, p.y},
+		{p.x + 1, p.y},
+		{p.x, p.y - 1},
+		{p.x, p.y + 1},
 	}
 }
 
@@ -311,3 +315,5 @@ type keyRune []rune
 func (k keyRune) Len() int           { return len(k) }
 func (k keyRune) Less(i, j int) bool { return k[i] < k[j] }
 func (k keyRune) Swap(i, j int)      { k[i], k[j] = k[j], k[i] }
+
+var benchmark = false

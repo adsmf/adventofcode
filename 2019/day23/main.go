@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -139,3 +143,5 @@ func (n *nic) outputHandler(input int) {
 		n.network.send(address(addr), packet{x, y})
 	}
 }
+
+var benchmark = false

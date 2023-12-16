@@ -10,15 +10,19 @@ var (
 )
 
 func main() {
-	fmt.Printf("Day 1: %d\n", day1())
-	fmt.Printf("Day 2: %d\n", day2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
-func day1() int {
+func part1() int {
 	return countValid(false)
 }
 
-func day2() int {
+func part2() int {
 	return countValid(true)
 }
 
@@ -58,3 +62,5 @@ func validatePass(testPass int, strict bool) bool {
 	}
 	return false
 }
+
+var benchmark = false

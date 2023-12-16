@@ -27,3 +27,10 @@ func TestAnswers(t *testing.T) {
 func TestMainRuns(t *testing.T) {
 	assert.NotPanics(t, func() { main() })
 }
+
+func BenchmarkMain(b *testing.B) {
+	benchmark = true
+	for i := 0; i < b.N; i++ {
+		main()
+	}
+}

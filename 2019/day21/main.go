@@ -2,13 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/adsmf/adventofcode/utils/intcode"
 	"io/ioutil"
+
+	"github.com/adsmf/adventofcode/utils/intcode"
 )
 
 func main() {
-	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2: %d\n", part2())
+	p1 := part1()
+	p2 := part2()
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
 }
 
 func part1() int {
@@ -80,3 +85,5 @@ func (s *springdroid) outputHandler(op int) {
 		fmt.Printf("Final value: %d\n", op)
 	}
 }
+
+var benchmark = false
