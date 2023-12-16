@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"math/bits"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -78,31 +79,15 @@ func (m *mapInfo) countEnergised(initial searchItem) int {
 	for len(m.open) > 0 {
 		for _, cur := range m.open {
 			tile := m.tile(cur.pos)
-			switch tile {
-			case tileNone:
+			outDirs := emitterMap[tile][cur.dir]
+			if bits.OnesCount(uint(outDirs)) == 1 {
+				addSearch(cur.pos, outDirs)
 				continue
-			case tileSpace:
-				addSearch(cur.pos, cur.dir)
-			case tileMirrorNESW:
-				newDir := reflectionNESW[cur.dir]
-				addSearch(cur.pos, newDir)
-			case tileMirrorNWSE:
-				newDir := reflectionNWSE[cur.dir]
-				addSearch(cur.pos, newDir)
-			case tileSplitV:
-				if cur.dir == dirUp || cur.dir == dirDown {
-					addSearch(cur.pos, cur.dir)
-					continue
+			}
+			for dir := dirUp; dir < dirMAX; dir <<= 1 {
+				if outDirs&dir > 0 {
+					addSearch(cur.pos, dir)
 				}
-				addSearch(cur.pos, dirUp)
-				addSearch(cur.pos, dirDown)
-			case tileSplitH:
-				if cur.dir == dirLeft || cur.dir == dirRight {
-					addSearch(cur.pos, cur.dir)
-					continue
-				}
-				addSearch(cur.pos, dirLeft)
-				addSearch(cur.pos, dirRight)
 			}
 		}
 		m.nextOpen, m.open = m.open[0:0], m.nextOpen
@@ -140,7 +125,7 @@ func load() mapInfo {
 		gm.max.y = y + 1
 		gm.max.x = len(line)
 		for _, ch := range line {
-			gm.tiles = append(gm.tiles, tileType(ch))
+			gm.tiles = append(gm.tiles, tileSym[ch])
 		}
 		return false
 	})
@@ -148,23 +133,28 @@ func load() mapInfo {
 }
 
 var (
+	emitterMap = [tileMAX][dirMAX]direction{
+		tileSpace:      {dirUp: dirUp, dirDown: dirDown, dirLeft: dirLeft, dirRight: dirRight},
+		tileMirrorNWSE: {dirUp: dirLeft, dirDown: dirRight, dirLeft: dirUp, dirRight: dirDown},
+		tileMirrorNESW: {dirUp: dirRight, dirDown: dirLeft, dirLeft: dirDown, dirRight: dirUp},
+		tileSplitH: {
+			dirLeft:  dirLeft,
+			dirRight: dirRight,
+			dirUp:    dirLeft | dirRight,
+			dirDown:  dirLeft | dirRight,
+		},
+		tileSplitV: {
+			dirUp:    dirUp,
+			dirDown:  dirDown,
+			dirLeft:  dirUp | dirDown,
+			dirRight: dirUp | dirDown,
+		},
+	}
 	directionOffsets = [dirMAX]point{
 		dirUp:    {0, -1},
 		dirDown:  {0, 1},
 		dirLeft:  {-1, 0},
 		dirRight: {1, 0},
-	}
-	reflectionNWSE = [dirMAX]direction{
-		dirUp:    dirLeft,
-		dirDown:  dirRight,
-		dirLeft:  dirUp,
-		dirRight: dirDown,
-	}
-	reflectionNESW = [dirMAX]direction{
-		dirUp:    dirRight,
-		dirDown:  dirLeft,
-		dirLeft:  dirDown,
-		dirRight: dirUp,
 	}
 )
 
@@ -188,13 +178,17 @@ const (
 
 type tileType byte
 
+var tileSym = [...]tileType{'.': tileSpace, '|': tileSplitV, '-': tileSplitH, '\\': tileMirrorNWSE, '/': tileMirrorNESW}
+
 const (
-	tileNone       tileType = 0
-	tileSpace      tileType = '.'
-	tileSplitV     tileType = '|'
-	tileSplitH     tileType = '-'
-	tileMirrorNWSE tileType = '\\'
-	tileMirrorNESW tileType = '/'
+	tileNone tileType = iota
+	tileSpace
+	tileSplitV
+	tileSplitH
+	tileMirrorNWSE
+	tileMirrorNESW
+
+	tileMAX
 )
 
 var benchmark = false
