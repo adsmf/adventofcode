@@ -23,53 +23,50 @@ func solve() (int, int) {
 	areaP1, areaP2 := 0, 0
 	boundaryLenP1, boundaryLenP2 := 0, 0
 	utils.EachLine(input, func(index int, line string) (done bool) {
-		spaces := 0
-		dirP1 := 0
-		digLenP1, digLenP2 := 0, 0
-		for _, ch := range line {
-			if ch == ' ' {
-				spaces++
-				continue
-			}
-			switch spaces {
-			case 0:
-				dirP1 = int(directionLetters[ch])
-				continue
-			case 1:
-				digLenP1 = digLenP1*10 + int(ch-'0')
-			case 2:
-				switch ch {
-				case '(', ')', '#':
-				case 'a', 'b', 'c', 'd', 'e', 'f':
-					digLenP2 = digLenP2*16 + 10 + int(ch-'a')
-				case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-					digLenP2 = digLenP2*16 + int(ch-'0')
-				}
-			}
-		}
-		dirP2 := digLenP2 & 0xf
-		digLenP2 >>= 4
+		dirP1, digLenP1, dirP2, digLenP2 := parseLine(line)
 		offsetP1 := directionOffsets[dirP1]
 		offsetP2 := directionOffsets[dirP2]
 		nextP1 := curPosP1.add(offsetP1.times(int(digLenP1)))
 		nextP2 := curPosP2.add(offsetP2.times(int(digLenP2)))
-		boundaryLenP1 += int(digLenP1)
-		boundaryLenP2 += int(digLenP2)
+		boundaryLenP1 += digLenP1
+		boundaryLenP2 += digLenP2
 		areaP1 += (curPosP1.y + nextP1.y) * (curPosP1.x - nextP1.x)
 		areaP2 += (curPosP2.y + nextP2.y) * (curPosP2.x - nextP2.x)
 		curPosP1, curPosP2 = nextP1, nextP2
 		return false
 	})
-	if areaP1 < 0 {
-		areaP1 *= -1
-	}
-
-	if areaP2 < 0 {
-		areaP2 *= -1
-	}
-	dugP1 := areaP1/2 + boundaryLenP1/2 + 1
-	dugP2 := areaP2/2 + boundaryLenP2/2 + 1
+	dugP1 := utils.IntAbs(areaP1)/2 + boundaryLenP1/2 + 1
+	dugP2 := utils.IntAbs(areaP2)/2 + boundaryLenP2/2 + 1
 	return dugP1, dugP2
+}
+
+func parseLine(line string) (direction, int, direction, int) {
+	field := 0
+	dirP1 := dirNone
+	digLenP1, digLenP2 := 0, 0
+	for _, ch := range line {
+		if ch == ' ' {
+			field++
+			continue
+		}
+		switch field {
+		case 0:
+			dirP1 = direction(directionLetters[ch])
+			continue
+		case 1:
+			digLenP1 = digLenP1*10 + int(ch-'0')
+		case 2:
+			switch ch {
+			case 'a', 'b', 'c', 'd', 'e', 'f':
+				digLenP2 = digLenP2*16 + 10 + int(ch-'a')
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				digLenP2 = digLenP2*16 + int(ch-'0')
+			}
+		}
+	}
+	dirP2 := direction(digLenP2 & 0xf)
+	digLenP2 >>= 4
+	return dirP1, digLenP1, dirP2, digLenP2
 }
 
 type point struct{ x, y int }
@@ -80,13 +77,14 @@ func (p point) times(scalar int) point { return point{x: p.x * scalar, y: p.y * 
 type direction int
 
 const (
-	dirRight direction = iota
+	dirNone direction = iota - 1
+
+	dirRight
 	dirDown
 	dirLeft
 	dirUp
 
 	dirMAX
-	dirNone = -1
 )
 
 var directionOffsets = [dirMAX]point{
