@@ -59,11 +59,7 @@ func solve() (int, int) {
 func evalBounds(ruleName string, bounds boundaryList, rules workflowRules) int {
 	switch ruleName {
 	case "A":
-		total := 1
-		for i := 0; i < 4; i++ {
-			total *= (bounds[i].max - bounds[i].min + 1)
-		}
-		return total
+		return bounds.len()
 	case "R":
 		return 0
 	default:
@@ -73,23 +69,26 @@ func evalBounds(ruleName string, bounds boundaryList, rules workflowRules) int {
 			condBound := bounds[cond.check]
 			switch cond.op {
 			case '>':
-				if condBound.max > cond.value {
-					sub := bounds
-					if sub[cond.check].min <= cond.value {
-						sub[cond.check].min = cond.value + 1
-					}
-					total += evalBounds(cond.target, sub, rules)
-					bounds[cond.check].max = cond.value
+				if condBound.max <= cond.value {
+					continue
 				}
+				sub := bounds
+				if sub[cond.check].min <= cond.value {
+					sub[cond.check].min = cond.value + 1
+				}
+				total += evalBounds(cond.target, sub, rules)
+				bounds[cond.check].max = cond.value
 			case '<':
-				if condBound.min < cond.value {
-					sub := bounds
-					if sub[cond.check].max >= cond.value {
-						sub[cond.check].max = cond.value - 1
-					}
-					total += evalBounds(cond.target, sub, rules)
-					bounds[cond.check].min = cond.value
+				if condBound.min >= cond.value {
+					continue
 				}
+				sub := bounds
+				if sub[cond.check].max >= cond.value {
+					sub[cond.check].max = cond.value - 1
+				}
+				total += evalBounds(cond.target, sub, rules)
+				bounds[cond.check].min = cond.value
+
 			}
 		}
 		total += evalBounds(rule.final, bounds, rules)
@@ -170,6 +169,16 @@ type workflowCondition struct {
 
 type partInfo [4]int
 
-type boundaryList = [4]struct{ min, max int }
+type boundaryList [4]boundary
+
+func (b boundaryList) len() int {
+	return b[0].len() * b[1].len() * b[2].len() * b[3].len()
+}
+
+type boundary struct {
+	min, max int
+}
+
+func (b boundary) len() int { return b.max - b.min + 1 }
 
 var benchmark = false
