@@ -30,9 +30,14 @@ func solve() (int, int) {
 	}
 	highPulses, lowPulses := 0, 0
 	p1 := 0
+	maxCap := 0
+	pulses := make([]signal, 0, 70)
+	nextPulses := make([]signal, 0, 70)
+	emit := func(sig signal) { nextPulses = append(nextPulses, sig) }
 	for i := 1; ; i++ {
-		pulses := []signal{{"button", "broadcaster", false}}
-		nextPulses := []signal{}
+		pulses = pulses[0:0]
+		nextPulses = nextPulses[0:0]
+		pulses = append(pulses, signal{"button", "broadcaster", false})
 		for len(pulses) > 0 {
 			for _, pulse := range pulses {
 				if pulse.value {
@@ -57,8 +62,10 @@ func solve() (int, int) {
 					}
 					return p1, lcm
 				}
-				toAdd := m[pulse.target].recieve(pulse.value, pulse.source)
-				nextPulses = append(nextPulses, toAdd...)
+				m[pulse.target].recieve(pulse.value, pulse.source, emit)
+			}
+			if len(nextPulses) > maxCap {
+				maxCap = cap(nextPulses)
 			}
 			pulses, nextPulses = nextPulses, pulses[0:0]
 		}
@@ -67,6 +74,8 @@ func solve() (int, int) {
 		}
 	}
 }
+
+type handler func(sig signal)
 
 type signal struct {
 	source string
@@ -84,23 +93,22 @@ type module struct {
 	received map[string]bool
 }
 
-func (m *module) recieve(value bool, from string) []signal {
+func (m *module) recieve(value bool, from string, output handler) {
 	if m == nil {
-		return nil
+		return
 	}
-	outputs := []signal{}
 	switch m.modType {
 	case modBroadcaster:
 		for _, wire := range m.wires {
-			outputs = append(outputs, signal{m.id, wire, value})
+			output(signal{m.id, wire, value})
 		}
 	case modFlipFlop:
 		if value {
-			return nil
+			return
 		}
 		m.value = !m.value
 		for _, wire := range m.wires {
-			outputs = append(outputs, signal{m.id, wire, m.value})
+			output(signal{m.id, wire, m.value})
 		}
 	case modConjunction:
 		m.received[from] = value
@@ -112,14 +120,14 @@ func (m *module) recieve(value bool, from string) []signal {
 			}
 		}
 		for _, wire := range m.wires {
-			outputs = append(outputs, signal{m.id, wire, !allHigh})
+			output(signal{m.id, wire, !allHigh})
 		}
 	case modReceiver:
 		// Do nothing?
 	default:
 		panic("Unhandled receiver: " + m.modType.String())
 	}
-	return outputs
+	return
 }
 
 func (m module) String() string {
