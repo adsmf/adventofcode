@@ -24,20 +24,29 @@ func solve() (int, int) {
 	open := []point{m.start}
 	nextOpen := []point{}
 	keyPoints := []point{}
-	nextPos := map[point]bool{}
+	visited := make([][]point, len(m.tiles))
 	for i := 1; len(open) > 0; i++ {
-		clear(nextPos)
+		for i := range visited {
+			visited[i] = visited[i][0:0]
+		}
 		for _, pos := range open {
 			for _, off := range directionOffsets {
 				nPos := pos.add(off)
-				nTile := m.tile(nPos)
+				nTile, nHash := m.tile(nPos)
 				if nTile == tileSpace || nTile == tileStart {
-					nextPos[nPos] = true
+					found := false
+					for _, seen := range visited[nHash] {
+						if nPos == seen {
+							found = true
+							break
+						}
+					}
+					if !found {
+						visited[nHash] = append(visited[nHash], nPos)
+						nextOpen = append(nextOpen, nPos)
+					}
 				}
 			}
-		}
-		for pos := range nextPos {
-			nextOpen = append(nextOpen, pos)
 		}
 		if i == 64 {
 			p1 = len(nextOpen)
@@ -79,7 +88,7 @@ type mapInfo struct {
 	start point
 }
 
-func (m mapInfo) tile(pos point) tileType {
+func (m mapInfo) tile(pos point) (tileType, uint64) {
 	for pos.x < 0 {
 		pos.x += m.max.x
 	}
@@ -92,7 +101,7 @@ func (m mapInfo) tile(pos point) tileType {
 	for pos.y >= m.max.y {
 		pos.y -= m.max.y
 	}
-	return m.tiles[m.pointIndex(pos)]
+	return m.tiles[m.pointIndex(pos)], uint64(pos.x + pos.y*m.max.x)
 }
 func (m mapInfo) pointIndex(pos point) int {
 	return pos.x + pos.y*(m.max.x)
