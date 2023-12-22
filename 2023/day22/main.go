@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"sort"
 
 	"github.com/adsmf/adventofcode/utils"
 	"golang.org/x/exp/constraints"
@@ -26,6 +27,10 @@ func solve() (int, int) {
 	grounded := make([]bool, len(bricks))
 	supported := make([][]int, len(bricks))
 	supporting := make([][]int, len(bricks))
+
+	sort.Slice(bricks, func(i, j int) bool {
+		return bricks[i].min.z < bricks[j].min.z
+	})
 
 	allSettled := false
 	for !allSettled {
@@ -52,10 +57,10 @@ func solve() (int, int) {
 			if canDrop {
 				bricks[i].drop(1)
 				allSettled = false
-			}
-			if bricks[i].min.z == 0 {
-				grounded[i] = true
-				settledBricks[i] = true
+				if bricks[i].min.z == 0 {
+					grounded[i] = true
+					isSettled = true
+				}
 			}
 			if isSettled {
 				settledBricks[i] = true
