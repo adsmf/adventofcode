@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/adsmf/adventofcode/utils"
-	"golang.org/x/exp/constraints"
 )
 
 //go:embed input.txt
@@ -26,14 +25,12 @@ func solve() (int, int) {
 	settledBricks := make([]bool, len(bricks))
 	grounded := make([]bool, len(bricks))
 	supported := make([][]int, len(bricks))
-	supporting := make([][]int, len(bricks))
 
 	sort.Slice(bricks, func(i, j int) bool {
 		return bricks[i].min.z < bricks[j].min.z
 	})
 
-	allSettled := false
-	for !allSettled {
+	for allSettled := false; !allSettled; {
 		allSettled = true
 		for i := 0; i < len(bricks); i++ {
 			if settledBricks[i] {
@@ -49,7 +46,6 @@ func solve() (int, int) {
 					canDrop = false
 					if settledBricks[j] {
 						isSettled = true
-						supporting[j] = append(supporting[j], i)
 						supported[i] = append(supported[i], j)
 					}
 				}
@@ -68,27 +64,14 @@ func solve() (int, int) {
 		}
 	}
 
-	totalP1 := 0
-	for i := range bricks {
-		canRemove := true
-		for _, sup := range supporting[i] {
-			if len(supported[sup]) == 1 {
-				canRemove = false
-			}
-		}
-		if canRemove {
-			totalP1++
-		}
-	}
-	totalP2 := 0
+	totalP1, totalP2 := 0, 0
 	removed := make([]bool, len(bricks))
 	for i := range bricks {
 		thisRemoves := 0
 		clear(removed)
 		removed[i] = true
 
-		done := false
-		for !done {
+		for done := false; !done; {
 			done = true
 			for j := 0; j < len(bricks); j++ {
 				if removed[j] || grounded[j] {
@@ -107,6 +90,9 @@ func solve() (int, int) {
 					done = false
 				}
 			}
+		}
+		if thisRemoves == 0 {
+			totalP1++
 		}
 		totalP2 += thisRemoves
 	}
@@ -159,20 +145,6 @@ func (b brickInfo) intersects(o brickInfo, zOffset int) bool {
 
 type point struct {
 	x, y, z int
-}
-
-func min[T constraints.Ordered](a, b T) T {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max[T constraints.Ordered](a, b T) T {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 var benchmark = false
