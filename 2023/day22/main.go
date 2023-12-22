@@ -22,46 +22,32 @@ func main() {
 func solve() (int, int) {
 	bricks := load()
 
-	settledBricks := make([]bool, len(bricks))
-	grounded := make([]bool, len(bricks))
 	supported := make([][]int, len(bricks))
 
 	sort.Slice(bricks, func(i, j int) bool {
 		return bricks[i].min.z < bricks[j].min.z
 	})
 
-	for allSettled := false; !allSettled; {
-		allSettled = true
-		for i := 0; i < len(bricks); i++ {
-			if settledBricks[i] {
-				continue
-			}
-			canDrop := true
-			isSettled := false
-			for j := 0; j < len(bricks); j++ {
-				if i == j {
-					continue
+	for i := 0; i < len(bricks); i++ {
+		settleAt := 0
+		supported[i] = []int{}
+		for j := 0; j < i; j++ {
+			if bricks[i].aligns(bricks[j]) {
+				newSettle := bricks[j].max.z + 1
+				if settleAt < newSettle {
+					settleAt = newSettle
+					supported[i] = supported[i][0:0]
+					supported[i] = append(supported[i], j)
+				} else if settleAt == newSettle {
+					supported[i] = append(supported[i], j)
 				}
-				if bricks[i].intersects(bricks[j], 1) {
-					canDrop = false
-					if settledBricks[j] {
-						isSettled = true
-						supported[i] = append(supported[i], j)
-					}
-				}
-			}
-			if canDrop {
-				bricks[i].drop(1)
-				allSettled = false
-				if bricks[i].min.z == 0 {
-					grounded[i] = true
-					isSettled = true
-				}
-			}
-			if isSettled {
-				settledBricks[i] = true
 			}
 		}
+		dropBy := bricks[i].min.z - settleAt
+		if settleAt == 0 {
+			supported[i] = append(supported[i], supportGround)
+		}
+		bricks[i].drop(dropBy)
 	}
 
 	totalP1, totalP2 := 0, 0
@@ -74,12 +60,12 @@ func solve() (int, int) {
 		for done := false; !done; {
 			done = true
 			for j := 0; j < len(bricks); j++ {
-				if removed[j] || grounded[j] {
+				if removed[j] {
 					continue
 				}
 				anySupport := false
 				for _, sup := range supported[j] {
-					if !removed[sup] {
+					if sup == supportGround || !removed[sup] {
 						anySupport = true
 						break
 					}
@@ -97,10 +83,6 @@ func solve() (int, int) {
 		totalP2 += thisRemoves
 	}
 	return totalP1, totalP2
-}
-
-func part2() int {
-	return -1
 }
 
 func load() []brickInfo {
@@ -134,9 +116,8 @@ func (b *brickInfo) drop(by int) {
 	b.max.z -= by
 }
 
-func (b brickInfo) intersects(o brickInfo, zOffset int) bool {
-	if b.min.z-zOffset > o.max.z || b.max.z-zOffset < o.min.z ||
-		b.min.x > o.max.x || b.max.x < o.min.x ||
+func (b brickInfo) aligns(o brickInfo) bool {
+	if b.min.x > o.max.x || b.max.x < o.min.x ||
 		b.min.y > o.max.y || b.max.y < o.min.y {
 		return false
 	}
@@ -146,5 +127,7 @@ func (b brickInfo) intersects(o brickInfo, zOffset int) bool {
 type point struct {
 	x, y, z int
 }
+
+const supportGround = -1
 
 var benchmark = false
