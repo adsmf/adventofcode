@@ -23,34 +23,39 @@ func part1() int {
 	gm := load()
 	em := gm.calcEdges(tileDirections)
 	em.optimaze()
-	return findLongest(em, map[point]int{}, point{1, 0}, gm.max, pointSet{}, 0, 0)
+	ps := make(pointSet, gm.max.x*gm.max.y)
+	return findLongest(em, point{1, 0}, gm.max, ps, 0, 0)
 }
 
 func part2() int {
 	gm := load()
 	em := gm.calcEdges(tileDirections2)
 	em.optimaze()
-	return findLongest(em, map[point]int{}, point{1, 0}, gm.max, pointSet{}, 0, 0)
+	ps := make(pointSet, gm.max.x*gm.max.y)
+	return findLongest(em, point{1, 0}, gm.max, ps, 0, 0)
 }
 
-func findLongest(gm edgeMap, cache map[point]int, pos point, maxPos point, visited pointSet, maxDist int, dist int) int {
+func findLongest(gm edgeMap, pos point, maxPos point, visited pointSet, maxDist int, dist int) int {
 	if pos.y == maxPos.y-1 {
 		return max(maxDist, dist)
 	}
+	index := func(p point) int {
+		return p.x + p.y*maxPos.x
+	}
 
-	visited[pos] = true
+	visited[index(pos)] = true
 	for n, cost := range gm[pos] {
-		if visited[n] {
+		if visited[index(n)] {
 			continue
 		}
-		maxDist = findLongest(gm, cache, n, maxPos, visited, maxDist, dist+cost)
+		maxDist = findLongest(gm, n, maxPos, visited, maxDist, dist+cost)
 	}
-	visited[pos] = false
+	visited[index(pos)] = false
 	return maxDist
 
 }
 
-type pointSet map[point]bool
+type pointSet []bool
 
 func load() mapInfo {
 	gm := mapInfo{}
@@ -69,29 +74,27 @@ func load() mapInfo {
 type edgeMap map[point]map[point]int
 
 func (em *edgeMap) optimaze() {
-	for done := false; !done; {
-		done = true
-		for cPos, edges := range *em {
-			switch len(edges) {
-			case 2:
-				n := [2]point{}
-				l := [2]int{}
-				i := 0
-				for pos, pL := range edges {
-					n[i] = pos
-					l[i] = pL
-					i++
-				}
-				n0 := (*em)[n[0]]
-				n1 := (*em)[n[1]]
-				if n0[cPos] > 0 && n1[cPos] > 0 {
-					n0[n[1]] = n0[cPos] + l[1]
-					n1[n[0]] = n1[cPos] + l[0]
-					delete(n0, cPos)
-					delete(n1, cPos)
-					delete(*em, cPos)
-				}
+	for cPos, edges := range *em {
+		switch len(edges) {
+		case 2:
+			n := [2]point{}
+			l := [2]int{}
+			i := 0
+			for pos, pL := range edges {
+				n[i] = pos
+				l[i] = pL
+				i++
 			}
+			n0, n1 := (*em)[n[0]], (*em)[n[1]]
+			n0d, n1d := n0[cPos], n1[cPos]
+			if n0d == 0 && n1d == 0 {
+				continue
+			}
+			n0[n[1]] = n0[cPos] + l[1]
+			n1[n[0]] = n1[cPos] + l[0]
+			delete(n0, cPos)
+			delete(n1, cPos)
+			delete(*em, cPos)
 		}
 	}
 }
