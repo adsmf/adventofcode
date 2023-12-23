@@ -11,51 +11,40 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	gm := load()
+	p1 := part1(gm)
+	p2 := part2(gm)
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	gm := load()
-	em := gm.calcEdges(tileDirections)
-	em.optimaze()
-	ps := make(pointSet, gm.max.x*gm.max.y)
-	return findLongest(em, point{1, 0}, gm.max, ps, 0, 0)
+func part1(gm mapInfo) int {
+	segments := gm.calcEdges(tileDirectionsP1)
+	flattened, start, end := segments.flatten(gm.max.y - 1)
+	return findLongest(flattened, start, end, make([]bool, len(flattened)), 0, 0)
 }
 
-func part2() int {
-	gm := load()
-	em := gm.calcEdges(tileDirections2)
-	em.optimaze()
-	ps := make(pointSet, gm.max.x*gm.max.y)
-	return findLongest(em, point{1, 0}, gm.max, ps, 0, 0)
+func part2(gm mapInfo) int {
+	segments := gm.calcEdges(tileDirectionsP2)
+	flattened, start, end := segments.flatten(gm.max.y - 1)
+	return findLongest(flattened, start, end, make([]bool, len(flattened)), 0, 0)
 }
 
-func findLongest(gm edgeMap, pos point, maxPos point, visited pointSet, maxDist int, dist int) int {
-	if pos.y == maxPos.y-1 {
+func findLongest(gm flatEdge, posID int, targetID int, visited []bool, maxDist int, dist int) int {
+	if posID == targetID {
 		return max(maxDist, dist)
 	}
-	index := func(p point) int {
-		return p.x + p.y*maxPos.x
-	}
-
-	visited[index(pos)] = true
-	for n, cost := range gm[pos] {
-		if visited[index(n)] {
-			continue
+	visited[posID] = true
+	for _, n := range gm[posID] {
+		if !visited[n.end] {
+			maxDist = findLongest(gm, n.end, targetID, visited, maxDist, dist+n.length)
 		}
-		maxDist = findLongest(gm, n, maxPos, visited, maxDist, dist+cost)
 	}
-	visited[index(pos)] = false
+	visited[posID] = false
 	return maxDist
-
 }
-
-type pointSet []bool
 
 func load() mapInfo {
 	gm := mapInfo{}
@@ -71,9 +60,40 @@ func load() mapInfo {
 	return gm
 }
 
+type flatEdge [][]edgeInfo
+
 type edgeMap map[point]map[point]int
 
-func (em *edgeMap) optimaze() {
+func (e edgeMap) flatten(finalRow int) (flatEdge, int, int) {
+	startID, endID := -1, -1
+	pointIDs := make(map[point]int, len(e))
+	for pos := range e {
+		id := len(pointIDs)
+		pointIDs[pos] = id
+		if pos.y == 0 {
+			startID = id
+		}
+		if pos.y == finalRow {
+			endID = id
+		}
+	}
+	f := make(flatEdge, len(pointIDs))
+	for pos, edges := range e {
+		idx := pointIDs[pos]
+		f[idx] = make([]edgeInfo, 0, len(edges))
+		for to, dist := range edges {
+			f[idx] = append(f[idx], edgeInfo{pointIDs[to], dist})
+		}
+	}
+	return f, startID, endID
+}
+
+type edgeInfo struct {
+	end    int
+	length int
+}
+
+func (em *edgeMap) optimazeEdges() {
 	for cPos, edges := range *em {
 		switch len(edges) {
 		case 2:
@@ -134,6 +154,7 @@ func (m mapInfo) calcEdges(dirs [][]point) edgeMap {
 		}
 		open, nextOpen = nextOpen, open[0:0]
 	}
+	em.optimazeEdges()
 	return em
 }
 
@@ -161,7 +182,6 @@ const (
 	dirLeft
 
 	dirMAX
-	dirNone = -1
 )
 
 var directionOffsets = [dirMAX]point{
@@ -179,7 +199,7 @@ var (
 		directionOffsets[dirRight],
 	}
 
-	tileDirections = [][]point{
+	tileDirectionsP1 = [][]point{
 		tileSpace:      tileDirectionsAll,
 		tileSlopeUp:    {directionOffsets[dirUp]},
 		tileSlopeDown:  {directionOffsets[dirDown]},
@@ -187,7 +207,7 @@ var (
 		tileSlopeRight: {directionOffsets[dirRight]},
 	}
 
-	tileDirections2 = [][]point{
+	tileDirectionsP2 = [][]point{
 		tileSpace:      tileDirectionsAll,
 		tileSlopeUp:    tileDirectionsAll,
 		tileSlopeDown:  tileDirectionsAll,
