@@ -20,8 +20,8 @@ func main() {
 }
 
 func solve() (int, int) {
-	l1, l2 := make([]int, 0, len(input)>>3), make([]int, 0, len(input)>>3)
-	utils.EachInteger(input, func(index, value int) (done bool) {
+	l1, l2 := make([]int, 0, 1000), make([]int, 0, 1000)
+	utils.EachInteger(input, func(_, value int) (done bool) {
 		l1 = append(l1, value)
 		l1, l2 = l2, l1
 		return false
