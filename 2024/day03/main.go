@@ -3,8 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"regexp"
-	"strconv"
 )
 
 //go:embed input.txt
@@ -20,26 +18,51 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
-	re := regexp.MustCompile(`mul\((\d+),(\d+)\)|do\(\)|don't\(\)`)
-	cmds := re.FindAllStringSubmatch(input, -1)
+	pos := 0
 	enabled := true
-	for _, cmd := range cmds {
-		switch cmd[0] {
-		case "do()":
-			enabled = true
-		case "don't()":
+	for ; ; pos++ {
+		for ; pos < len(input) && input[pos] != '('; pos++ {
+		}
+		if pos >= len(input) {
+			return p1, p2
+		}
+		if pos > 5 && input[pos-5:pos] == "don't" && input[pos+1] == ')' {
 			enabled = false
-		default:
-			v1, _ := strconv.Atoi(cmd[1])
-			v2, _ := strconv.Atoi(cmd[2])
-			mult := v1 * v2
-			p1 += mult
-			if enabled {
-				p2 += mult
+			continue
+		}
+		if pos > 2 && input[pos-2:pos] == "do" && input[pos+1] == ')' {
+			enabled = true
+			continue
+		}
+		if pos > 3 && input[pos-3:pos] == "mul" {
+			vals := [2]int{}
+			arg := 1
+			for pos++; pos < len(input); pos++ {
+				ch := input[pos]
+				if ch == ')' {
+					mul := vals[0] * vals[1]
+					p1 += mul
+					if enabled {
+						p2 += mul
+					}
+					break
+				}
+				if ch == ',' {
+					arg++
+					if arg > 2 {
+						break
+					}
+					continue
+				}
+				if ch >= '0' && ch <= '9' {
+					vals[arg-1] *= 10
+					vals[arg-1] += int(ch - '0')
+					continue
+				}
+				break
 			}
 		}
 	}
-	return p1, p2
 }
 
 var benchmark = false
