@@ -3,91 +3,66 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
-	count := 0
-	grid := utils.GetLines(input)
-	h, w := len(grid), len(grid[0])
-	word := "XMAS"
-
-	checkFrom := func(col, row int) {
-		for offRow := -1; offRow <= 1; offRow++ {
-			for offCol := -1; offCol <= 1; offCol++ {
-				if offRow == 0 && offCol == 0 {
+func solve() (int, int) {
+	p1, p2 := 0, 0
+	w := 0
+	for ; input[w] != '\n'; w++ {
+	}
+	lineLen := w + 1
+	h := len(input) / lineLen
+	chAt := func(row, col int) byte {
+		return input[col+row*lineLen]
+	}
+	const p1word = "XMAS"
+	p1Dirs := [][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}
+	for row := range h {
+		for col := range w {
+			switch chAt(row, col) {
+			case 'X':
+				for _, off := range p1Dirs {
+					if col+off[0]*3 < 0 || row+off[1]*3 < 0 || col+off[0]*3 >= w || row+off[1]*3 >= h {
+						continue
+					}
+					valid := true
+					for i := 1; i < len(p1word); i++ {
+						if chAt(row+off[1]*i, col+off[0]*i) != p1word[i] {
+							valid = false
+							break
+						}
+					}
+					if valid {
+						p1++
+					}
+				}
+			case 'A':
+				if col < 1 || col >= w-1 || row < 1 || row >= h-1 {
 					continue
 				}
-				valid := true
-				for i := 1; i < len(word); i++ {
-					checkCol := col + offCol*i
-					checkRow := row + offRow*i
-					if checkCol < 0 || checkRow < 0 || checkRow >= h || checkCol >= w {
-						valid = false
-						break
-					}
-					if grid[checkRow][checkCol] != word[i] {
-						valid = false
-						break
-					}
-				}
-				if valid {
-					count++
+				tl := chAt(row-1, col-1)
+				tr := chAt(row-1, col+1)
+				bl := chAt(row+1, col-1)
+				br := chAt(row+1, col+1)
+				if ((tl == 'M' && br == 'S') || (br == 'M' && tl == 'S')) &&
+					((tr == 'M' && bl == 'S') || (bl == 'M' && tr == 'S')) {
+					p2++
 				}
 			}
 		}
 	}
-	for row, line := range grid {
-		for col, ch := range line {
-			if ch != 'X' {
-				continue
-			}
-			checkFrom(col, row)
-		}
-	}
-	return count
-}
-
-func part2() int {
-	count := 0
-	grid := utils.GetLines(input)
-	h, w := len(grid), len(grid[0])
-
-	checkFrom := func(col, row int) {
-		if col < 1 || col >= w-1 || row < 1 || row >= h-1 {
-			return
-		}
-
-		diag1 := (grid[row-1][col-1] == 'M' && grid[row+1][col+1] == 'S') ||
-			(grid[row+1][col+1] == 'M' && grid[row-1][col-1] == 'S')
-		diag2 := (grid[row+1][col-1] == 'M' && grid[row-1][col+1] == 'S') ||
-			(grid[row-1][col+1] == 'M' && grid[row+1][col-1] == 'S')
-		if diag1 && diag2 {
-			count++
-		}
-	}
-	for row, line := range grid {
-		for col, ch := range line {
-			if ch != 'A' {
-				continue
-			}
-			checkFrom(col, row)
-		}
-	}
-	return count
+	return p1, p2
 }
 
 var benchmark = false
