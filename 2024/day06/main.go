@@ -19,47 +19,36 @@ func main() {
 func solve() (int, int) {
 	g := loadGrid()
 	w, _ := runSim(g)
-	return countUnique(w), searchLoops(g, w)
+	return len(w), searchLoops(g, w)
 }
 
 func runSim(g grid, addObst ...point) (walkSet, bool) {
-	facing := dirUp
-	curPos := g.start
-	w := walkSet{walkDir{curPos, facing}: true}
+	cur := walkDir{g.start, dirUp}
+	w := walkSet{cur.p: cur.d}
 	simObst := map[point]bool{}
 	for _, obst := range addObst {
 		simObst[obst] = true
 	}
 	for {
-		nextPos := curPos.move(facing)
-		for simObst[nextPos] || g.obstacles[nextPos] {
-			facing = facing.rotateRight()
-			nextPos = curPos.move(facing)
+		next := cur.move()
+		for simObst[next.p] || g.obstacles[next.p] {
+			cur = cur.rotateRight()
+			next = cur.move()
 		}
-		curPos = nextPos
-		if _, found := g.obstacles[curPos]; !found {
+		cur = next
+		if _, found := g.obstacles[cur.p]; !found {
 			return w, false
 		}
-		wd := walkDir{curPos, facing}
-		if w[wd] {
+		if w[cur.p]&cur.d > 0 {
 			return w, true
 		}
-		w[wd] = true
+		w[cur.p] |= cur.d
 	}
-}
-
-func countUnique(w walkSet) int {
-	unique := map[point]bool{}
-	for v := range w {
-		unique[v.p] = true
-	}
-	return len(unique)
 }
 
 func searchLoops(g grid, w walkSet) int {
 	obst := map[point]bool{}
-	for v := range w {
-		obstPos := v.p
+	for obstPos := range w {
 		if _, found := obst[obstPos]; found || g.obstacles[obstPos] || obstPos == g.start {
 			continue
 		}
@@ -80,7 +69,10 @@ type walkDir struct {
 	d direction
 }
 
-type walkSet map[walkDir]bool
+func (w walkDir) move() walkDir        { return walkDir{w.p.move(w.d), w.d} }
+func (w walkDir) rotateRight() walkDir { return walkDir{w.p, w.d.rotateRight()} }
+
+type walkSet map[point]direction
 
 func loadGrid() grid {
 	g := grid{
@@ -113,25 +105,33 @@ type grid struct {
 	start     point
 	h, w      int
 }
+
 type point struct{ x, y int }
 
-var moves = []point{{0, -1}, {1, 0}, {0, 1}, {-1, 0}}
-
 func (p point) move(dir direction) point {
-	return point{p.x + moves[dir].x, p.y + moves[dir].y}
+	switch dir {
+	case dirUp:
+		return point{p.x, p.y - 1}
+	case dirRight:
+		return point{p.x + 1, p.y}
+	case dirDown:
+		return point{p.x, p.y + 1}
+	default:
+		return point{p.x - 1, p.y}
+	}
 }
 
-type direction int
+type direction byte
 
 func (d direction) rotateRight() direction {
 	if d == dirLeft {
 		return dirUp
 	}
-	return d + 1
+	return d << 1
 }
 
 const (
-	dirUp direction = iota
+	dirUp direction = 1 << iota
 	dirRight
 	dirDown
 	dirLeft
