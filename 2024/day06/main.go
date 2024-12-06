@@ -31,12 +31,12 @@ func runSim(g grid, addObst ...point) (walkSet, bool) {
 	}
 	for {
 		next := cur.move()
-		for simObst[next.p] || g.obstacles[next.p] {
+		for simObst[next.p] || g.obstacle(next.p) {
 			cur = cur.rotateRight()
 			next = cur.move()
 		}
 		cur = next
-		if _, found := g.obstacles[cur.p]; !found {
+		if !g.inBound(cur.p) {
 			return w, false
 		}
 		if w[cur.p]&cur.d > 0 {
@@ -49,7 +49,7 @@ func runSim(g grid, addObst ...point) (walkSet, bool) {
 func searchLoops(g grid, w walkSet) int {
 	obst := map[point]bool{}
 	for obstPos := range w {
-		if _, found := obst[obstPos]; found || g.obstacles[obstPos] || obstPos == g.start {
+		if _, found := obst[obstPos]; found || g.obstacle(obstPos) || obstPos == g.start {
 			continue
 		}
 		_, loop := runSim(g, obstPos)
@@ -75,20 +75,15 @@ func (w walkDir) rotateRight() walkDir { return walkDir{w.p, w.d.rotateRight()} 
 type walkSet map[point]direction
 
 func loadGrid() grid {
-	g := grid{
-		obstacles: map[point]bool{},
-	}
+	g := grid{}
 	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '^':
 			g.start = point{x, y}
-			fallthrough
-		case '.':
-			g.obstacles[point{x, y}] = false
-			x++
-		case '#':
-			g.obstacles[point{x, y}] = true
+			g.h = len(input) / (g.w + 1)
+			return g
+		case '.', '#':
 			x++
 		case '\n':
 			g.w = x
@@ -96,14 +91,27 @@ func loadGrid() grid {
 			y++
 		}
 	}
-	g.h = y + 1
 	return g
 }
 
 type grid struct {
-	obstacles map[point]bool
-	start     point
-	h, w      int
+	start point
+	h, w  int
+}
+
+func (g grid) obstacle(p point) bool {
+	if !g.inBound(p) {
+		return false
+	}
+	pos := p.x + p.y*(g.w+1)
+	if pos >= len(input) {
+		panic(fmt.Sprintf("%#v %#v", p, g))
+	}
+	return input[p.x+p.y*(g.w+1)] == '#'
+}
+
+func (g grid) inBound(p point) bool {
+	return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h
 }
 
 type point struct{ x, y int }
