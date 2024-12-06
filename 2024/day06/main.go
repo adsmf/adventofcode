@@ -8,6 +8,12 @@ import (
 //go:embed input.txt
 var input string
 
+// Ewww, magic numbers
+const (
+	gridAlloc = 2e4
+	maxLoop   = 6e3
+)
+
 func main() {
 	p1, p2 := solve()
 	if !benchmark {
@@ -18,50 +24,50 @@ func main() {
 
 func solve() (int, int) {
 	g := loadGrid()
-	w, _ := runSim(g)
-	return len(w), searchLoops(g, w)
+	v := make(pointSet, gridAlloc)
+	count, _ := runSim(g, v, point{-1, -1})
+	return count, searchLoops(g, v)
 }
 
-func runSim(g grid, addObst ...point) (walkSet, bool) {
+func runSim(g grid, visit pointSet, simObst point) (int, bool) {
 	cur := walkDir{g.start, dirUp}
-	w := walkSet{cur.p: cur.d}
-	simObst := map[point]bool{}
-	for _, obst := range addObst {
-		simObst[obst] = true
+	if visit != nil {
+		visit[g.toMS(cur.p)] = true
 	}
-	for {
+	unique := 1
+	for i := 0; i < maxLoop; i++ {
 		next := cur.move()
-		for simObst[next.p] || g.obstacle(next.p) {
+		for simObst == next.p || g.obstacle(next.p) {
 			cur = cur.rotateRight()
 			next = cur.move()
 		}
 		cur = next
 		if !g.inBound(cur.p) {
-			return w, false
+			return unique, false
 		}
-		if w[cur.p]&cur.d > 0 {
-			return w, true
+		if visit != nil {
+			ms := g.toMS(cur.p)
+			if !visit[ms] {
+				visit[ms] = true
+				unique++
+			}
 		}
-		w[cur.p] |= cur.d
 	}
+	return 0, true
 }
 
-func searchLoops(g grid, w walkSet) int {
-	obst := map[point]bool{}
-	for obstPos := range w {
-		if _, found := obst[obstPos]; found || g.obstacle(obstPos) || obstPos == g.start {
+func searchLoops(g grid, w pointSet) int {
+	obCount := 0
+	for obstPos, visited := range w {
+		if !visited {
 			continue
 		}
-		_, loop := runSim(g, obstPos)
-		obst[obstPos] = loop
-	}
-	count := 0
-	for _, loop := range obst {
+		_, loop := runSim(g, nil, g.fromMS(obstPos))
 		if loop {
-			count++
+			obCount++
 		}
 	}
-	return count
+	return obCount
 }
 
 type walkDir struct {
@@ -72,7 +78,8 @@ type walkDir struct {
 func (w walkDir) move() walkDir        { return walkDir{w.p.move(w.d), w.d} }
 func (w walkDir) rotateRight() walkDir { return walkDir{w.p, w.d.rotateRight()} }
 
-type walkSet map[point]direction
+type pointSet []bool
+type walkSet []direction
 
 func loadGrid() grid {
 	g := grid{}
@@ -103,16 +110,15 @@ func (g grid) obstacle(p point) bool {
 	if !g.inBound(p) {
 		return false
 	}
-	pos := p.x + p.y*(g.w+1)
-	if pos >= len(input) {
-		panic(fmt.Sprintf("%#v %#v", p, g))
-	}
 	return input[p.x+p.y*(g.w+1)] == '#'
 }
 
 func (g grid) inBound(p point) bool {
 	return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h
 }
+
+func (g grid) toMS(p point) int    { return p.x + p.y*(g.w+1) + 1 }
+func (g grid) fromMS(ms int) point { return point{(ms - 1) % (g.w + 1), (ms - 1) / (g.w + 1)} }
 
 type point struct{ x, y int }
 
@@ -128,6 +134,8 @@ func (p point) move(dir direction) point {
 		return point{p.x - 1, p.y}
 	}
 }
+
+type moveSet []direction
 
 type direction byte
 
