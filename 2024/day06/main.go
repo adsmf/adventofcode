@@ -79,7 +79,6 @@ func (w walkDir) move() walkDir        { return walkDir{w.p.move(w.d), w.d} }
 func (w walkDir) rotateRight() walkDir { return walkDir{w.p, w.d.rotateRight()} }
 
 type pointSet []bool
-type walkSet []direction
 
 func loadGrid() grid {
 	g := grid{}
@@ -134,8 +133,6 @@ func (p point) move(dir direction) point {
 		return point{p.x - 1, p.y}
 	}
 }
-
-type moveSet []direction
 
 type direction byte
 
