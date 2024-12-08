@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"slices"
 )
 
 //go:embed input.txt
@@ -16,12 +17,21 @@ func main() {
 	}
 }
 
+const gridCap = 50 * 50
+
 func solve() (int, int) {
 	w := 0
 	for ; input[w] != '\n'; w++ {
 	}
 	h := len(input) / (w + 1)
-	nodes := make(map[byte][]point, 100)
+	if gridCap < w*h {
+		panic("grid capacity too low")
+	}
+	type nodeFreq struct {
+		pos  point
+		freq byte
+	}
+	nodes := make([]nodeFreq, 0, 250)
 	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch ch := input[pos]; ch {
@@ -31,38 +41,41 @@ func solve() (int, int) {
 		case '.':
 			x++
 		default:
-			nodes[ch] = append(nodes[ch], point{x, y})
+			nodes = append(nodes, nodeFreq{point{x, y}, ch})
 			x++
 		}
 	}
 	valid := func(p point) bool {
 		return p.x >= 0 && p.x < w && p.y >= 0 && p.y < h
 	}
-
-	antinodesP1 := make([]bool, w*h)
-	antinodesP2 := make([]bool, w*h)
-	for _, freqNodes := range nodes {
-		for i := 0; i < len(freqNodes)-1; i++ {
-			n1 := freqNodes[i]
-			antinodesP2[n1.pos(w)] = true
-			for j := i + 1; j < len(freqNodes); j++ {
-				n2 := freqNodes[j]
-				diff := n1.sub(n2)
-				antinodesP2[n2.pos(w)] = true
-				for first, an := true, n1.add(diff); valid(an); an = an.add(diff) {
-					if first {
-						antinodesP1[an.pos(w)] = true
-						first = false
-					}
-					antinodesP2[an.pos(w)] = true
+	slices.SortFunc(nodes, func(a, b nodeFreq) int {
+		return int(a.freq) - int(b.freq)
+	})
+	antinodesP1 := make([]bool, gridCap)
+	antinodesP2 := make([]bool, gridCap)
+	for i := 0; i < len(nodes)-1; i++ {
+		n1 := nodes[i]
+		for j := i + 1; j < len(nodes); j++ {
+			n2 := nodes[j]
+			if n2.freq != n1.freq {
+				break
+			}
+			diff := n1.pos.sub(n2.pos)
+			antinodesP2[n1.pos.pos(w)] = true
+			antinodesP2[n2.pos.pos(w)] = true
+			for first, an := true, n1.pos.add(diff); valid(an); an = an.add(diff) {
+				if first {
+					antinodesP1[an.pos(w)] = true
+					first = false
 				}
-				for first, an := true, n2.sub(diff); valid(an); an = an.sub(diff) {
-					if first {
-						antinodesP1[an.pos(w)] = true
-						first = false
-					}
-					antinodesP2[an.pos(w)] = true
+				antinodesP2[an.pos(w)] = true
+			}
+			for first, an := true, n2.pos.sub(diff); valid(an); an = an.sub(diff) {
+				if first {
+					antinodesP1[an.pos(w)] = true
+					first = false
 				}
+				antinodesP2[an.pos(w)] = true
 			}
 		}
 	}
