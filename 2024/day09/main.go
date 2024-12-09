@@ -106,8 +106,13 @@ func part2() int {
 			}
 			if free.size() >= byte(size) {
 				calcAt(pos/2, size, free.start())
-				freeSections[freeIdx] = makeFreeSection(free.start()+size, free.size()-byte(size))
 				added = true
+				if free.size() == byte(size) {
+					copy(freeSections[freeIdx:], freeSections[freeIdx+1:])
+					freeSections = freeSections[0 : len(freeSections)-1]
+					break
+				}
+				freeSections[freeIdx] = makeFreeSection(free.start()+size, free.size()-byte(size))
 				break
 			}
 		}
