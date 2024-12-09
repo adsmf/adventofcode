@@ -36,7 +36,7 @@ func part1() int {
 			}
 			continue
 		}
-		for free > 0 {
+		for free > 0 && rFence > 0 {
 			file := rFence / 2
 			fileSize := int(layout[rFence] - '0')
 			for i := 0; i < min(fileSize, free); i++ {
@@ -57,91 +57,63 @@ func part1() int {
 	return p1
 }
 
+type freeSection struct {
+	start int32
+	size  byte
+}
+
 func part2() int {
-	sections := []section{}
-
-	for pos, file, free := 0, 0, false; pos < len(input); pos, free = pos+1, !free {
-		if input[pos] == '\n' {
-			break
-		}
+	freeSections := make([]freeSection, 0, 10000)
+	totalDisk := 0
+	for input[len(input)-1] == '\n' {
+		input = input[:len(input)-1]
+	}
+	for pos, free, freeStart := 0, false, 0; pos < len(input); pos++ {
 		val := int(input[pos] - '0')
-		sec := section{
-			size: val,
-		}
-		if free {
-			sec.file = empty
-		} else {
-			sec.file = file
-			file++
-		}
-		sections = append(sections, sec)
-	}
-	for pos := len(sections) - 1; pos > 0; pos-- {
-		sec := sections[pos]
-		if sec.file == empty {
+		totalDisk += val
+		if !free {
+			freeStart += val
+			free = true
 			continue
 		}
-		for prevPos := 0; prevPos < pos; prevPos++ {
-			prevSec := sections[prevPos]
-			if prevSec.file != empty {
-				continue
-			}
-			if prevSec.size == sec.size {
-				sections[prevPos].file, sections[pos].file = sections[pos].file, sections[prevPos].file
-				break
-			}
-			if prevSec.size > sec.size {
-				remaining := section{
-					file: empty,
-					size: prevSec.size - sec.size,
-				}
-
-				newSections := make([]section, 0, len(sections))
-				newSections = append(newSections, sections[:prevPos]...)
-				newSections = append(newSections, sec)
-				newSections = append(newSections, remaining)
-				newSections = append(newSections, sections[prevPos+1:pos]...)
-				newSections = append(newSections, section{file: empty, size: sec.size})
-				newSections = append(newSections, sections[pos+1:]...)
-				sections = newSections
-				break
-			}
-		}
+		freeSections = append(freeSections, freeSection{start: int32(freeStart), size: byte(val)})
+		freeStart += val
+		free = false
 	}
-	pos := 0
 	p2 := 0
-	for _, sec := range sections {
-		if sec.file == empty {
-			pos += sec.size
+	rFence := len(input) - 1
+	rFence = rFence &^ 1
+	for ; input[rFence] == '\n'; rFence-- {
+	}
+	calcAt := func(file int, size int, pos int) {
+		for i := 0; i < size; i++ {
+			p2 += (pos + i) * file
+		}
+	}
+	for pos := rFence; pos >= 0; pos-- {
+		size := int(input[pos] - '0')
+		totalDisk -= size
+		if pos&1 == 1 {
 			continue
 		}
-		for i := 0; i < sec.size; i++ {
-			p2 += (pos + i) * sec.file
-
+		added := false
+		for freeIdx, free := range freeSections {
+			if free.start > int32(totalDisk) {
+				break
+			}
+			if free.size >= byte(size) {
+				calcAt(pos/2, size, int(free.start))
+				freeSections[freeIdx].start += int32(size)
+				freeSections[freeIdx].size -= byte(size)
+				added = true
+				break
+			}
 		}
-		pos += sec.size
+		if !added {
+			calcAt(pos/2, size, totalDisk)
+		}
 	}
 	return p2
 }
-
-type section struct {
-	file int
-	size int
-}
-
-func dump(secs []section) {
-	for _, sec := range secs {
-		for i := 0; i < sec.size; i++ {
-			if sec.file == empty {
-				fmt.Print(".")
-				continue
-			}
-			fmt.Printf("%d", sec.file%10)
-		}
-	}
-	fmt.Println()
-}
-
-const empty = -1
 
 var benchmark = false
