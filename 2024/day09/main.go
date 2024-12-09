@@ -18,42 +18,42 @@ func main() {
 }
 
 func part1() int {
-	mem := []int{}
-	file := 0
-	firstFree := 0
-	for pos := 0; pos < len(input); pos++ {
-		if input[pos] == '\n' {
-			break
-		}
-		val := int(input[pos] - '0')
-		if pos&1 == 0 {
-			for i := 0; i < val; i++ {
-				mem = append(mem, file)
-			}
-			file++
-			continue
-		}
-		for i := 0; i < val; i++ {
-			mem = append(mem, empty)
-		}
-	}
-	for pos := len(mem) - 1; pos >= firstFree; pos-- {
-		if mem[pos] == empty {
-			mem = mem[:len(mem)-1]
-			continue
-		}
-		for ; mem[firstFree] != empty && firstFree < pos; firstFree++ {
-		}
-		if mem[firstFree] != empty {
-			break
-		}
-		mem[firstFree] = mem[len(mem)-1]
-		mem = mem[:len(mem)-1]
-	}
 	p1 := 0
-	for pos, file := range mem {
-		p1 += pos * int(file)
+
+	layout := []byte(input)
+	rFence := len(layout) - 1
+	for ; layout[rFence] == '\n'; rFence-- {
 	}
+	rFence = rFence &^ 1
+	memPos := 0
+	for lFence := 0; lFence <= rFence; lFence++ {
+		free := int(layout[lFence] - '0')
+		if lFence&1 == 0 {
+			file := (lFence / 2)
+			for i := 0; i < free; i++ {
+				p1 += (memPos) * file
+				memPos++
+			}
+			continue
+		}
+		for free > 0 {
+			file := rFence / 2
+			fileSize := int(layout[rFence] - '0')
+			for i := 0; i < min(fileSize, free); i++ {
+
+				p1 += (memPos) * file
+				memPos++
+			}
+			if fileSize <= free {
+				free -= fileSize
+				rFence -= 2
+				continue
+			}
+			layout[rFence] = byte(fileSize-free) + '0'
+			free = 0
+		}
+	}
+
 	return p1
 }
 
@@ -127,6 +127,19 @@ func part2() int {
 type section struct {
 	file int
 	size int
+}
+
+func dump(secs []section) {
+	for _, sec := range secs {
+		for i := 0; i < sec.size; i++ {
+			if sec.file == empty {
+				fmt.Print(".")
+				continue
+			}
+			fmt.Printf("%d", sec.file%10)
+		}
+	}
+	fmt.Println()
 }
 
 const empty = -1
