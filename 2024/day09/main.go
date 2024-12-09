@@ -6,11 +6,11 @@ import (
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
-	p1 := part1()
 	p2 := part2()
+	p1 := part1()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
@@ -19,15 +19,13 @@ func main() {
 
 func part1() int {
 	p1 := 0
-
-	layout := []byte(input)
-	rFence := len(layout) - 1
-	for ; layout[rFence] == '\n'; rFence-- {
+	rFence := len(input) - 1
+	for ; input[rFence] == '\n'; rFence-- {
 	}
 	rFence = rFence &^ 1
 	memPos := 0
 	for lFence := 0; lFence <= rFence; lFence++ {
-		free := int(layout[lFence] - '0')
+		free := int(input[lFence] - '0')
 		if lFence&1 == 0 {
 			file := (lFence / 2)
 			for i := 0; i < free; i++ {
@@ -38,7 +36,7 @@ func part1() int {
 		}
 		for free > 0 && rFence > 0 {
 			file := rFence / 2
-			fileSize := int(layout[rFence] - '0')
+			fileSize := int(input[rFence] - '0')
 			for i := 0; i < min(fileSize, free); i++ {
 
 				p1 += (memPos) * file
@@ -49,7 +47,7 @@ func part1() int {
 				rFence -= 2
 				continue
 			}
-			layout[rFence] = byte(fileSize-free) + '0'
+			input[rFence] = byte(fileSize-free) + '0'
 			free = 0
 		}
 	}
@@ -57,9 +55,14 @@ func part1() int {
 	return p1
 }
 
-type freeSection struct {
-	start int32
-	size  byte
+type freeSection uint32
+
+const sizeOffset = 4
+
+func (f freeSection) start() int { return int(f >> sizeOffset) }
+func (f freeSection) size() byte { return byte(f & ((1 << sizeOffset) - 1)) }
+func makeFreeSection(start int, size byte) freeSection {
+	return freeSection(size) | freeSection(start<<sizeOffset)
 }
 
 func part2() int {
@@ -76,7 +79,7 @@ func part2() int {
 			free = true
 			continue
 		}
-		freeSections = append(freeSections, freeSection{start: int32(freeStart), size: byte(val)})
+		freeSections = append(freeSections, makeFreeSection(freeStart, byte(val)))
 		freeStart += val
 		free = false
 	}
@@ -98,13 +101,12 @@ func part2() int {
 		}
 		added := false
 		for freeIdx, free := range freeSections {
-			if free.start > int32(totalDisk) {
+			if free.start() > totalDisk {
 				break
 			}
-			if free.size >= byte(size) {
-				calcAt(pos/2, size, int(free.start))
-				freeSections[freeIdx].start += int32(size)
-				freeSections[freeIdx].size -= byte(size)
+			if free.size() >= byte(size) {
+				calcAt(pos/2, size, free.start())
+				freeSections[freeIdx] = makeFreeSection(free.start()+size, free.size()-byte(size))
 				added = true
 				break
 			}
