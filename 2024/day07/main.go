@@ -48,7 +48,7 @@ func solve() (int, int) {
 	return p1, p2
 }
 
-const searchBuffer = 200_000
+const searchBuffer = 60_000
 
 var open = make([]search, 0, searchBuffer)
 var next = make([]search, 0, searchBuffer)
@@ -66,23 +66,32 @@ func canMake(target int, operands ...int) (bool, bool) {
 	open = append(open, search{1, operands[0], false})
 	for len(open) > 0 {
 		for _, cur := range open {
-			if cur.pos == len(operands) {
-				if cur.total == target {
-					if cur.concat {
-						validP2 = true
-						continue
-					}
-					return true, true
+			mult := cur.total * operands[cur.pos]
+			add := cur.total + operands[cur.pos]
+			concat := concatInts(cur.total, operands[cur.pos])
+			if cur.pos < len(operands)-1 {
+				if mult <= target {
+					next = append(next, search{cur.pos + 1, mult, cur.concat})
+				}
+				if add <= target {
+					next = append(next, search{cur.pos + 1, add, cur.concat})
+				}
+				if concat < target {
+					next = append(next, search{cur.pos + 1, concat, true})
 				}
 				continue
 			}
-			if cur.total > target {
-				continue
+			if mult == target || add == target {
+
+				if cur.concat {
+					validP2 = true
+					continue
+				}
+				return true, true
 			}
-			next = append(next, search{cur.pos + 1, cur.total * operands[cur.pos], cur.concat})
-			next = append(next, search{cur.pos + 1, cur.total + operands[cur.pos], cur.concat})
-			concat := concatInts(cur.total, operands[cur.pos])
-			next = append(next, search{cur.pos + 1, concat, true})
+			if concat == target {
+				validP2 = true
+			}
 		}
 		open, next = next, open[0:0]
 	}
