@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"slices"
 )
 
 //go:embed input.txt
@@ -36,7 +37,7 @@ func solve() (int, int) {
 		}
 	}
 	g.h = y
-	trails := make(map[pointPair]bool, 700)
+	trails := make([]pointPair, 0, 1500)
 
 	p2 := 0
 	for len(open) > 0 {
@@ -46,7 +47,7 @@ func solve() (int, int) {
 				if g.valAt(n) == nextVal {
 					if nextVal == 9 {
 						p2++
-						trails[pointPair{cur.start, n}] = true
+						trails = append(trails, makePointPair(g, cur.start, n))
 						continue
 					}
 					next = append(next, search{cur.start, n, nextVal})
@@ -55,7 +56,18 @@ func solve() (int, int) {
 		}
 		open, next = next, open[0:0]
 	}
-	return len(trails), p2
+	slices.SortFunc(trails, func(a, b pointPair) int {
+		return int(a - b)
+	})
+	p1 := 0
+	last := pointPair(0)
+	for _, trail := range trails {
+		if trail != last {
+			last = trail
+			p1++
+		}
+	}
+	return p1, p2
 }
 
 type grid struct {
@@ -70,7 +82,11 @@ func (g grid) valAt(p point) int {
 	if !g.inBound(p) {
 		return -1
 	}
-	return int(input[int(p.x)+int(p.y)*int(g.w+1)] - '0')
+	return int(input[g.index(p)] - '0')
+}
+
+func (g grid) index(p point) int {
+	return int(p.x) + int(p.y)*int(g.w+1)
 }
 
 type point struct{ x, y int8 }
@@ -90,6 +106,10 @@ type search struct {
 	val   int
 }
 
-type pointPair struct{ a, b point }
+type pointPair int32
+
+func makePointPair(g grid, a, b point) pointPair {
+	return pointPair(g.index(a)<<16 + g.index(b))
+}
 
 var benchmark = false
