@@ -29,7 +29,7 @@ func solve() (int, int) {
 			y++
 			x = 0
 		case '0':
-			open = append(open, search{point{x, y}, point{x, y}, 0})
+			open = append(open, search{point{x, y}, point{x, y}, '0'})
 			x++
 		default:
 			x++
@@ -45,7 +45,7 @@ func solve() (int, int) {
 			nextVal := cur.val + 1
 			for _, n := range cur.pos.neighbours() {
 				if g.valAt(n) == nextVal {
-					if nextVal == 9 {
+					if nextVal == '9' {
 						p2++
 						trails = append(trails, makePointPair(g, cur.start, n))
 						continue
@@ -78,11 +78,11 @@ func (g grid) inBound(p point) bool {
 	return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h
 }
 
-func (g grid) valAt(p point) int {
+func (g grid) valAt(p point) byte {
 	if !g.inBound(p) {
-		return -1
+		return 0
 	}
-	return int(input[g.index(p)] - '0')
+	return input[g.index(p)]
 }
 
 func (g grid) index(p point) int {
@@ -103,7 +103,7 @@ func (p point) neighbours() [4]point {
 type search struct {
 	start point
 	pos   point
-	val   int
+	val   byte
 }
 
 type pointPair int32
