@@ -3,11 +3,10 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"slices"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -19,53 +18,55 @@ func main() {
 
 func solve() (int, int) {
 	g := grid{}
-	open := make([]search, 0, 1500)
-	next := make([]search, 0, 1500)
+	for ; input[g.w] != '\n'; g.w++ {
+	}
+	g.h = int8(len(input) / int(g.w+1))
+	open := make([]search, 0, 50)
+	next := make([]search, 0, 50)
+	modified := make([]int, 0, 10)
+	reset := func() {
+		for _, pos := range modified {
+			input[pos] &= 0x3f
+		}
+		modified = modified[0:0]
+	}
+	p1, p2 := 0, 0
 	x, y := int8(0), int8(0)
 	for _, ch := range input {
 		switch ch {
 		case '\n':
-			g.w = x
 			y++
 			x = 0
+			continue
 		case '0':
-			open = append(open, search{point{x, y}, point{x, y}, '0'})
-			x++
-		default:
-			x++
+			reset()
+			open = append(open, search{point{x, y}, '0'})
+			for len(open) > 0 {
+				for _, cur := range open {
+					nextVal := cur.val + 1
+					for _, n := range cur.pos.neighbours() {
+						gVal := g.valAt(n)
+						if gVal&0x3f == nextVal {
+							switch gVal {
+							case '9':
+								p1++
+								p2++
+								input[g.index(n)] |= 0x80
+								modified = append(modified, g.index(n))
+							case '9' | 0x80:
+								p2++
+							default:
+								next = append(next, search{n, nextVal})
+							}
 
-		}
-	}
-	g.h = y
-	trails := make([]pointPair, 0, 1500)
-
-	p2 := 0
-	for len(open) > 0 {
-		for _, cur := range open {
-			nextVal := cur.val + 1
-			for _, n := range cur.pos.neighbours() {
-				if g.valAt(n) == nextVal {
-					if nextVal == '9' {
-						p2++
-						trails = append(trails, makePointPair(g, cur.start, n))
-						continue
+						}
 					}
-					next = append(next, search{cur.start, n, nextVal})
 				}
+				open, next = next, open[0:0]
 			}
+			reset()
 		}
-		open, next = next, open[0:0]
-	}
-	slices.SortFunc(trails, func(a, b pointPair) int {
-		return int(a - b)
-	})
-	p1 := 0
-	last := pointPair(0)
-	for _, trail := range trails {
-		if trail != last {
-			last = trail
-			p1++
-		}
+		x++
 	}
 	return p1, p2
 }
@@ -101,15 +102,8 @@ func (p point) neighbours() [4]point {
 }
 
 type search struct {
-	start point
-	pos   point
-	val   byte
-}
-
-type pointPair int32
-
-func makePointPair(g grid, a, b point) pointPair {
-	return pointPair(g.index(a)<<16 + g.index(b))
+	pos point
+	val byte
 }
 
 var benchmark = false
