@@ -18,9 +18,9 @@ func main() {
 
 func solve() (int, int) {
 	g := grid{}
-	open := []search{}
-	next := []search{}
-	x, y := 0, 0
+	open := make([]search, 0, 1500)
+	next := make([]search, 0, 1500)
+	x, y := int8(0), int8(0)
 	for _, ch := range input {
 		switch ch {
 		case '\n':
@@ -36,14 +36,17 @@ func solve() (int, int) {
 		}
 	}
 	g.h = y
-	trails := map[pointPair]int{}
+	trails := make(map[pointPair]bool, 700)
+
+	p2 := 0
 	for len(open) > 0 {
 		for _, cur := range open {
 			nextVal := cur.val + 1
 			for _, n := range cur.pos.neighbours() {
 				if g.valAt(n) == nextVal {
 					if nextVal == 9 {
-						trails[pointPair{cur.start, n}]++
+						p2++
+						trails[pointPair{cur.start, n}] = true
 						continue
 					}
 					next = append(next, search{cur.start, n, nextVal})
@@ -52,15 +55,11 @@ func solve() (int, int) {
 		}
 		open, next = next, open[0:0]
 	}
-	p2 := 0
-	for _, c := range trails {
-		p2 += c
-	}
 	return len(trails), p2
 }
 
 type grid struct {
-	w, h int
+	w, h int8
 }
 
 func (g grid) inBound(p point) bool {
@@ -71,10 +70,10 @@ func (g grid) valAt(p point) int {
 	if !g.inBound(p) {
 		return -1
 	}
-	return int(input[p.x+p.y*(g.w+1)] - '0')
+	return int(input[int(p.x)+int(p.y)*int(g.w+1)] - '0')
 }
 
-type point struct{ x, y int }
+type point struct{ x, y int8 }
 
 func (p point) neighbours() [4]point {
 	return [4]point{
