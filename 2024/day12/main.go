@@ -8,6 +8,8 @@ import (
 //go:embed input.txt
 var input string
 
+const gridAlloc = 150 * 150
+
 func main() {
 	p1, p2 := solve()
 	if !benchmark {
@@ -18,11 +20,18 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
+	if gridAlloc < len(input) {
+		panic("Insufficient grid allocation for input")
+	}
 	g := grid{}
 	for ; input[g.w] != '\n'; g.w++ {
 	}
 	g.h = len(input) / (g.w + 1)
-	visited := map[point]bool{}
+	visited := make([]bool, gridAlloc)
+	open := make([]search, 0, 20)
+	next := make([]search, 0, 20)
+	perimiterPoints := make(map[sideInfo]bool, 200)
+	curRegion := make([]point, 0, 300)
 	x, y := 0, 0
 	for _, ch := range input {
 		if ch == '\n' {
@@ -31,30 +40,26 @@ func solve() (int, int) {
 			continue
 		}
 		pos := point{x, y}
-		if visited[pos] {
+		if visited[g.index(pos)] {
 			x++
 			continue
 		}
-		visited[pos] = true
-		open := []search{{pos, byte(ch)}}
-		next := []search{}
-		curRegion := map[point]bool{pos: true}
-		type sideInfo struct {
-			pos  point
-			edge int
-		}
+		visited[g.index(pos)] = true
+		open = append(open, search{pos, byte(ch)})
+		curRegion = curRegion[0:0]
+		curRegion = append(curRegion, pos)
 		curPerimiterLen := 0
-		perimiterPoints := map[sideInfo]bool{}
+		clear(perimiterPoints)
 		for len(open) > 0 {
 			for _, cur := range open {
 				for dir, n := range cur.pos.neighbours() {
 					nVal := g.valAt(n)
 					if nVal == byte(ch) {
-						if curRegion[n] {
+						if visited[g.index(n)] {
 							continue
 						}
-						visited[n] = true
-						curRegion[n] = true
+						visited[g.index(n)] = true
+						curRegion = append(curRegion, n)
 						next = append(next, search{n, byte(ch)})
 					} else {
 						curPerimiterLen++
@@ -64,12 +69,12 @@ func solve() (int, int) {
 			}
 			open, next = next, open[0:0]
 		}
-
 		numSides := 0
 		for p := range perimiterPoints {
 			numSides++
-			open := []sideInfo{p}
-			next := []sideInfo{}
+			open := make([]sideInfo, 0, 4)
+			open = append(open, p)
+			next := make([]sideInfo, 0, 4)
 			for len(open) > 0 {
 				for _, cur := range open {
 					for _, n := range cur.pos.neighbours() {
@@ -83,6 +88,7 @@ func solve() (int, int) {
 				open, next = next, open[0:0]
 			}
 		}
+
 		p1 += len(curRegion) * curPerimiterLen
 		p2 += len(curRegion) * (numSides)
 		x++
@@ -123,6 +129,11 @@ func (p point) neighbours() [4]point {
 		{p.x + 1, p.y},
 		{p.x, p.y + 1},
 	}
+}
+
+type sideInfo struct {
+	pos  point
+	edge int
 }
 
 var benchmark = false

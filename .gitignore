@@ -16,6 +16,7 @@
 .DS_Store
 cpu.prof
 mem.prof
+trace.prof
 pprof-list.txt
 
 /benchmarks/results
