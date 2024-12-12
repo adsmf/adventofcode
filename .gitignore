@@ -20,3 +20,6 @@ pprof-list.txt
 
 /benchmarks/results
 /benchmarks/benchmarks.md
+
+input.txt
+example*.txt
