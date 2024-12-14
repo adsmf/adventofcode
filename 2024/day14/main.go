@@ -52,7 +52,11 @@ func solveAlt() (int, int) {
 		if v1 == 0 && vSig(quads) {
 			v1 = i
 		}
-		if i >= 100 && h1 > 0 && v1 > 0 {
+		if h1 > 0 && v1 > 0 {
+			if i < 100 {
+				move(robots, 100-i)
+				p1 = safetyFactor(calcQuads(robots))
+			}
 			break
 		}
 	}
