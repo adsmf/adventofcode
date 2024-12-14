@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/adsmf/adventofcode/utils"
+	"github.com/adsmf/adventofcode/utils/solvers"
 )
 
 //go:embed input.txt
@@ -17,14 +18,14 @@ const (
 )
 
 func main() {
-	p1, p2 := solve()
+	p1, p2 := solveAlt()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func solve() (int, int) {
+func solveAlt() (int, int) {
 	vals := [4]int{}
 	robots := make(robotList, 0, 500)
 	utils.EachInteger(input, func(index, value int) (done bool) {
@@ -37,29 +38,39 @@ func solve() (int, int) {
 		robots = append(robots, r)
 		return false
 	})
-	move(robots, 100)
-	p1 := safetyFactor(robots)
-	for i := 101; ; i++ {
+	p1 := 0
+	h1, v1 := 0, 0
+	for i := 1; ; i++ {
 		move(robots, 1)
-		if unique(robots) {
-			return p1, i
+		quads := calcQuads(robots)
+		if i == 100 {
+			p1 = safetyFactor(quads)
+		}
+		if h1 == 0 && hSig(quads) {
+			h1 = i
+		}
+		if v1 == 0 && vSig(quads) {
+			v1 = i
+		}
+		if i >= 100 && h1 > 0 && v1 > 0 {
+			break
 		}
 	}
-}
-
-func unique(robots robotList) bool {
-	seen := [gridMax]bool{}
-	for _, r := range robots {
-		pos := r.p.x + r.p.y*width
-		if seen[pos] {
-			return false
-		}
-		seen[pos] = true
+	res, err := solvers.ChineseRemainderTheoremStd([]int{h1, v1}, []int{width, height})
+	if err != nil {
+		panic(err)
 	}
-	return true
+	return p1, int(res)
 }
 
-func safetyFactor(robots robotList) int {
+func hSig(quads [4]int) bool {
+	return quads[0]+quads[2]-quads[1]-quads[3] > 100
+}
+func vSig(quads [4]int) bool {
+	return quads[2]+quads[3]-quads[0]-quads[1] > 100
+}
+
+func calcQuads(robots robotList) [4]int {
 	midH, midW := height/2, width/2
 	quads := [4]int{}
 	for _, rob := range robots {
@@ -75,6 +86,10 @@ func safetyFactor(robots robotList) int {
 		}
 		quads[quad]++
 	}
+	return quads
+}
+
+func safetyFactor(quads [4]int) int {
 	return quads[0] * quads[1] * quads[2] * quads[3]
 }
 
