@@ -3,8 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -19,50 +17,47 @@ func main() {
 	}
 }
 
+var gridTiles = make([]tileType, 0, 5000)
+
 func part1() int {
 	g := grid{
-		tiles: map[point]tileType{},
+		tiles: gridTiles[0:0],
 	}
-	var rPos point
-	utils.EachSectionMB(input, "\n\n", func(index int, section string) (done bool) {
-		if index == 0 {
-			rPos = g.load(section, false)
-			return false
+	rPos, startIdx := g.load(false)
+	for i := startIdx; i < len(input); i++ {
+		ch := input[i]
+		var dir point
+		switch ch {
+		case '<':
+			dir = point{-1, 0}
+		case '^':
+			dir = point{0, -1}
+		case 'v':
+			dir = point{0, 1}
+		case '>':
+			dir = point{1, 0}
+		default:
+			continue
 		}
-		for _, ch := range section {
-			var dir point
-			switch ch {
-			case '<':
-				dir = point{-1, 0}
-			case '^':
-				dir = point{0, -1}
-			case 'v':
-				dir = point{0, 1}
-			case '>':
-				dir = point{1, 0}
-			default:
-				continue
+		next := rPos.add(dir)
+		switch g.tile(next) {
+		case tileEmpty:
+			rPos = next
+		case tileWall:
+		case tileBox:
+			for g.tile(next) == tileBox {
+				next = next.add(dir)
 			}
-			next := rPos.add(dir)
-			switch g.tiles[next] {
-			case tileEmpty:
-				rPos = next
-			case tileWall:
-			case tileBox:
-				for g.tiles[next] == tileBox {
-					next = next.add(dir)
-				}
-				if g.tiles[next] == tileEmpty {
-					g.tiles[next] = tileBox
-					rPos = rPos.add(dir)
-					g.tiles[rPos] = tileEmpty
-				}
+			if g.tile(next) == tileEmpty {
+				g.setTile(next, tileBox)
+				rPos = rPos.add(dir)
+				g.setTile(rPos, tileEmpty)
 			}
 		}
-		return false
-	})
+	}
 	p1 := 0
-	for pos, t := range g.tiles {
+	for idx, t := range g.tiles {
+		pos := g.fromIndex(idx)
 		if t == tileBox {
 			p1 += 100*pos.y + pos.x
 		}
@@ -72,77 +67,75 @@ func part1() int {
 
 func part2() int {
 	g := grid{
-		tiles: map[point]tileType{},
+		tiles: gridTiles[0:0],
 	}
-	var rPos point
-	utils.EachSectionMB(input, "\n\n", func(index int, section string) (done bool) {
-		if index == 0 {
-			rPos = g.load(section, true)
-			return false
+	rPos, startIdx := g.load(true)
+	open := make([]point, 0, 256)
+	next := make([]point, 0, 256)
+	toPush := make([]point, 450)
+	for i := startIdx; i < len(input); i++ {
+		ch := input[i]
+		var dir point
+		switch ch {
+		case '<':
+			dir = point{-1, 0}
+		case '^':
+			dir = point{0, -1}
+		case 'v':
+			dir = point{0, 1}
+		case '>':
+			dir = point{1, 0}
+		default:
+			continue
 		}
-		for _, ch := range section {
-			var dir point
-			switch ch {
-			case '<':
-				dir = point{-1, 0}
-			case '^':
-				dir = point{0, -1}
-			case 'v':
-				dir = point{0, 1}
-			case '>':
-				dir = point{1, 0}
-			default:
-				continue
-			}
-			vertical := dir.y != 0
-			open := []point{rPos.add(dir)}
-			next := []point{}
-			canMove := true
-			toPush := []point{}
-			for len(open) > 0 {
-				for _, cur := range open {
-					switch g.tiles[cur] {
-					case tileWall:
-						canMove = false
-					case tileBoxL:
-						next = append(next, cur.add(dir))
-						if vertical {
-							next = append(next, cur.add(dir).add(point{1, 0}))
-						}
-						toPush = append(toPush, cur)
-					case tileBoxR:
-						next = append(next, cur.add(dir))
-						if vertical {
-							next = append(next, cur.add(dir).add(point{-1, 0}))
-						}
-						toPush = append(toPush, cur.add(point{-1, 0}))
+		vertical := dir.y != 0
+		open, next = open[0:0], next[0:0]
+		open = append(open, rPos.add(dir))
+		toPush = toPush[0:0]
+		canMove := true
+		for len(open) > 0 {
+			for _, cur := range open {
+				switch g.tile(cur) {
+				case tileWall:
+					canMove = false
+				case tileBoxL:
+					next = append(next, cur.add(dir))
+					if vertical {
+						next = append(next, cur.add(dir).add(point{1, 0}))
 					}
-					if !canMove {
-						break
+					toPush = append(toPush, cur)
+				case tileBoxR:
+					next = append(next, cur.add(dir))
+					if vertical {
+						next = append(next, cur.add(dir).add(point{-1, 0}))
 					}
+					toPush = append(toPush, cur.add(point{-1, 0}))
 				}
 				if !canMove {
 					break
 				}
-				open, next = next, open[0:0]
 			}
-			if canMove {
-				for _, boxL := range toPush {
-					g.tiles[boxL] = tileEmpty
-					g.tiles[boxL.add(point{1, 0})] = tileEmpty
-
-				}
-				for _, boxL := range toPush {
-					g.tiles[boxL.add(dir)] = tileBoxL
-					g.tiles[boxL.add(dir).add(point{1, 0})] = tileBoxR
-				}
-				rPos = rPos.add(dir)
+			if !canMove {
+				break
 			}
+			open, next = next, open[0:0]
 		}
-		return false
-	})
+		if canMove {
+			for _, boxL := range toPush {
+				g.setTile(boxL, tileEmpty)
+				g.setTile(boxL.add(point{1, 0}), tileEmpty)
+
+			}
+			for _, boxL := range toPush {
+				g.setTile(boxL.add(dir), tileBoxL)
+				g.setTile(boxL.add(dir).add(point{1, 0}), tileBoxR)
+			}
+			rPos = rPos.add(dir)
+		}
+	}
 	p2 := 0
-	for pos, t := range g.tiles {
+	for idx, t := range g.tiles {
+		pos := g.fromIndex(idx)
 		if t == tileBoxL {
 			p2 += 100*pos.y + pos.x
 		}
@@ -152,50 +145,59 @@ func part2() int {
 
 type grid struct {
 	w, h  int
-	tiles map[point]tileType
+	tiles []tileType
 }
 
-func (g *grid) load(section string, doubleWidth bool) point {
+func (g *grid) load(doubleWidth bool) (point, int) {
 	x, y := 0, 0
 	charSize := 1
+	for ; input[g.w] != '\n'; g.w++ {
+	}
 	if doubleWidth {
 		charSize = 2
+		g.w <<= 1
 	}
 	var rPos point
-	for _, ch := range section {
+	for i, ch := range input {
 		pos := point{x, y}
-		posR := point{x + 1, y}
 		x += charSize
 		switch ch {
 		case '\n':
 			y++
-			g.w = max(g.w, x)
+			if x == charSize {
+				g.h = y
+				return rPos, i
+			}
 			x = 0
 		case 'O':
 			if doubleWidth {
-				g.tiles[pos] = tileBoxL
-				g.tiles[posR] = tileBoxR
+				g.tiles = append(g.tiles, tileBoxL)
+				g.tiles = append(g.tiles, tileBoxR)
 			} else {
-				g.tiles[pos] = tileBox
+				g.tiles = append(g.tiles, tileBox)
 			}
 		case '#':
-			g.tiles[pos] = tileWall
+			g.tiles = append(g.tiles, tileWall)
 			if doubleWidth {
-				g.tiles[posR] = tileWall
+				g.tiles = append(g.tiles, tileWall)
 			}
 		case '@':
 			rPos = pos
 			fallthrough
 		case '.':
-			g.tiles[pos] = tileEmpty
+			g.tiles = append(g.tiles, tileEmpty)
 			if doubleWidth {
-				g.tiles[posR] = tileEmpty
+				g.tiles = append(g.tiles, tileEmpty)
 			}
 		}
 	}
-	g.h = y + 1
-	return rPos
+	return rPos, -1
 }
+
+func (g grid) tile(p point) tileType       { return g.tiles[g.index(p)] }
+func (g grid) setTile(p point, t tileType) { g.tiles[g.index(p)] = t }
+func (g grid) index(p point) int           { return p.x + p.y*g.w }
+func (g grid) fromIndex(idx int) point     { return point{idx % g.w, idx / g.w} }
 
 type point struct{ x, y int }
 
@@ -210,22 +212,5 @@ const (
 )
 
 type tileType byte
-
-func (t tileType) String() string {
-	switch t {
-	case tileBox:
-		return "O"
-	case tileBoxL:
-		return "["
-	case tileBoxR:
-		return "]"
-	case tileEmpty:
-		return "."
-	case tileWall:
-		return "#"
-	default:
-		return ""
-	}
-}
 
 var benchmark = false
