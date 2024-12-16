@@ -36,15 +36,16 @@ func solve() (int, int) {
 			end = g.fromIndex(i)
 		}
 	}
-	dists, prevs := dijkstra(g, search{start, 0})
+	var dists = make([]uint32, gridAlloc<<2)
+	dijkstra(g, dists, search{start, 0})
 	p1 := math.MaxInt
 	var best search
 	for dir := range 4 {
 		cur := search{end, byte(dir)}
 		score := dists[g.searchIndex(cur)]
-		if score > 0 && score < p1 {
+		if score > 0 && score < uint32(p1) {
 			best = cur
-			p1 = score
+			p1 = int(score)
 		}
 	}
 	bestSeats := make([]bool, gridAlloc)
@@ -53,23 +54,18 @@ func solve() (int, int) {
 
 	open := make([]search, 0, 4)
 	next := make([]search, 0, 4)
-	visited := make([]bool, gridAlloc<<2)
 
 	open = append(open, best)
 	for len(open) > 0 {
 		for _, cur := range open {
 			score := dists[g.searchIndex(cur)]
-			for _, p := range prevs[g.searchIndex(cur)] {
-				if visited[g.index(p.pos)<<2+int(p.dir)] {
-					continue
-				}
-				visited[g.index(p.pos)<<2+int(p.dir)] = true
+			g.eachRevNeighbour(cur, func(p search, cost uint32) {
 				pScore := dists[g.searchIndex(p)]
-				if score == pScore+1 || score == pScore+1001 {
+				if score == pScore+cost {
 					bestSeats[g.index(p.pos)] = true
 					next = append(next, p)
 				}
-			}
+			})
 		}
 		open, next = next, open[0:0]
 	}
@@ -87,25 +83,20 @@ type search struct {
 	dir byte
 }
 
-func dijkstra(g grid, start search) ([]int, [][]search) {
-	queue := searchQueue{}
-	dist := make([]int, gridAlloc<<2)
+func dijkstra(g grid, dist []uint32, start search) {
+	queue := make(searchQueue, 0, 400)
 	heap.Push(&queue, queueItem{start, 0})
-	prev := make([][]search, gridAlloc<<2)
 	for queue.Len() > 0 {
 		cur := queue.Pop().(queueItem)
 		g.eachNeighbour(cur.node, func(neigh search, cost int) {
 			ni := g.searchIndex(neigh)
-			alt := dist[g.searchIndex(cur.node)] + cost
+			alt := dist[g.searchIndex(cur.node)] + uint32(cost)
 			if dist[ni] == 0 || alt < dist[ni] {
 				dist[ni] = alt
-				prev[ni] = prev[ni][0:0]
 				queue.Push(queueItem{neigh, 0})
 			}
-			prev[ni] = append(prev[ni], cur.node)
 		})
 	}
-	return dist, prev
 }
 
 type queueItem struct {
@@ -153,6 +144,17 @@ func (g grid) eachNeighbour(s search, callback func(next search, cost int)) {
 	try(s.dir, 1)
 	try((s.dir+3)%4, 1001)
 	try((s.dir+1)%4, 1001)
+}
+func (g grid) eachRevNeighbour(s search, callback func(next search, cost uint32)) {
+	try := func(dir byte, cost uint32) {
+		next := s.pos.add(dirs[(s.dir+2)%4])
+		if g.valAt(next) != '#' {
+			callback(search{next, dir}, cost)
+		}
+	}
+	try((s.dir), 1)
+	try((s.dir+1)%4, 1001)
+	try((s.dir+3)%4, 1001)
 }
 
 type point struct{ x, y int }
