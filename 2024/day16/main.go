@@ -10,6 +10,10 @@ import (
 //go:embed input.txt
 var input string
 
+const (
+	gridAlloc = 20_000
+)
+
 func main() {
 	p1, p2 := solve()
 	if !benchmark {
@@ -35,37 +39,47 @@ func solve() (int, int) {
 	dists, prevs := dijkstra(g, search{start, 0})
 	p1 := math.MaxInt
 	var best search
-	for p, score := range dists {
-		if p.pos == end {
-			if score < p1 {
-				best = p
-				p1 = score
-			}
+	for dir := range 4 {
+		cur := search{end, byte(dir)}
+		score := dists[g.searchIndex(cur)]
+		if score > 0 && score < p1 {
+			best = cur
+			p1 = score
 		}
 	}
-	bestSeats := map[point]bool{start: true, end: true}
-	open := []search{best}
-	next := []search{}
-	visited := map[search]bool{}
+	bestSeats := make([]bool, gridAlloc)
+	bestSeats[g.index(start)] = true
+	bestSeats[g.index(end)] = true
+
+	open := make([]search, 0, 4)
+	next := make([]search, 0, 4)
+	visited := make([]bool, gridAlloc<<2)
+
+	open = append(open, best)
 	for len(open) > 0 {
 		for _, cur := range open {
-			score := dists[cur]
-			for _, p := range prevs[cur] {
-				if visited[p] {
+			score := dists[g.searchIndex(cur)]
+			for _, p := range prevs[g.searchIndex(cur)] {
+				if visited[g.index(p.pos)<<2+int(p.dir)] {
 					continue
 				}
-				visited[p] = true
-				pScore := dists[p]
+				visited[g.index(p.pos)<<2+int(p.dir)] = true
+				pScore := dists[g.searchIndex(p)]
 				if score == pScore+1 || score == pScore+1001 {
-					bestSeats[p.pos] = true
+					bestSeats[g.index(p.pos)] = true
 					next = append(next, p)
 				}
 			}
 		}
 		open, next = next, open[0:0]
 	}
-
-	return p1, len(bestSeats)
+	p2 := 0
+	for _, good := range bestSeats {
+		if good {
+			p2++
+		}
+	}
+	return p1, p2
 }
 
 type search struct {
@@ -73,48 +87,23 @@ type search struct {
 	dir byte
 }
 
-func (s search) neighbours(g grid) ([]search, []int) {
-	n := make([]search, 0, 3)
-	cost := make([]int, 0, 3)
-	dir := s.dir
-	dirL := (s.dir + 3) % 4
-	dirR := (s.dir + 1) % 4
-
-	next := s.pos.add(dirs[dir])
-	nextL := s.pos.add(dirs[dirL])
-	nextR := s.pos.add(dirs[dirR])
-
-	if g.valAt(next) != '#' {
-		n = append(n, search{next, dir})
-		cost = append(cost, 1)
-	}
-	if g.valAt(nextL) != '#' {
-		n = append(n, search{nextL, dirL})
-		cost = append(cost, 1001)
-	}
-	if g.valAt(nextR) != '#' {
-		n = append(n, search{nextR, dirR})
-		cost = append(cost, 1001)
-	}
-	return n, cost
-}
-
-func dijkstra(g grid, start search) (map[search]int, map[search][]search) {
+func dijkstra(g grid, start search) ([]int, [][]search) {
 	queue := searchQueue{}
-	dist := map[search]int{}
+	dist := make([]int, gridAlloc<<2)
 	heap.Push(&queue, queueItem{start, 0})
-	prev := map[search][]search{}
+	prev := make([][]search, gridAlloc<<2)
 	for queue.Len() > 0 {
 		cur := queue.Pop().(queueItem)
-		neighbours, costs := cur.node.neighbours(g)
-		for i, neigh := range neighbours {
-			alt := dist[cur.node] + costs[i]
-			prev[neigh] = append(prev[neigh], cur.node)
-			if dist[neigh] == 0 || alt < dist[neigh] {
-				dist[neigh] = alt
+		g.eachNeighbour(cur.node, func(neigh search, cost int) {
+			ni := g.searchIndex(neigh)
+			alt := dist[g.searchIndex(cur.node)] + cost
+			if dist[ni] == 0 || alt < dist[ni] {
+				dist[ni] = alt
+				prev[ni] = prev[ni][0:0]
 				queue.Push(queueItem{neigh, 0})
 			}
-		}
+			prev[ni] = append(prev[ni], cur.node)
+		})
 	}
 	return dist, prev
 }
@@ -143,14 +132,27 @@ type grid struct {
 	h, w int
 }
 
-func (g grid) inBound(p point) bool    { return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h }
-func (g grid) index(p point) int       { return int(p.x) + int(p.y)*int(g.w+1) }
-func (g grid) fromIndex(idx int) point { return point{idx % (g.w + 1), idx / (g.w + 1)} }
+func (g grid) inBound(p point) bool     { return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h }
+func (g grid) index(p point) int        { return int(p.x) + int(p.y)*int(g.w+1) }
+func (g grid) fromIndex(idx int) point  { return point{idx % (g.w + 1), idx / (g.w + 1)} }
+func (g grid) searchIndex(s search) int { return g.index(s.pos)<<2 + int(s.dir) }
 func (g grid) valAt(p point) byte {
 	if !g.inBound(p) {
 		return 0
 	}
 	return input[g.index(p)]
+}
+
+func (g grid) eachNeighbour(s search, callback func(next search, cost int)) {
+	try := func(dir byte, cost int) {
+		next := s.pos.add(dirs[dir])
+		if g.valAt(next) != '#' {
+			callback(search{next, dir}, cost)
+		}
+	}
+	try(s.dir, 1)
+	try((s.dir+3)%4, 1001)
+	try((s.dir+1)%4, 1001)
 }
 
 type point struct{ x, y int }
