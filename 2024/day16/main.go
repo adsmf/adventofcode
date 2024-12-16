@@ -51,8 +51,8 @@ func solve() (int, int) {
 	bestSeats[g.index(start)] = true
 	bestSeats[g.index(end)] = true
 
-	open := make([]search, 0, 4)
-	next := make([]search, 0, 4)
+	open := make([]search, 0, 6)
+	next := make([]search, 0, 6)
 
 	open = append(open, best)
 	for len(open) > 0 {
