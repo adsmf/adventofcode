@@ -13,6 +13,8 @@ const (
 	gridAlloc = 20_000
 )
 
+type searchSet [gridAlloc << 2]uint32
+
 func main() {
 	p1, p2 := solve()
 	if !benchmark {
@@ -35,8 +37,8 @@ func solve() (int, int) {
 			end = g.fromIndex(i)
 		}
 	}
-	var dists = make([]uint32, gridAlloc<<2)
-	dijkstra(g, dists, search{start, 0})
+	var dists = searchSet{}
+	dijkstra(g, &dists, search{start, 0})
 	p1 := math.MaxInt
 	var best search
 	for dir := range 4 {
@@ -47,7 +49,7 @@ func solve() (int, int) {
 			p1 = int(score)
 		}
 	}
-	bestSeats := make([]bool, gridAlloc)
+	bestSeats := [gridAlloc]bool{}
 	bestSeats[g.index(start)] = true
 	bestSeats[g.index(end)] = true
 
@@ -82,7 +84,7 @@ type search struct {
 	dir byte
 }
 
-func dijkstra(g grid, dist []uint32, start search) {
+func dijkstra(g grid, dist *searchSet, start search) {
 	queue := make(chan queueItem, 400)
 	queue <- queueItem{start, 0}
 	for {
