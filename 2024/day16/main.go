@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/heap"
 	_ "embed"
 	"fmt"
 	"math"
@@ -84,39 +83,28 @@ type search struct {
 }
 
 func dijkstra(g grid, dist []uint32, start search) {
-	queue := make(searchQueue, 0, 400)
-	heap.Push(&queue, queueItem{start, 0})
-	for queue.Len() > 0 {
-		cur := queue.Pop().(queueItem)
-		g.eachNeighbour(cur.node, func(neigh search, cost int) {
-			ni := g.searchIndex(neigh)
-			alt := dist[g.searchIndex(cur.node)] + uint32(cost)
-			if dist[ni] == 0 || alt < dist[ni] {
-				dist[ni] = alt
-				queue.Push(queueItem{neigh, 0})
-			}
-		})
+	queue := make(chan queueItem, 400)
+	queue <- queueItem{start, 0}
+	for {
+		select {
+		case cur := <-queue:
+			g.eachNeighbour(cur.node, func(neigh search, cost int) {
+				ni := g.searchIndex(neigh)
+				alt := dist[g.searchIndex(cur.node)] + uint32(cost)
+				if dist[ni] == 0 || alt < dist[ni] {
+					dist[ni] = alt
+					queue <- queueItem{neigh, 0}
+				}
+			})
+		default:
+			return
+		}
 	}
 }
 
 type queueItem struct {
 	node     search
 	priority int
-}
-
-type searchQueue []queueItem
-
-func (pq searchQueue) Len() int           { return len(pq) }
-func (pq searchQueue) Less(i, j int) bool { return pq[i].priority > pq[j].priority }
-func (pq searchQueue) Swap(i, j int)      { pq[i], pq[j] = pq[j], pq[i] }
-func (pq *searchQueue) Push(x any)        { *pq = append(*pq, x.(queueItem)) }
-
-func (pq *searchQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
 }
 
 type grid struct {
