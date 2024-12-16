@@ -85,22 +85,20 @@ type search struct {
 }
 
 func dijkstra(g grid, dist *searchSet, start search) {
-	queue := make(chan queueItem, 400)
-	queue <- queueItem{start, 0}
-	for {
-		select {
-		case cur := <-queue:
-			g.eachNeighbour(cur.node, func(neigh search, cost int) {
-				ni := g.searchIndex(neigh)
-				alt := dist[g.searchIndex(cur.node)] + uint32(cost)
-				if dist[ni] == 0 || alt < dist[ni] {
-					dist[ni] = alt
-					queue <- queueItem{neigh, 0}
-				}
-			})
-		default:
-			return
-		}
+	queue := make([]queueItem, 0, 400)
+	queue = append(queue, queueItem{start, 0})
+	for len(queue) > 0 {
+		cur := queue[0]
+		copy(queue[0:], queue[1:])
+		queue = queue[:len(queue)-1]
+		g.eachNeighbour(cur.node, func(neigh search, cost int) {
+			ni := g.searchIndex(neigh)
+			alt := dist[g.searchIndex(cur.node)] + uint32(cost)
+			if dist[ni] == 0 || alt < dist[ni] {
+				dist[ni] = alt
+				queue = append(queue, queueItem{neigh, 0})
+			}
+		})
 	}
 }
 
