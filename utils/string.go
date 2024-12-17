@@ -67,17 +67,18 @@ func EachInteger(input string, callback Callback[int]) {
 	negative := false
 	started := false
 	index := 0
-	send := func() {
+	send := func() (done bool) {
 		if started {
 			if negative {
 				accumulator *= -1
 			}
-			callback(index, accumulator)
+			done = callback(index, accumulator)
 			index++
 			accumulator = 0
 			started = false
 		}
 		negative = false
+		return
 	}
 	for _, char := range []byte(input) {
 		switch {
@@ -87,7 +88,9 @@ func EachInteger(input string, callback Callback[int]) {
 			accumulator = accumulator*10 + int(char-'0')
 			started = true
 		default:
-			send()
+			if send() {
+				return
+			}
 		}
 	}
 	send()
