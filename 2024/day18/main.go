@@ -13,9 +13,9 @@ var input string
 const (
 	gridMax  = 70
 	loadOnly = 1024
+	maxBuf   = 1 << 6
 )
 
-// type gridSet [(gridMax + 1) * (gridMax + 1)]bool
 type gridWeight [(gridMax + 1) * (gridMax + 1)]int
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 func solve() (int, point) {
 	g := grid{}
 	cur := point{}
-	blockedPoints := []point{}
+	blockedPoints := make([]point, 0, 3500)
 	utils.EachInteger(input, func(index, value int) (done bool) {
 		if index&1 == 0 {
 			cur.x = value
@@ -67,15 +67,14 @@ func solve() (int, point) {
 }
 
 func dijkstra(g grid, start point, t int) gridWeight {
-	queue := make([]queueItem, 0, 1400)
+	queue := cirQueue[point]{}
 	dist := gridWeight{}
-	queue = append(queue, queueItem{start, 0})
+	queue.add(start)
 	prev := gridWeight{}
-	var cur queueItem
-	for len(queue) > 0 {
-		cur, queue = queue[0], queue[1:]
-		ci := g.index(cur.node)
-		g.eachNeighbour(cur.node, func(neigh point, cost int) {
+	for queue.Len() > 0 {
+		cur := queue.pop()
+		ci := g.index(cur)
+		g.eachNeighbour(cur, func(neigh point, cost int) {
 			ni := g.index(neigh)
 			if cost > 0 && cost <= t+1 {
 				return
@@ -84,19 +83,49 @@ func dijkstra(g grid, start point, t int) gridWeight {
 			if dist[ni] == 0 || alt < dist[ni] {
 				dist[ni] = alt
 				prev[ni] = ci
-				queue = append(queue, queueItem{neigh, 0})
+				queue.add(neigh)
 			}
 		})
 	}
 	return prev
 }
 
+type cirQueue[T any] struct {
+	buf        [maxBuf]T
+	start, end int
+}
+
+func (c cirQueue[T]) Len() int {
+	end := c.end
+	if end < c.start {
+		end += len(c.buf)
+	}
+	return end - c.start
+}
+
+func (c *cirQueue[T]) add(p T) {
+	c.buf[c.end] = p
+	c.end++
+	c.end &= maxBuf - 1
+}
+
+func (c *cirQueue[T]) pop() T {
+	if c.start == c.end {
+		panic("Pop from empty queue")
+	}
+	v := c.buf[c.start]
+	c.start++
+	c.start &= maxBuf - 1
+	return v
+}
+
 type grid struct {
 	blocked gridWeight
 }
 
-func (g grid) inBound(p point) bool { return p.x >= 0 && p.x <= gridMax && p.y >= 0 && p.y <= gridMax }
-func (g grid) index(p point) int    { return int(p.x) + int(p.y)*int(gridMax+1) }
+func (g grid) inBound(p point) bool    { return p.x >= 0 && p.x <= gridMax && p.y >= 0 && p.y <= gridMax }
+func (g grid) index(p point) int       { return int(p.x) + int(p.y)*int(gridMax+1) }
+func (g grid) fromIndex(idx int) point { return point{idx % (gridMax + 1), idx / (gridMax + 1)} }
 func (g grid) eachNeighbour(p point, callback func(next point, cost int)) {
 	for _, dir := range dirs {
 		next := p.add(dir)
