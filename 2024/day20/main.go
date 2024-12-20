@@ -54,20 +54,20 @@ func cheatSearch(g grid, dist *searchSet, maxCheat int, minSaving int, callback 
 		for x := 0; x < g.w; x++ {
 			cur := point{x, y}
 			curDist := dist[g.index(cur)]
-			if g.valAt(cur) != '#' {
+			if curDist > 0 {
 				for cX := x - maxCheat; cX <= x+maxCheat; cX++ {
 					xDiff := max(cX-x, x-cX)
 					remCheat := maxCheat - xDiff
 					for cY := y - remCheat; cY <= y+remCheat; cY++ {
 						yDiff := max(cY-y, y-cY)
 						cPos := point{cX, cY}
-						cVal := g.valAt(cPos)
-						if cVal == '.' {
-							nDist := dist[g.index(cPos)]
-							saving := nDist - curDist - int32(xDiff) - int32(yDiff)
-							if saving >= int32(minSaving) {
-								callback(xDiff + yDiff)
-							}
+						if !g.inBound(cPos) {
+							continue
+						}
+						nDist := dist[g.index(cPos)]
+						saving := nDist - curDist - int32(xDiff) - int32(yDiff)
+						if saving >= int32(minSaving) {
+							callback(xDiff + yDiff)
 						}
 					}
 				}
@@ -79,6 +79,7 @@ func cheatSearch(g grid, dist *searchSet, maxCheat int, minSaving int, callback 
 func baseRoute(g grid, dist *searchSet, start point) {
 	lastPoint := point{0, 0}
 	done := point{-1, -1}
+	dist[g.index(start)] = 1
 	for cur := start; cur != done; {
 		nextPoint := done
 		g.eachNeighbour(cur, func(neigh point) {
