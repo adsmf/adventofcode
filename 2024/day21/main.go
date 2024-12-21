@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -78,20 +79,40 @@ type cacheKey struct {
 }
 
 func calcRoutes(routes *routeSet, buttons map[byte]point) {
+	transitions := func(in string) int {
+		count := 0
+		last := rune(0)
+		for _, ch := range in {
+			if ch != last {
+				count++
+				last = ch
+			}
+		}
+		return count
+	}
 	for start := range buttons {
 		for end := range buttons {
 			all := allMoves(buttons[start], buttons[end], buttons)
+			slices.SortFunc(all, func(a, b string) int {
+				return transitions(a) - transitions(b)
+			})
+			var i int
+			for i = 1; i < len(all); i++ {
+				if transitions(all[i]) > transitions(all[i-1]) {
+					break
+				}
+			}
+			all = all[:i]
 			routes[start][end] = all
 		}
 	}
 }
 
-type search struct {
-	pos  point
-	keys string
-}
-
 func allMoves(start, target point, buttons map[byte]point) []string {
+	type search struct {
+		pos  point
+		keys string
+	}
 	validPoints := map[point]bool{}
 	for _, pos := range buttons {
 		validPoints[pos] = true
