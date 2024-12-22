@@ -11,63 +11,52 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func evolve(secret int, steps int) int {
-	for i := 0; i < steps; i++ {
-		secret ^= (secret << 6) & ((1 << 24) - 1)
-		secret ^= (secret >> 5) & ((1 << 24) - 1)
-		secret ^= (secret * 1 << 11) & ((1 << 24) - 1)
-	}
+func evolve(secret int) int {
+	secret ^= (secret << 6) & ((1 << 24) - 1)
+	secret ^= (secret >> 5) & ((1 << 24) - 1)
+	secret ^= (secret * 1 << 11) & ((1 << 24) - 1)
 	return secret
 }
 
-func part1() int {
-	p1 := 0
+func solve() (int, int) {
+	p1, p2 := 0, 0
+	window := [4]byte{}
+	counts := make(map[uint32]int, 45_000)
+	seen := make(map[uint32]bool, 2000)
 	utils.EachInteger(input, func(_, value int) (done bool) {
-		evolved := evolve(value, 2000)
-		p1 += evolved
-		return
-	})
-	return p1
-}
-
-func part2() int {
-	window := [4]int{}
-	counts := map[int]int{}
-	utils.EachInteger(input, func(_, value int) (done bool) {
-		seen := map[int]bool{}
+		clear(seen)
 		lastPrice := value % 10
-		window[3] = lastPrice
-		for i := 1; i < 2000; i++ {
-			value = evolve(value, 1)
+		window[3] = byte(lastPrice + 10)
+		for i := 0; i < 2000; i++ {
+			value = evolve(value)
 			price := value % 10
 			diff := price - lastPrice
 			lastPrice = price
-
-			window[0], window[1], window[2], window[3] = window[1], window[2], window[3], diff
-			hash := (window[0] + 20) |
-				(window[1]+20)<<8 |
-				(window[2]+20)<<16 |
-				(window[3]+20)<<24
-			if !seen[hash] {
-				counts[hash] += price
+			window[0], window[1], window[2], window[3] = window[1], window[2], window[3], byte(diff+10)
+			hash := uint32(window[0]) |
+				uint32(window[1])<<5 |
+				uint32(window[2])<<10 |
+				uint32(window[3])<<15
+			if seen[hash] {
+				continue
 			}
 			seen[hash] = true
+			counts[hash] += price
 		}
+		p1 += value
 		return
 	})
-	p2 := 0
 	for _, count := range counts {
 		p2 = max(count, p2)
 	}
-	return p2
+	return p1, p2
 }
 
 var benchmark = false
