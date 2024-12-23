@@ -27,22 +27,17 @@ func evolve(secret int) int {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
-	window := [4]byte{}
 	counts := [1 << 21]uint16{}
 	utils.EachInteger(input, func(_, value int) (done bool) {
 		seen := [1 << 21]bool{}
 		lastPrice := uint16(value % 10)
-		window[3] = byte(lastPrice + 10)
+		hash := uint32(0)
 		for i := 0; i < 2000; i++ {
 			value = evolve(value)
 			price := uint16(value % 10)
 			diff := price - lastPrice
 			lastPrice = price
-			window[0], window[1], window[2], window[3] = window[1], window[2], window[3], byte(diff+10)
-			hash := uint32(window[0]) |
-				uint32(window[1])<<5 |
-				uint32(window[2])<<10 |
-				uint32(window[3])<<15
+			hash = (hash<<5)&((1<<20)-1) | uint32(diff+10)
 			if seen[hash] {
 				continue
 			}
