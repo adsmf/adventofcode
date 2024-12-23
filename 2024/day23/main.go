@@ -24,29 +24,31 @@ func main() {
 func solve() (int, string) {
 	pairs := connectionSet{}
 	utils.EachLine(input, func(index int, line string) (done bool) {
-		c1, c2 := line[0:2], line[3:5]
+		c1, c2 := compToID(line[0:2]), compToID(line[3:5])
 		if pairs[c1] == nil {
-			pairs[c1] = map[string]bool{}
+			pairs[c1] = computerSet{}
 		}
 		if pairs[c2] == nil {
-			pairs[c2] = map[string]bool{}
+			pairs[c2] = computerSet{}
 		}
 		pairs[c1][c2] = true
 		pairs[c2][c1] = true
 		return
 	})
 
-	p1groups := map[string]bool{}
+	p1groups := map[int]bool{}
 	for c1, connections := range pairs {
 		for c2 := range connections {
 			for c3 := range pairs[c2] {
 				if pairs[c1][c3] {
-					if c1[0] != 't' && c2[0] != 't' && c3[0] != 't' {
+					if !c1.tPrefix() && !c2.tPrefix() && !c3.tPrefix() {
 						continue
 					}
-					comps := [3]string{c1, c2, c3}
+					comps := [3]compID{c1, c2, c3}
 					slices.Sort(comps[:])
-					group := fmt.Sprintf("%s-%s-%s", comps[0], comps[1], comps[2])
+					group := int(comps[0]) |
+						int(comps[1]<<10) |
+						int(comps[2]<<20)
 					p1groups[group] = true
 				}
 			}
@@ -64,13 +66,13 @@ func password(pairs connectionSet) string {
 	set := pairs.BronKerbosch(computerSet{}, allComps, computerSet{})
 	comps := make([]string, 0, len(set))
 	for comp := range set {
-		comps = append(comps, comp)
+		comps = append(comps, comp.String())
 	}
 	slices.Sort(comps)
 	return strings.Join(comps, ",")
 }
 
-type connectionSet map[string]computerSet
+type connectionSet map[compID]computerSet
 
 /*
 Bron-Kerbosch to find maximal clique
@@ -102,7 +104,7 @@ func (cs connectionSet) BronKerbosch(R, P, X computerSet) computerSet {
 	return best
 }
 
-type computerSet map[string]bool
+type computerSet map[compID]bool
 
 func (c computerSet) union(o computerSet) computerSet {
 	set := maps.Clone(c)
@@ -120,6 +122,24 @@ func (c computerSet) intersection(o computerSet) computerSet {
 		}
 	}
 	return set
+}
+
+func compToID(in string) compID {
+	return compID(in[0]-'a') + compID(in[1]-'a')<<5
+}
+
+type compID int
+
+func (c compID) tPrefix() bool {
+	return (c&((1<<5)-1) + 'a') == 't'
+}
+
+func (c compID) String() string {
+	bytes := []byte{
+		byte(c&((1<<5)-1) + 'a'),
+		byte(c>>5 + 'a'),
+	}
+	return string(bytes)
 }
 
 var benchmark = false
