@@ -14,15 +14,14 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %s\n", p2)
 	}
 }
 
-func part1() int {
+func solve() (int, string) {
 	pairs := connectionSet{}
 	utils.EachLine(input, func(index int, line string) (done bool) {
 		c1, c2 := line[0:2], line[3:5]
@@ -37,8 +36,7 @@ func part1() int {
 		return
 	})
 
-	groups := map[string]bool{}
-
+	p1groups := map[string]bool{}
 	for c1, connections := range pairs {
 		for c2 := range connections {
 			for c3 := range pairs[c2] {
@@ -49,30 +47,13 @@ func part1() int {
 					comps := [3]string{c1, c2, c3}
 					slices.Sort(comps[:])
 					group := fmt.Sprintf("%s-%s-%s", comps[0], comps[1], comps[2])
-					groups[group] = true
+					p1groups[group] = true
 				}
 			}
 		}
 	}
-	return len(groups)
-}
-
-func part2() string {
-	pairs := connectionSet{}
-	utils.EachLine(input, func(index int, line string) (done bool) {
-		c1, c2 := line[0:2], line[3:5]
-		if pairs[c1] == nil {
-			pairs[c1] = map[string]bool{}
-		}
-		if pairs[c2] == nil {
-			pairs[c2] = map[string]bool{}
-		}
-		pairs[c1][c2] = true
-		pairs[c2][c1] = true
-		return
-	})
-
-	return password(pairs)
+	p2 := password(pairs)
+	return len(p1groups), p2
 }
 
 func password(pairs connectionSet) string {
