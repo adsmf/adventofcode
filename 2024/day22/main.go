@@ -29,7 +29,7 @@ func solve() (int, int) {
 	p1, p2 := 0, 0
 	counts := [1 << 21]uint16{}
 	utils.EachInteger(input, func(_, value int) (done bool) {
-		seen := [1 << 21]bool{}
+		seen := [1 << 20]bool{}
 		lastPrice := uint16(value % 10)
 		hash := uint32(0)
 		for i := 0; i < 2000; i++ {
@@ -37,7 +37,7 @@ func solve() (int, int) {
 			price := uint16(value % 10)
 			diff := price - lastPrice
 			lastPrice = price
-			hash = (hash<<5)&((1<<20)-1) | uint32(diff+10)
+			hash = (hash<<5)&((1<<19)-1) | uint32(diff+10)
 			if seen[hash] {
 				continue
 			}
