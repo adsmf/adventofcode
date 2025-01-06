@@ -21,11 +21,24 @@ func main() {
 }
 
 func solve() (int, int) {
-	sections := strings.Split(input, "\n\n")
-	towels := strings.Split(sections[0], ", ")
 	p1 := 0
 	p2 := 0
-	utils.EachLine(sections[1], func(index int, line string) (done bool) {
+	towels := make([]string, 0, 500)
+	s := 0
+parseTowels:
+	for pos, ch := range input {
+		switch ch {
+		case '\n':
+			towels = append(towels, input[s:pos])
+			break parseTowels
+		case ',':
+			towels = append(towels, input[s:pos])
+			s = pos + 1
+		case ' ':
+			s++
+		}
+	}
+	utils.EachLine(input[s-1:], func(index int, line string) (done bool) {
 		possible := matches(line, towels)
 		if possible > 0 {
 			p1++
