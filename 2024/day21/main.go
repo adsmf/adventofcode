@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"unique"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -43,7 +44,7 @@ func solve() (int, int) {
 }
 
 func minTyped(input string, routes routeSet, cache cacheSet, depth int) int {
-	key := cacheKey{input, depth}
+	key := cacheKey{unique.Make(input), depth}
 	if res, found := cache[key]; found {
 		return res
 	}
@@ -74,7 +75,7 @@ func countMoves(start, end byte, depth int, routes routeSet, cache cacheSet) int
 }
 
 type cacheKey struct {
-	input string
+	input unique.Handle[string]
 	depth int
 }
 
@@ -92,7 +93,7 @@ func calcRoutes(routes *routeSet, buttons map[byte]point) {
 	}
 	for start := range buttons {
 		for end := range buttons {
-			all := allMoves(buttons[start], buttons[end], buttons)
+			all := bestMove(buttons[start], buttons[end], buttons)
 			slices.SortFunc(all, func(a, b string) int {
 				return transitions(a) - transitions(b)
 			})
@@ -108,16 +109,18 @@ func calcRoutes(routes *routeSet, buttons map[byte]point) {
 	}
 }
 
-func allMoves(start, target point, buttons map[byte]point) []string {
+func bestMove(start, target point, buttons map[byte]point) []string {
 	type search struct {
 		pos  point
 		keys string
 	}
-	validPoints := map[point]bool{}
+	validPoints := make(map[point]bool, len(buttons))
 	for _, pos := range buttons {
 		validPoints[pos] = true
 	}
-	open, next := []search{{start, ""}}, []search{}
+	open := make([]search, 0, 16)
+	next := make([]search, 0, 16)
+	open = append(open, search{start, ""})
 
 	moves := []string{}
 	for len(open) > 0 {
