@@ -7,8 +7,6 @@ import (
 	"os"
 	"slices"
 	"strings"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
@@ -31,35 +29,37 @@ func solve() (int, string) {
 		values: make(map[nameHash]bool, 45*2),
 		gates:  make(map[nameHash]gate, 45*5),
 	}
-	utils.EachSectionMB(input, "\n\n", func(secIdx int, section string) (done bool) {
-		if secIdx == 0 {
-			utils.EachLine(section, func(index int, line string) (done bool) {
-				id := line[0:3]
-				val := line[5] == '1'
-				dev.values[hash(id)] = val
-				return
-			})
-			return
+
+	for pos := 0; pos < len(input)-3; pos++ {
+		if input[pos] == '\n' {
+			continue
 		}
-		utils.EachLine(section, func(index int, line string) (done bool) {
-			parts := strings.Split(line, " ")
-			g := gate{
-				l: hash(parts[0]),
-				r: hash(parts[2]),
-			}
-			switch parts[1] {
-			case "AND":
-				g.op = opAND
-			case "OR":
-				g.op = opOR
-			case "XOR":
-				g.op = opXOR
-			}
-			dev.gates[hash(parts[4])] = g
-			return
-		})
-		return
-	})
+		g1 := hash(input[pos : pos+3])
+		pos += 3
+		if input[pos] == ':' {
+			dev.values[g1] = input[pos+2] == '1'
+			pos += 2
+			continue
+		}
+		g := gate{}
+		switch input[pos+1] {
+		case 'A':
+			g.op = opAND
+			pos += 5
+		case 'O':
+			g.op = opOR
+			pos += 4
+		case 'X':
+			g.op = opXOR
+			pos += 5
+		}
+		g2 := hash(input[pos : pos+3])
+		g3 := hash(input[pos+7 : pos+10])
+		g.l = g1
+		g.r = g2
+		dev.gates[g3] = g
+		pos += 10
+	}
 	p1 := 0
 	for i := 0; ; i++ {
 		id := gateID('z', i)
@@ -72,7 +72,7 @@ func solve() (int, string) {
 		}
 	}
 
-	dev.usedBy = map[nameHash]map[nameHash]bool{}
+	dev.usedBy = make(map[nameHash]map[nameHash]bool, 300)
 	for tgt, g := range dev.gates {
 		if dev.usedBy[g.l] == nil {
 			dev.usedBy[g.l] = map[nameHash]bool{}
@@ -97,7 +97,7 @@ func solve() (int, string) {
 	return p1, strings.Join(swappedStr, ",")
 }
 
-type nameHash uint32
+type nameHash uint16
 
 func (n nameHash) String() string {
 	s := make([]byte, 3)
