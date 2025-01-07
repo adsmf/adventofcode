@@ -18,15 +18,21 @@ const (
 	maxLinks     = 2
 )
 
+var p2buf = [32]byte{}
+
 func main() {
-	p1, p2 := solve()
+	p1 := solve()
+
+	i := 0
+	for ; p2buf[i] > 0; i++ {
+	}
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
-		fmt.Printf("Part 2: %s\n", p2)
+		fmt.Printf("Part 2: %s\n", p2buf[:i])
 	}
 }
 
-func solve() (int, string) {
+func solve() int {
 	dev := device{}
 	allGates := make([]nameHash, 0, 700)
 
@@ -73,8 +79,8 @@ func solve() (int, string) {
 	p1 := 0
 	for i := 0; ; i++ {
 		id := gateID('z', i)
-		val, err := dev.eval(id)
-		if err != nil {
+		val, ok := dev.eval(id)
+		if !ok {
 			break
 		}
 		if val {
@@ -92,24 +98,36 @@ func solve() (int, string) {
 		dev.writeDot()
 	}
 
-	swapped := dev.findSwapped()
-	slices.Sort(swapped)
-	swappedStr := make([]string, len(swapped))
+	dev.findSwapped()
+	swapped := dev.swapped
+	slices.Sort(swapped[:])
+	pos := 0
 	for i := range len(swapped) {
-		swappedStr[i] = swapped[i].String()
+		if i > 0 {
+			p2buf[pos] = ','
+			pos++
+		}
+		val := swapped[i].Bytes()
+		copy(p2buf[pos:], val[:])
+		pos += len(val)
 	}
-	return p1, strings.Join(swappedStr, ",")
+	return p1
 }
 
 type nameHash uint16
 
-func (n nameHash) String() string {
-	s := make([]byte, 3)
+func (n nameHash) Bytes() [3]byte {
+	b := [3]byte{}
 	for i := range 3 {
-		s[2-i] = unhashCh(byte(n % 36))
+		b[2-i] = unhashCh(byte(n % 36))
 		n /= 36
 	}
-	return string(s)
+	return b
+}
+
+func (n nameHash) String() string {
+	b := n.Bytes()
+	return string(b[:])
 }
 
 func hash(name string) nameHash {
@@ -134,11 +152,12 @@ func unhashCh(ch byte) byte {
 type device struct {
 	xVal, yVal [inputBits]bool
 	gates      gateSet
-	swapped    []nameHash
+	foundSwaps byte
+	swapped    [8]nameHash
 	usedBy     linkSet
 }
 
-func (d *device) findSwapped() []nameHash {
+func (d *device) findSwapped() {
 	maxBit := 0
 	for i := 0; i < inputBits; i++ {
 		if d.gates[gateID('z', i)].op == opUnknown {
@@ -149,11 +168,10 @@ func (d *device) findSwapped() []nameHash {
 	cOut := nameHash(0)
 	for i := 0; i < maxBit; i++ {
 		cOut = d.checkAdder(i, cOut)
-		if len(d.swapped) == 8 {
+		if d.foundSwaps == 8 {
 			break
 		}
 	}
-	return d.swapped
 }
 
 func (d *device) findNode(in1, in2 nameHash, op operation) nameHash {
@@ -193,17 +211,26 @@ func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 	and2 = d.findNode(xor1, cIn, opAND)
 	cOut = d.findNode(and1, and2, opOR)
 
+	addSwap := func(n nameHash) {
+		d.swapped[d.foundSwaps] = n
+		d.foundSwaps++
+	}
 	// Swap search
 	if zB.op != opXOR {
-		d.swapped = append(d.swapped, zID)
+		addSwap(zID)
+		// d.swapped = append(d.swapped, zID)
+		// d.swapped[d.foundSwaps]=zID
+		// d.foundSwaps++
 		switch zB.op {
 		case opOR:
 			swappedWith := d.findNode(cIn, xor1, opXOR)
 			cOut = swappedWith
-			d.swapped = append(d.swapped, swappedWith)
+			// d.swapped = append(d.swapped, swappedWith)
+			addSwap(swappedWith)
 		case opAND:
 			swappedWith := d.findNode(xor1, cIn, opXOR)
-			d.swapped = append(d.swapped, swappedWith)
+			// d.swapped = append(d.swapped, swappedWith)
+			addSwap(swappedWith)
 			if and1 == 0 || and1 == zID {
 				and1 = swappedWith
 			} else {
@@ -212,7 +239,9 @@ func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 			cOut = d.findNode(and1, and2, opOR)
 		}
 	} else if cOut == 0 {
-		d.swapped = append(d.swapped, xor1, and1)
+		addSwap(xor1)
+		addSwap(and1)
+		// d.swapped = append(d.swapped, xor1, and1)
 		xor1, and1 = and1, xor1
 		and2 = d.findNode(xor1, cIn, opAND)
 		cOut = d.findNode(and1, and2, opOR)
@@ -220,36 +249,36 @@ func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 	return
 }
 
-func (d *device) eval(id nameHash) (bool, error) {
+func (d *device) eval(id nameHash) (bool, bool) {
 	firstCh := id / 36 / 36
 	if firstCh == 'x'-'a' {
 		idx := ((id/36)%36-26)*10 + (id%36 - 26)
-		return d.xVal[idx], nil
+		return d.xVal[idx], true
 	} else if firstCh == 'y'-'a' {
 		idx := ((id/36)%36-26)*10 + (id%36 - 26)
-		return d.yVal[idx], nil
+		return d.yVal[idx], true
 	}
 	g := d.gates[id]
 	if g.op == opUnknown {
-		return false, fmt.Errorf("gate for %s not found", id)
+		return false, false
 	}
-	l, err := d.eval(g.l)
-	if err != nil {
-		return false, err
+	l, ok := d.eval(g.l)
+	if !ok {
+		return false, ok
 	}
-	r, err := d.eval(g.r)
-	if err != nil {
-		return false, err
+	r, ok := d.eval(g.r)
+	if !ok {
+		return false, ok
 	}
 	switch g.op {
 	case opAND:
-		return l && r, nil
+		return l && r, true
 	case opOR:
-		return l || r, nil
+		return l || r, true
 	case opXOR:
-		return l != r, nil
+		return l != r, true
 	}
-	return false, fmt.Errorf("no operation result!")
+	return false, false
 }
 
 func (d device) writeDot() {
