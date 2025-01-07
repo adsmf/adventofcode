@@ -14,6 +14,7 @@ var input string
 
 const (
 	writeDotFile = false
+	inputBits    = 45
 )
 
 func main() {
@@ -26,21 +27,26 @@ func main() {
 
 func solve() (int, string) {
 	dev := device{
-		values: make(map[nameHash]bool, 45*2),
-		gates:  make(map[nameHash]gate, 45*5),
+		gates: make(map[nameHash]gate, 45*5),
 	}
 
 	for pos := 0; pos < len(input)-3; pos++ {
 		if input[pos] == '\n' {
 			continue
 		}
-		g1 := hash(input[pos : pos+3])
-		pos += 3
-		if input[pos] == ':' {
-			dev.values[g1] = input[pos+2] == '1'
-			pos += 2
+		if input[pos+3] == ':' {
+			id := (input[pos+1]-'0')*10 + (input[pos+2] - '0')
+			switch input[pos] {
+			case 'x':
+				dev.xVal[id] = input[pos+5] == '1'
+			case 'y':
+				dev.yVal[id] = input[pos+5] == '1'
+			}
+			pos += 5
 			continue
 		}
+		g1 := hash(input[pos : pos+3])
+		pos += 3
 		g := gate{}
 		switch input[pos+1] {
 		case 'A':
@@ -60,6 +66,7 @@ func solve() (int, string) {
 		dev.gates[g3] = g
 		pos += 10
 	}
+
 	p1 := 0
 	for i := 0; ; i++ {
 		id := gateID('z', i)
@@ -128,15 +135,15 @@ func unhashCh(ch byte) byte {
 }
 
 type device struct {
-	values  map[nameHash]bool
-	gates   map[nameHash]gate
-	swapped []nameHash
-	usedBy  map[nameHash]map[nameHash]bool
+	xVal, yVal [inputBits]bool
+	gates      map[nameHash]gate
+	swapped    []nameHash
+	usedBy     map[nameHash]map[nameHash]bool
 }
 
 func (d *device) findSwapped() []nameHash {
 	maxBit := 0
-	for i := 0; i < 64; i++ {
+	for i := 0; i < inputBits; i++ {
 		_, found := d.gates[gateID('z', i)]
 		if !found {
 			break
@@ -218,8 +225,13 @@ func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 }
 
 func (d *device) eval(id nameHash) (bool, error) {
-	if v, found := d.values[id]; found {
-		return v, nil
+	firstCh := id / 36 / 36
+	if firstCh == 'x'-'a'+10 {
+		idx := ((id/36)%36)*10 + (id % 36)
+		return d.xVal[idx], nil
+	} else if firstCh == 'y'-'a'+10 {
+		idx := ((id/36)%36)*10 + (id % 36)
+		return d.yVal[idx], nil
 	}
 	g, found := d.gates[id]
 	if !found {
@@ -257,7 +269,7 @@ func (d device) writeDot() {
 			dot.WriteString(fmt.Sprintf("\t\t%s [style=filled,fillcolor=cyan]\n", id))
 		}
 	}
-	for i := 0; i < 64; i++ {
+	for i := 0; i < inputBits; i++ {
 		xID := gateID('x', i)
 		yID := gateID('y', i)
 		zID := gateID('z', i)
