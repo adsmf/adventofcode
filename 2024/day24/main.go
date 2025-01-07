@@ -28,15 +28,15 @@ func main() {
 
 func solve() (int, string) {
 	dev := device{
-		values: make(map[string]bool, 45*2),
-		gates:  make(map[string]gate, 45*5),
+		values: make(map[nameHash]bool, 45*2),
+		gates:  make(map[nameHash]gate, 45*5),
 	}
 	utils.EachSectionMB(input, "\n\n", func(secIdx int, section string) (done bool) {
 		if secIdx == 0 {
 			utils.EachLine(section, func(index int, line string) (done bool) {
 				id := line[0:3]
 				val := line[5] == '1'
-				dev.values[id] = val
+				dev.values[hash(id)] = val
 				return
 			})
 			return
@@ -44,8 +44,8 @@ func solve() (int, string) {
 		utils.EachLine(section, func(index int, line string) (done bool) {
 			parts := strings.Split(line, " ")
 			g := gate{
-				l: parts[0],
-				r: parts[2],
+				l: hash(parts[0]),
+				r: hash(parts[2]),
 			}
 			switch parts[1] {
 			case "AND":
@@ -55,7 +55,7 @@ func solve() (int, string) {
 			case "XOR":
 				g.op = opXOR
 			}
-			dev.gates[parts[4]] = g
+			dev.gates[hash(parts[4])] = g
 			return
 		})
 		return
@@ -72,13 +72,13 @@ func solve() (int, string) {
 		}
 	}
 
-	dev.usedBy = map[string]map[string]bool{}
+	dev.usedBy = map[nameHash]map[nameHash]bool{}
 	for tgt, g := range dev.gates {
 		if dev.usedBy[g.l] == nil {
-			dev.usedBy[g.l] = map[string]bool{}
+			dev.usedBy[g.l] = map[nameHash]bool{}
 		}
 		if dev.usedBy[g.r] == nil {
-			dev.usedBy[g.r] = map[string]bool{}
+			dev.usedBy[g.r] = map[nameHash]bool{}
 		}
 		dev.usedBy[g.l][tgt] = true
 		dev.usedBy[g.r][tgt] = true
@@ -90,17 +90,51 @@ func solve() (int, string) {
 
 	swapped := dev.findSwapped()
 	slices.Sort(swapped)
-	return p1, strings.Join(swapped, ",")
+	swappedStr := make([]string, len(swapped))
+	for i := range len(swapped) {
+		swappedStr[i] = swapped[i].String()
+	}
+	return p1, strings.Join(swappedStr, ",")
+}
+
+type nameHash uint32
+
+func (n nameHash) String() string {
+	s := make([]byte, 3)
+	for i := range 3 {
+		s[2-i] = unhashCh(byte(n % 36))
+		n /= 36
+	}
+	return string(s)
+}
+
+func hash(name string) nameHash {
+	return nameHash(hashChar(name[0]))*36*36 +
+		nameHash(hashChar(name[1]))*36 +
+		nameHash(hashChar(name[2]))
+}
+
+func hashChar(ch byte) byte {
+	if ch >= 'a' {
+		return ch - 'a' + 10
+	}
+	return ch - '0'
+}
+func unhashCh(ch byte) byte {
+	if ch < 10 {
+		return ch + '0'
+	}
+	return ch - 10 + 'a'
 }
 
 type device struct {
-	values  map[string]bool
-	gates   map[string]gate
-	swapped []string
-	usedBy  map[string]map[string]bool
+	values  map[nameHash]bool
+	gates   map[nameHash]gate
+	swapped []nameHash
+	usedBy  map[nameHash]map[nameHash]bool
 }
 
-func (d *device) findSwapped() []string {
+func (d *device) findSwapped() []nameHash {
 	maxBit := 0
 	for i := 0; i < 64; i++ {
 		_, found := d.gates[gateID('z', i)]
@@ -109,7 +143,7 @@ func (d *device) findSwapped() []string {
 		}
 		maxBit = i
 	}
-	cOut := ""
+	cOut := nameHash(0)
 	for i := 0; i < maxBit; i++ {
 		cOut = d.checkAdder(i, cOut)
 		if len(d.swapped) == 8 {
@@ -119,7 +153,7 @@ func (d *device) findSwapped() []string {
 	return d.swapped
 }
 
-func (d device) findNode(in1, in2 string, op operation) string {
+func (d device) findNode(in1, in2 nameHash, op operation) nameHash {
 	for tgt := range d.usedBy[in1] {
 		if d.gates[tgt].op != op {
 			continue
@@ -128,10 +162,10 @@ func (d device) findNode(in1, in2 string, op operation) string {
 			return tgt
 		}
 	}
-	return ""
+	return 0
 }
 
-func (d *device) checkAdder(idx int, cIn string) (cOut string) {
+func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 	/*
 		Full adder:
 			sum = (A ^ B) ^ cIn
@@ -147,10 +181,10 @@ func (d *device) checkAdder(idx int, cIn string) (cOut string) {
 	xID := gateID('x', idx)
 	zB := d.gates[zID]
 	if idx == 0 {
-		cOut = d.findNode("x00", "y00", opAND)
+		cOut = d.findNode(hash("x00"), hash("y00"), opAND)
 		return
 	}
-	var xor1, and1, and2 string
+	var xor1, and1, and2 nameHash
 	xor1 = d.findNode(xID, yID, opXOR)
 	and1 = d.findNode(xID, yID, opAND)
 	and2 = d.findNode(xor1, cIn, opAND)
@@ -167,14 +201,14 @@ func (d *device) checkAdder(idx int, cIn string) (cOut string) {
 		case opAND:
 			swappedWith := d.findNode(xor1, cIn, opXOR)
 			d.swapped = append(d.swapped, swappedWith)
-			if and1 == "" || and1 == zID {
+			if and1 == 0 || and1 == zID {
 				and1 = swappedWith
 			} else {
 				and2 = swappedWith
 			}
 			cOut = d.findNode(and1, and2, opOR)
 		}
-	} else if cOut == "" {
+	} else if cOut == 0 {
 		d.swapped = append(d.swapped, xor1, and1)
 		xor1, and1 = and1, xor1
 		and2 = d.findNode(xor1, cIn, opAND)
@@ -183,7 +217,7 @@ func (d *device) checkAdder(idx int, cIn string) (cOut string) {
 	return
 }
 
-func (d *device) eval(id string) (bool, error) {
+func (d *device) eval(id nameHash) (bool, error) {
 	if v, found := d.values[id]; found {
 		return v, nil
 	}
@@ -230,7 +264,7 @@ func (d device) writeDot() {
 		if _, found := d.gates[zID]; !found {
 			break
 		}
-		nodeSet := map[string]bool{zID: true}
+		nodeSet := map[nameHash]bool{zID: true}
 		for n := range d.usedBy[xID] {
 			nodeSet[xID] = true
 			nodeSet[n] = true
@@ -256,16 +290,16 @@ func (d device) writeDot() {
 		}
 		nodes := []string{}
 		for node := range nodeSet {
-			if node != "" {
-				nodes = append(nodes, node)
+			if node != 0 {
+				nodes = append(nodes, node.String())
 			}
 		}
 		dot.WriteString(fmt.Sprintf("\tsubgraph cluster_%02d { %s }\n", i, strings.Join(nodes, "; ")))
 	}
 	for node, g := range d.gates {
-		nodeStyle(node)
-		nodeStyle(g.l)
-		nodeStyle(g.r)
+		nodeStyle(node.String())
+		nodeStyle(g.l.String())
+		nodeStyle(g.r.String())
 		dot.WriteString(fmt.Sprintf("\t\t%s [shape=record,label=\"{%s|%s}\"]\n", node, g.op, node))
 		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.l, node))
 		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.r, node))
@@ -274,12 +308,12 @@ func (d device) writeDot() {
 	os.WriteFile("wiring.dot", dot.Bytes(), 0644)
 }
 
-func gateID(prefix byte, idx int) string {
-	return string([]byte{prefix, byte(idx/10 + '0'), byte(idx%10 + '0')})
+func gateID(prefix byte, idx int) nameHash {
+	return hash(string([]byte{prefix, byte(idx/10 + '0'), byte(idx%10 + '0')}))
 }
 
 type gate struct {
-	l, r string
+	l, r nameHash
 	op   operation
 }
 
