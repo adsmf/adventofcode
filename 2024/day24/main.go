@@ -15,6 +15,7 @@ var input string
 const (
 	writeDotFile = false
 	inputBits    = 45
+	maxLinks     = 2
 )
 
 func main() {
@@ -26,9 +27,8 @@ func main() {
 }
 
 func solve() (int, string) {
-	dev := device{
-		gates: make(map[nameHash]gate, 45*5),
-	}
+	dev := device{}
+	allGates := make([]nameHash, 0, 700)
 
 	for pos := 0; pos < len(input)-3; pos++ {
 		if input[pos] == '\n' {
@@ -65,7 +65,10 @@ func solve() (int, string) {
 		g.r = g2
 		dev.gates[g3] = g
 		pos += 10
+		allGates = append(allGates, g1, g2, g3)
 	}
+	slices.Sort(allGates)
+	allGates = slices.Compact(allGates)
 
 	p1 := 0
 	for i := 0; ; i++ {
@@ -79,16 +82,10 @@ func solve() (int, string) {
 		}
 	}
 
-	dev.usedBy = make(map[nameHash]map[nameHash]bool, 300)
-	for tgt, g := range dev.gates {
-		if dev.usedBy[g.l] == nil {
-			dev.usedBy[g.l] = map[nameHash]bool{}
-		}
-		if dev.usedBy[g.r] == nil {
-			dev.usedBy[g.r] = map[nameHash]bool{}
-		}
-		dev.usedBy[g.l][tgt] = true
-		dev.usedBy[g.r][tgt] = true
+	for _, tgt := range allGates {
+		g := dev.gates[tgt]
+		dev.usedBy[g.l].add(tgt)
+		dev.usedBy[g.r].add(tgt)
 	}
 
 	if writeDotFile {
@@ -123,29 +120,28 @@ func hash(name string) nameHash {
 
 func hashChar(ch byte) byte {
 	if ch >= 'a' {
-		return ch - 'a' + 10
+		return ch - 'a'
 	}
-	return ch - '0'
+	return ch - '0' + 26
 }
 func unhashCh(ch byte) byte {
-	if ch < 10 {
-		return ch + '0'
+	if ch < 26 {
+		return ch + 'a'
 	}
-	return ch - 10 + 'a'
+	return ch + '0' - 26
 }
 
 type device struct {
 	xVal, yVal [inputBits]bool
-	gates      map[nameHash]gate
+	gates      gateSet
 	swapped    []nameHash
-	usedBy     map[nameHash]map[nameHash]bool
+	usedBy     linkSet
 }
 
 func (d *device) findSwapped() []nameHash {
 	maxBit := 0
 	for i := 0; i < inputBits; i++ {
-		_, found := d.gates[gateID('z', i)]
-		if !found {
+		if d.gates[gateID('z', i)].op == opUnknown {
 			break
 		}
 		maxBit = i
@@ -160,12 +156,12 @@ func (d *device) findSwapped() []nameHash {
 	return d.swapped
 }
 
-func (d device) findNode(in1, in2 nameHash, op operation) nameHash {
-	for tgt := range d.usedBy[in1] {
-		if d.gates[tgt].op != op {
-			continue
+func (d *device) findNode(in1, in2 nameHash, op operation) nameHash {
+	for _, tgt := range d.usedBy[in1] {
+		if tgt == 0 {
+			break
 		}
-		if d.usedBy[in2][tgt] {
+		if d.usedBy[in2].has(tgt) && d.gates[tgt].op == op {
 			return tgt
 		}
 	}
@@ -226,15 +222,15 @@ func (d *device) checkAdder(idx int, cIn nameHash) (cOut nameHash) {
 
 func (d *device) eval(id nameHash) (bool, error) {
 	firstCh := id / 36 / 36
-	if firstCh == 'x'-'a'+10 {
-		idx := ((id/36)%36)*10 + (id % 36)
+	if firstCh == 'x'-'a' {
+		idx := ((id/36)%36-26)*10 + (id%36 - 26)
 		return d.xVal[idx], nil
-	} else if firstCh == 'y'-'a'+10 {
-		idx := ((id/36)%36)*10 + (id % 36)
+	} else if firstCh == 'y'-'a' {
+		idx := ((id/36)%36-26)*10 + (id%36 - 26)
 		return d.yVal[idx], nil
 	}
-	g, found := d.gates[id]
-	if !found {
+	g := d.gates[id]
+	if g.op == opUnknown {
 		return false, fmt.Errorf("gate for %s not found", id)
 	}
 	l, err := d.eval(g.l)
@@ -273,31 +269,31 @@ func (d device) writeDot() {
 		xID := gateID('x', i)
 		yID := gateID('y', i)
 		zID := gateID('z', i)
-		if _, found := d.gates[zID]; !found {
+		if d.gates[zID].op == opUnknown {
 			break
 		}
 		nodeSet := map[nameHash]bool{zID: true}
-		for n := range d.usedBy[xID] {
+		for _, n := range d.usedBy[xID] {
 			nodeSet[xID] = true
 			nodeSet[n] = true
 			if i == 0 {
 				continue
 			}
-			for nn := range d.usedBy[n] {
+			for _, nn := range d.usedBy[n] {
 				nodeSet[nn] = true
 			}
 		}
-		for n := range d.usedBy[yID] {
+		for _, n := range d.usedBy[yID] {
 			nodeSet[yID] = true
 			nodeSet[n] = true
 			if i == 0 {
 				continue
 			}
-			for nn := range d.usedBy[n] {
+			for _, nn := range d.usedBy[n] {
 				nodeSet[nn] = true
 			}
 		}
-		if _, found := d.usedBy[yID]; found {
+		if d.usedBy[yID][0] != 0 {
 			nodeSet[yID] = true
 		}
 		nodes := []string{}
@@ -309,12 +305,15 @@ func (d device) writeDot() {
 		dot.WriteString(fmt.Sprintf("\tsubgraph cluster_%02d { %s }\n", i, strings.Join(nodes, "; ")))
 	}
 	for node, g := range d.gates {
-		nodeStyle(node.String())
+		if g.op == opUnknown {
+			continue
+		}
+		nodeStyle(nameHash(node).String())
 		nodeStyle(g.l.String())
 		nodeStyle(g.r.String())
-		dot.WriteString(fmt.Sprintf("\t\t%s [shape=record,label=\"{%s|%s}\"]\n", node, g.op, node))
-		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.l, node))
-		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.r, node))
+		dot.WriteString(fmt.Sprintf("\t\t%s [shape=record,label=\"{%s|%s}\"]\n", nameHash(node), g.op, nameHash(node)))
+		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.l, nameHash(node)))
+		dot.WriteString(fmt.Sprintf("\t\t%s -> %s\n", g.r, nameHash(node)))
 	}
 	dot.WriteString("}\n")
 	os.WriteFile("wiring.dot", dot.Bytes(), 0644)
@@ -322,6 +321,30 @@ func (d device) writeDot() {
 
 func gateID(prefix byte, idx int) nameHash {
 	return hash(string([]byte{prefix, byte(idx/10 + '0'), byte(idx%10 + '0')}))
+}
+
+type gateSet [26 * 36 * 36]gate
+type linkSet [26 * 36 * 36]links
+type links [maxLinks]nameHash
+
+func (l *links) add(tgt nameHash) {
+	for i := range len(l) {
+		if l[i] == 0 {
+			l[i] = tgt
+			return
+		}
+	}
+}
+func (l links) has(tgt nameHash) bool {
+	for i := range len(l) {
+		if l[i] == 0 {
+			return false
+		}
+		if l[i] == tgt {
+			return true
+		}
+	}
+	return false
 }
 
 type gate struct {
