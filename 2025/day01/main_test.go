@@ -52,14 +52,16 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
-// func BenchmarkPart1(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		part1()
-// 	}
-// }
-
-// func BenchmarkPart2(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		part2()
-// 	}
-// }
+func BenchmarkSolvers(b *testing.B) {
+	benchmark = true
+	b.Run("flip", func(b *testing.B) {
+		for b.Loop() {
+			_, _ = solve()
+		}
+	})
+	b.Run("direct", func(b *testing.B) {
+		for b.Loop() {
+			_, _ = solveAlt()
+		}
+	})
+}
