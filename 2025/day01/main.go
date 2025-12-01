@@ -23,18 +23,18 @@ func solve() (int, int) {
 	const dialSize = 100
 	dialVal := 50
 	p1, p2 := 0, 0
-	lastDir := byte('R')
+	lastCW := true
 	utils.EachLine(input, func(index int, line string) (done bool) {
-		dir := line[0]
+		curCW := line[0] == 'R'
 		val, _ := strconv.Atoi(line[1:])
 		rotations := val / dialSize
 		p2 += rotations
 		val -= dialSize * rotations
-		if dir != lastDir {
+		if curCW != lastCW {
 			if dialVal > 0 {
 				dialVal = dialSize - dialVal
 			}
-			lastDir = dir
+			lastCW = curCW
 		}
 		dialVal += val
 		if dialVal >= dialSize {
