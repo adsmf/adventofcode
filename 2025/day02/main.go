@@ -3,7 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"strconv"
+	"math"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -24,23 +24,16 @@ func solve() (int, int) {
 	allIDs := utils.GetInts(input)
 	for i := 0; i < len(allIDs); i += 2 {
 		for id := allIDs[i]; id <= allIDs[i+1]; id++ {
-			idStr := strconv.Itoa(id)
-			for reps := 2; reps <= len(idStr); reps++ {
-				if len(idStr)%reps != 0 {
+			digits := int(math.Log10(float64(id))) + 1
+			for reps := 2; reps <= digits; reps++ {
+				if digits%reps != 0 {
 					continue
 				}
-				chunkSize := len(idStr) / reps
-				search := idStr[:chunkSize]
-				match := true
-				for i := 2; i <= reps; i++ {
-					if idStr[chunkSize*(i-1):chunkSize*i] != search {
-						match = false
-						break
-					}
-				}
-				if !match {
+				chunkDigits := digits / reps
+				if !digitsRepeat(id, reps, chunkDigits) {
 					continue
 				}
+
 				if reps == 2 {
 					p1 += id
 				}
@@ -50,6 +43,21 @@ func solve() (int, int) {
 		}
 	}
 	return p1, p2
+}
+
+func digitsRepeat(value int, reps, chunkDigits int) bool {
+	m := 1
+	for range chunkDigits {
+		m *= 10
+	}
+	search := value % m
+	for i := 2; i <= reps; i++ {
+		value /= m
+		if value%m != search {
+			return false
+		}
+	}
+	return true
 }
 
 var benchmark = false
