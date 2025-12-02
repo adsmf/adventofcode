@@ -13,7 +13,7 @@ func ExampleMain() {
 
 func BenchmarkMain(b *testing.B) {
 	benchmark = true
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		main()
 	}
 }

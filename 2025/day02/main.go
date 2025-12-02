@@ -9,7 +9,7 @@ import (
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -21,9 +21,14 @@ func main() {
 
 func solve() (int, int) {
 	p1, p2 := 0, 0
-	allIDs := utils.GetInts(input)
-	for i := 0; i < len(allIDs); i += 2 {
-		for id := allIDs[i]; id <= allIDs[i+1]; id++ {
+	start := 0
+	utils.EachInteger(input, func(index, value int) (done bool) {
+		if index&1 == 0 {
+			start = value
+			return
+		}
+		end := value
+		for id := start; id <= end; id++ {
 			digits := int(math.Log10(float64(id))) + 1
 			for reps := 2; reps <= digits; reps++ {
 				if digits%reps != 0 {
@@ -41,7 +46,8 @@ func solve() (int, int) {
 				break
 			}
 		}
-	}
+		return
+	})
 	return p1, p2
 }
 

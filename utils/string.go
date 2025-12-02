@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func GetInts(input string) []int {
+func GetInts[I string | []byte](input I) []int {
 	ints := make([]int, 0, len(input)/2)
 
 	EachInteger(input, func(index, value int) (done bool) {
@@ -62,7 +62,7 @@ func EachSectionMB(input string, separator string, callback Callback[string]) {
 	}
 }
 
-func EachInteger(input string, callback Callback[int]) {
+func EachInteger[I string | []byte](input I, callback Callback[int]) {
 	accumulator := 0
 	negative := false
 	started := false
