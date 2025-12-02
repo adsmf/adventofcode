@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/adsmf/adventofcode/utils"
 )
@@ -21,8 +20,8 @@ func main() {
 }
 
 func solve() (int, int) {
-	allIDs := utils.GetInts(input)
 	p1, p2 := 0, 0
+	allIDs := utils.GetInts(input)
 	for i := 0; i < len(allIDs); i += 2 {
 		for id := allIDs[i]; id <= allIDs[i+1]; id++ {
 			idStr := strconv.Itoa(id)
@@ -30,13 +29,23 @@ func solve() (int, int) {
 				if len(idStr)%reps != 0 {
 					continue
 				}
-				if idStr == strings.Repeat(idStr[:len(idStr)/reps], reps) {
-					if reps == 2 {
-						p1 += id
+				chunkSize := len(idStr) / reps
+				search := idStr[:chunkSize]
+				match := true
+				for i := 2; i <= reps; i++ {
+					if idStr[chunkSize*(i-1):chunkSize*i] != search {
+						match = false
+						break
 					}
-					p2 += id
-					break
 				}
+				if !match {
+					continue
+				}
+				if reps == 2 {
+					p1 += id
+				}
+				p2 += id
+				break
 			}
 		}
 	}
