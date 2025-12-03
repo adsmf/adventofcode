@@ -15,4 +15,4 @@ In various years I have had different goals when taking part in AoC:
     * ✅ 18 days with zero heap allocation
     * ❌ 7 days needed heap allocation with a total of 51.1MB of heap memory used
     * ❌ Very ugly code!
-* 2023 - A planned return to better looking code.  Will still try and maintain performance but not at all costs.
+* 2023+ - A planned return to better looking code.  Will still try and maintain performance but not at all costs.
