@@ -20,11 +20,11 @@ func GetLines(input string) []string {
 
 type Callback[T any] func(index int, value T) (done bool)
 
-func EachLine(input string, callback Callback[string]) {
+func EachLine[I string | []byte](input I, callback Callback[I]) {
 	EachSection(input, '\n', callback)
 }
 
-func EachSection(input string, separator byte, callback Callback[string]) {
+func EachSection[I string | []byte](input I, separator byte, callback Callback[I]) {
 	index := 0
 	pos := 0
 	start := 0
