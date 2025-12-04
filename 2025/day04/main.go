@@ -9,87 +9,67 @@ import (
 var input string
 
 func main() {
-	p1 := part1()
-	p2 := part2()
+	p1, p2 := solve()
 	if !benchmark {
 		fmt.Printf("Part 1: %d\n", p1)
 		fmt.Printf("Part 2: %d\n", p2)
 	}
 }
 
-func part1() int {
+func solve() (int, int) {
 	g := loadGrid()
-	counts := map[point]int{}
-	for pos, tile := range g.tiles {
-		if tile != tilePaper {
-			continue
-		}
-		for xOff := -1; xOff <= 1; xOff++ {
-			for yOff := -1; yOff <= 1; yOff++ {
-				adj := point{pos.x + xOff, pos.y + yOff}
-				if adj != pos && g.tiles[adj] == tilePaper {
-					counts[adj]++
-				}
-			}
-		}
-	}
-	accessible := 0
-	for pos, tile := range g.tiles {
-		if tile == tilePaper && counts[pos] < 4 {
-			accessible++
-		}
-
-	}
-	return accessible
-}
-
-func part2() int {
-	g := loadGrid()
+	initial := 0
 	removed := 0
 	done := false
 	for !done {
-		counts := map[point]int{}
+		counts := make([]int, len(g.tiles))
 		done = true
-		for pos, tile := range g.tiles {
-			if tile != tilePaper {
+		for idx, tile := range g.tiles {
+			if !tile {
 				continue
 			}
+			pos := g.fromIndex(idx)
 			for xOff := -1; xOff <= 1; xOff++ {
 				for yOff := -1; yOff <= 1; yOff++ {
-					adj := point{pos.x + xOff, pos.y + yOff}
-					if adj != pos && g.tiles[adj] == tilePaper {
-						counts[adj]++
+					adjPos := point{pos.x + xOff, pos.y + yOff}
+					adjIdx := g.toIndex(adjPos)
+					if !g.inBound(adjPos) {
+						continue
+					}
+					if adjIdx != idx && g.tiles[adjIdx] {
+						counts[adjIdx]++
 					}
 				}
 			}
 		}
 		for pos, tile := range g.tiles {
-			if tile == tilePaper && counts[pos] < 4 {
+			if tile && counts[pos] < 4 {
 				removed++
 				done = false
-				g.tiles[pos] = tileEmpty
+				g.tiles[pos] = false
 			}
 		}
+		if initial == 0 {
+			initial = removed
+		}
 	}
-	return removed
+	return initial, removed
 }
 
 type point struct{ x, y int }
 
-type gridTiles map[point]tileType
-
 func loadGrid() grid {
 	g := grid{
-		tiles: make(gridTiles),
+		tiles: make([]bool, 0, 20000),
 	}
 	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '@':
-			g.tiles[point{x, y}] = tilePaper
+			g.tiles = append(g.tiles, true)
 			x++
 		case '.':
-			g.tiles[point{x, y}] = tileEmpty
+			g.tiles = append(g.tiles, false)
 			x++
 		case '\n':
 			g.w = x
@@ -103,19 +83,11 @@ func loadGrid() grid {
 
 type grid struct {
 	h, w  int
-	tiles gridTiles
+	tiles []bool
 }
 
-func (g grid) inBound(p point) bool {
-	return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h
-}
-
-type tileType int
-
-const (
-	tileOOB tileType = iota
-	tileEmpty
-	tilePaper
-)
+func (g grid) inBound(p point) bool    { return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h }
+func (g grid) toIndex(p point) int     { return p.x + p.y*g.w }
+func (g grid) fromIndex(idx int) point { return point{idx % g.w, idx / g.w} }
 
 var benchmark = false
