@@ -27,7 +27,7 @@ func solve() (int, int) {
 			for yOff := -1; yOff <= 1; yOff++ {
 				adjPos := point{pos.x + xOff, pos.y + yOff}
 				adjIdx := g.toIndex(adjPos)
-				if !g.inBound(adjPos) {
+				if adjIdx < 0 || adjIdx >= len(input) {
 					continue
 				}
 				if adjIdx != idx && input[adjIdx] >= '0' {
@@ -95,7 +95,6 @@ type grid struct {
 	h, w int
 }
 
-func (g grid) inBound(p point) bool    { return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h }
 func (g grid) toIndex(p point) int     { return p.x + p.y*(g.w+1) }
 func (g grid) fromIndex(idx int) point { return point{idx % (g.w + 1), idx / (g.w + 1)} }
 
