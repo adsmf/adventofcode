@@ -38,7 +38,7 @@ func solve() (int, int) {
 	}
 
 	counts := make([]byte, len(g.tiles))
-	next := make([]byte, len(g.tiles))
+	toRemove := make([]int, 0, 1500)
 	for idx, tile := range g.tiles {
 		if !tile {
 			continue
@@ -46,22 +46,25 @@ func solve() (int, int) {
 		addAdjacent(counts, idx, 1)
 	}
 
-	done := false
-	for !done {
-		done = true
-		copy(next, counts)
+	for {
+		toRemove = toRemove[0:0]
 		for idx, tile := range g.tiles {
 			if tile && counts[idx] < 4 {
-				removed++
-				done = false
-				g.tiles[idx] = false
-				addAdjacent(next, idx, -1)
+				toRemove = append(toRemove, idx)
 			}
 		}
+		newRemovals := len(toRemove)
 		if initial == 0 {
-			initial = removed
+			initial = newRemovals
 		}
-		next, counts = counts, next
+		if newRemovals == 0 {
+			break
+		}
+		removed += newRemovals
+		for _, idx := range toRemove {
+			g.tiles[idx] = false
+			addAdjacent(counts, idx, -1)
+		}
 	}
 
 	return initial, removed
