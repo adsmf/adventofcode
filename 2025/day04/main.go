@@ -30,7 +30,7 @@ func solve() (int, int) {
 				if adjIdx < 0 || adjIdx >= len(input) {
 					continue
 				}
-				if adjIdx != idx && input[adjIdx] >= '0' {
+				if adjIdx != idx && input[adjIdx] <= 8 {
 					input[adjIdx] += byte(delta)
 				}
 			}
@@ -39,7 +39,7 @@ func solve() (int, int) {
 
 	toRemove := make([]int, 0, 1500)
 	for idx, tile := range input {
-		if tile < '0' {
+		if tile > 8 {
 			continue
 		}
 		addAdjacent(idx, 1)
@@ -48,7 +48,7 @@ func solve() (int, int) {
 	for {
 		toRemove = toRemove[0:0]
 		for idx, ch := range input {
-			if ch >= '0' && ch-'0' < 4 {
+			if ch < 4 {
 				toRemove = append(toRemove, idx)
 			}
 		}
@@ -61,7 +61,7 @@ func solve() (int, int) {
 		}
 		removed += newRemovals
 		for _, idx := range toRemove {
-			input[idx] = 0
+			input[idx] = 'x'
 			addAdjacent(idx, -1)
 		}
 	}
@@ -77,11 +77,12 @@ func loadGrid() grid {
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '@':
-			input[pos] = '0'
+			input[pos] = 0
 			x++
 		case '.':
 			x++
 		case '\n':
+			input[pos] = '#'
 			g.w = x
 			x = 0
 			y++
