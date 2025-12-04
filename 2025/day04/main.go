@@ -6,7 +6,7 @@ import (
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
 	p1, p2 := solve()
@@ -21,7 +21,7 @@ func solve() (int, int) {
 	initial := 0
 	removed := 0
 
-	addAdjacent := func(counts []byte, idx int, delta int) {
+	addAdjacent := func(idx int, delta int) {
 		pos := g.fromIndex(idx)
 		for xOff := -1; xOff <= 1; xOff++ {
 			for yOff := -1; yOff <= 1; yOff++ {
@@ -30,26 +30,25 @@ func solve() (int, int) {
 				if !g.inBound(adjPos) {
 					continue
 				}
-				if adjIdx != idx && g.tiles[adjIdx] {
-					counts[adjIdx] += byte(delta)
+				if adjIdx != idx && input[adjIdx] >= '0' {
+					input[adjIdx] += byte(delta)
 				}
 			}
 		}
 	}
 
-	counts := make([]byte, len(g.tiles))
 	toRemove := make([]int, 0, 1500)
-	for idx, tile := range g.tiles {
-		if !tile {
+	for idx, tile := range input {
+		if tile < '0' {
 			continue
 		}
-		addAdjacent(counts, idx, 1)
+		addAdjacent(idx, 1)
 	}
 
 	for {
 		toRemove = toRemove[0:0]
-		for idx, tile := range g.tiles {
-			if tile && counts[idx] < 4 {
+		for idx, ch := range input {
+			if ch >= '0' && ch-'0' < 4 {
 				toRemove = append(toRemove, idx)
 			}
 		}
@@ -62,8 +61,8 @@ func solve() (int, int) {
 		}
 		removed += newRemovals
 		for _, idx := range toRemove {
-			g.tiles[idx] = false
-			addAdjacent(counts, idx, -1)
+			input[idx] = 0
+			addAdjacent(idx, -1)
 		}
 	}
 
@@ -73,17 +72,14 @@ func solve() (int, int) {
 type point struct{ x, y int }
 
 func loadGrid() grid {
-	g := grid{
-		tiles: make([]bool, 0, 20000),
-	}
+	g := grid{}
 	x, y := 0, 0
 	for pos := 0; pos < len(input); pos++ {
 		switch input[pos] {
 		case '@':
-			g.tiles = append(g.tiles, true)
+			input[pos] = '0'
 			x++
 		case '.':
-			g.tiles = append(g.tiles, false)
 			x++
 		case '\n':
 			g.w = x
@@ -96,12 +92,11 @@ func loadGrid() grid {
 }
 
 type grid struct {
-	h, w  int
-	tiles []bool
+	h, w int
 }
 
 func (g grid) inBound(p point) bool    { return p.x >= 0 && p.x < g.w && p.y >= 0 && p.y < g.h }
-func (g grid) toIndex(p point) int     { return p.x + p.y*g.w }
-func (g grid) fromIndex(idx int) point { return point{idx % g.w, idx / g.w} }
+func (g grid) toIndex(p point) int     { return p.x + p.y*(g.w+1) }
+func (g grid) fromIndex(idx int) point { return point{idx % (g.w + 1), idx / (g.w + 1)} }
 
 var benchmark = false
