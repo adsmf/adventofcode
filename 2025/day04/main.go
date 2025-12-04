@@ -20,39 +20,50 @@ func solve() (int, int) {
 	g := loadGrid()
 	initial := 0
 	removed := 0
-	done := false
-	for !done {
-		counts := make([]int, len(g.tiles))
-		done = true
-		for idx, tile := range g.tiles {
-			if !tile {
-				continue
-			}
-			pos := g.fromIndex(idx)
-			for xOff := -1; xOff <= 1; xOff++ {
-				for yOff := -1; yOff <= 1; yOff++ {
-					adjPos := point{pos.x + xOff, pos.y + yOff}
-					adjIdx := g.toIndex(adjPos)
-					if !g.inBound(adjPos) {
-						continue
-					}
-					if adjIdx != idx && g.tiles[adjIdx] {
-						counts[adjIdx]++
-					}
+
+	addAdjacent := func(counts []byte, idx int, delta int) {
+		pos := g.fromIndex(idx)
+		for xOff := -1; xOff <= 1; xOff++ {
+			for yOff := -1; yOff <= 1; yOff++ {
+				adjPos := point{pos.x + xOff, pos.y + yOff}
+				adjIdx := g.toIndex(adjPos)
+				if !g.inBound(adjPos) {
+					continue
+				}
+				if adjIdx != idx && g.tiles[adjIdx] {
+					counts[adjIdx] += byte(delta)
 				}
 			}
 		}
-		for pos, tile := range g.tiles {
-			if tile && counts[pos] < 4 {
+	}
+
+	counts := make([]byte, len(g.tiles))
+	next := make([]byte, len(g.tiles))
+	for idx, tile := range g.tiles {
+		if !tile {
+			continue
+		}
+		addAdjacent(counts, idx, 1)
+	}
+
+	done := false
+	for !done {
+		done = true
+		copy(next, counts)
+		for idx, tile := range g.tiles {
+			if tile && counts[idx] < 4 {
 				removed++
 				done = false
-				g.tiles[pos] = false
+				g.tiles[idx] = false
+				addAdjacent(next, idx, -1)
 			}
 		}
 		if initial == 0 {
 			initial = removed
 		}
+		next, counts = counts, next
 	}
+
 	return initial, removed
 }
 
