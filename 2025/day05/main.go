@@ -40,15 +40,6 @@ func solve() (int, int) {
 		freshRanges = append(freshRanges, [2]int{start, value})
 		return
 	})
-	utils.EachInteger(input[sectionStart+2:], func(index, value int) (done bool) {
-		for _, freshRange := range freshRanges {
-			if value >= freshRange[0] && value <= freshRange[1] {
-				freshCount++
-				return
-			}
-		}
-		return
-	})
 	slices.SortFunc(freshRanges, func(a, b [2]int) int {
 		return a[0] - b[0]
 	})
@@ -62,6 +53,15 @@ func solve() (int, int) {
 		n++
 	}
 	freshRanges = freshRanges[:n]
+	utils.EachInteger(input[sectionStart+2:], func(index, value int) (done bool) {
+		for _, freshRange := range freshRanges {
+			if value >= freshRange[0] && value <= freshRange[1] {
+				freshCount++
+				return
+			}
+		}
+		return
+	})
 	totalFresh := 0
 	for i := range len(freshRanges) {
 		totalFresh += freshRanges[i][1] - freshRanges[i][0] + 1
