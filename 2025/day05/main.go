@@ -20,25 +20,33 @@ func main() {
 }
 
 func solve() (int, int) {
-	freshRanges := [][2]int{}
+	freshRanges := make([][2]int, 0, 200)
 	freshCount := 0
-	utils.EachSectionMB(input, "\n\n", func(secIdx int, section string) (done bool) {
-		if secIdx == 0 {
-			freshInts := utils.GetInts(section)
-			for i := 0; i < len(freshInts); i += 2 {
-				freshRanges = append(freshRanges, [2]int{freshInts[i], freshInts[i+1]})
-			}
+	sectionStart := 0
+	for i := range len(input) - 1 {
+		for ; input[i] != '\n'; i++ {
+		}
+		if input[i+1] == '\n' {
+			sectionStart = i
+			break
+		}
+	}
+	start := 0
+	utils.EachInteger(input[:sectionStart], func(index, value int) (done bool) {
+		if index&1 == 0 {
+			start = value
 			return
 		}
-		utils.EachInteger(section, func(index, value int) (done bool) {
-			for _, freshRange := range freshRanges {
-				if value >= freshRange[0] && value <= freshRange[1] {
-					freshCount++
-					return
-				}
+		freshRanges = append(freshRanges, [2]int{start, value})
+		return
+	})
+	utils.EachInteger(input[sectionStart+2:], func(index, value int) (done bool) {
+		for _, freshRange := range freshRanges {
+			if value >= freshRange[0] && value <= freshRange[1] {
+				freshCount++
+				return
 			}
-			return
-		})
+		}
 		return
 	})
 	slices.SortFunc(freshRanges, func(a, b [2]int) int {
