@@ -21,7 +21,6 @@ func main() {
 
 func solve() (int, int) {
 	freshRanges := make([][2]int, 0, 200)
-	freshCount := 0
 	sectionStart := 0
 	for i := range len(input) - 1 {
 		for ; input[i] != '\n'; i++ {
@@ -31,6 +30,7 @@ func solve() (int, int) {
 			break
 		}
 	}
+
 	start := 0
 	utils.EachInteger(input[:sectionStart], func(index, value int) (done bool) {
 		if index&1 == 0 {
@@ -40,6 +40,7 @@ func solve() (int, int) {
 		freshRanges = append(freshRanges, [2]int{start, value})
 		return
 	})
+
 	slices.SortFunc(freshRanges, func(a, b [2]int) int {
 		return a[0] - b[0]
 	})
@@ -53,6 +54,8 @@ func solve() (int, int) {
 		n++
 	}
 	freshRanges = freshRanges[:n]
+
+	freshCount := 0
 	utils.EachInteger(input[sectionStart+2:], func(index, value int) (done bool) {
 		for _, freshRange := range freshRanges {
 			if value >= freshRange[0] && value <= freshRange[1] {
@@ -62,6 +65,7 @@ func solve() (int, int) {
 		}
 		return
 	})
+
 	totalFresh := 0
 	for i := range len(freshRanges) {
 		totalFresh += freshRanges[i][1] - freshRanges[i][0] + 1
