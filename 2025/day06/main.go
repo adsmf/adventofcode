@@ -39,15 +39,7 @@ func part1(width, lines int) int {
 				break
 			}
 		}
-		if colEnd == -1 {
-			break
-		}
-		switch op {
-		case '+':
-			probTotal = 0
-		case '*':
-			probTotal = 1
-		}
+		probTotal = 1 - int(op&0x1) // == 1 for '*' or 0 for '+'
 		for lineIdx := range lines - 1 {
 			acc := 0
 			for col := colStart; col <= colEnd; col++ {
@@ -55,8 +47,7 @@ func part1(width, lines int) int {
 				if v == ' ' {
 					continue
 				}
-				acc *= 10
-				acc += int(v) - '0'
+				acc = acc*10 + int(v&0xf)
 			}
 			switch op {
 			case '+':
@@ -82,23 +73,17 @@ func part2(width, lines int) int {
 			if v == ' ' {
 				continue
 			}
-			acc *= 10
-			acc += int(v - '0')
+			acc = acc*10 + int(v&0xf)
 		}
 		if acc == 0 {
 			total += probTotal
-			probTotal = 0
 			continue
 		}
 		newOp := input[(lines-1)*(width+1)+col]
 		if newOp != ' ' {
-			switch newOp {
-			case '*':
-				probTotal = 1
-			case '+':
-				probTotal = 0
-			}
+			probTotal = acc
 			operation = newOp
+			continue
 		}
 
 		switch operation {
