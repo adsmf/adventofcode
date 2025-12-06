@@ -3,57 +3,12 @@ package main
 import (
 	_ "embed"
 	"fmt"
-
-	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input string
+var input []byte
 
 func main() {
-	p1 := part1()
-	p2 := part2()
-	if !benchmark {
-		fmt.Printf("Part 1: %d\n", p1)
-		fmt.Printf("Part 2: %d\n", p2)
-	}
-}
-
-func part1() int {
-	lineInts := [][]int{}
-	total := 0
-	utils.EachLine(input, func(index int, line string) (done bool) {
-		if line[0] >= '0' && line[0] <= '9' || line[0] == ' ' {
-			lineInts = append(lineInts, utils.GetInts(line))
-			return
-		}
-		idx := 0
-		for _, ch := range line {
-			switch ch {
-			case ' ':
-				continue
-			case '*':
-				mul := 1
-				for i := range len(lineInts) {
-					mul *= lineInts[i][idx]
-				}
-				total += mul
-			case '+':
-				sum := 0
-				for i := range len(lineInts) {
-					sum += lineInts[i][idx]
-				}
-				total += sum
-			}
-			idx++
-
-		}
-		return
-	})
-	return total
-}
-
-func part2() int {
 	width := 0
 	for i, ch := range input {
 		if ch == '\n' {
@@ -62,6 +17,61 @@ func part2() int {
 		}
 	}
 	lines := len(input) / width
+	p1 := part1(width, lines)
+	p2 := part2(width, lines)
+	if !benchmark {
+		fmt.Printf("Part 1: %d\n", p1)
+		fmt.Printf("Part 2: %d\n", p2)
+	}
+}
+
+func part1(width, lines int) int {
+	total := 0
+	probTotal := 0
+	colStart := 0
+	for colStart < width {
+		op := input[(lines-1)*(width+1)+colStart]
+		colEnd := -1
+		for col := colStart + 1; col <= width; col++ {
+			nextOp := input[(lines-1)*(width+1)+col]
+			if nextOp != ' ' || nextOp == '\n' {
+				colEnd = col - 1
+				break
+			}
+		}
+		if colEnd == -1 {
+			break
+		}
+		switch op {
+		case '+':
+			probTotal = 0
+		case '*':
+			probTotal = 1
+		}
+		for lineIdx := range lines - 1 {
+			acc := 0
+			for col := colStart; col <= colEnd; col++ {
+				v := input[lineIdx*(width+1)+col]
+				if v == ' ' {
+					continue
+				}
+				acc *= 10
+				acc += int(v) - '0'
+			}
+			switch op {
+			case '+':
+				probTotal += acc
+			case '*':
+				probTotal *= acc
+			}
+		}
+		total += probTotal
+		colStart = colEnd + 1
+	}
+	return total
+}
+
+func part2(width, lines int) int {
 	operation := byte('?')
 	total := 0
 	probTotal := 0

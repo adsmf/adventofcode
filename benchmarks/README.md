@@ -10,7 +10,7 @@ Day 2 | 390µs | 176µs | 47.8µs | 76.4ms | 272ms | 3.06ms | 1.22µs | 4.18µs 
 Day 3 | 1.53ms | 507µs | 2ns | 45.7ms | 68.8ms | 83.5µs | 48.2µs | 65.7µs | 2.78ms | 25.9µs | 208µs
 Day 4 | 2.24s | 23ms | 1.3ms | 745µs | 35.7ms | 927µs | 692µs | 23.4µs | 62.8µs | 396µs | 1.4ms
 Day 5 | 2.1ms | 15.8s | 70.5ms | 112ms | 189µs | 28µs | 704µs | 15.7µs | 35.2µs | 35.7µs | 87.3µs
-Day 6 | 5.73s | 183µs | 11.4ms | 37.5ms | 1.2ms | 1.34ms | 656ns | 14.5µs | 3.44ms | **🔴 77ms** | 83.1µs
+Day 6 | 5.73s | 183µs | 11.4ms | 37.5ms | 1.2ms | 1.34ms | 656ns | 14.5µs | 3.44ms | **🔴 77ms** | 62.2µs
 Day 7 | 22.9ms | 5.81ms | 2.4ms | 3.2ms | 45.2ms | 1.25ms | 57.1µs | 13.2µs | 312µs | 14.2ms | -
 Day 8 | 182µs | 131µs | 2.42ms | 681µs | 93.2µs | 1.81ms | 535µs | 458µs | 1.68ms | 14.1µs | -
 Day 9 | 19.6ms | 5.1ms | 82.8µs | 650ms | 69.4ms | 819µs | 244µs | 446µs | 114µs | 1.29ms | -
@@ -41,7 +41,7 @@ Day 2 | 372 KB | 12.5 KB | 17.6 KB | 18.9 MB | 255 MB | 545 KB | None | None | N
 Day 3 | 513 KB | 659 KB | None | 57.3 MB | 102 MB | 55.0 KB | 24.6 KB | None | 2.8 MB | None | None
 Day 4 | 454 MB | 10.9 MB | 504 KB | 360 KB | 22.9 MB | 488 KB | 391 KB | None | None | None | None
 Day 5 | 1.5 MB | 3.8 GB | 66.7 KB | 129 MB | 230 KB | 9.8 KB | 45.9 KB | None | 40.2 KB | None | None
-Day 6 | 218 MB | 31.1 KB | 1.7 MB | 14.3 KB | 1.6 MB | 535 KB | None | None | 112 B | None | **🔴 65.7 KB**
+Day 6 | 218 MB | 31.1 KB | 1.7 MB | 14.3 KB | 1.6 MB | 535 KB | None | None | 112 B | None | None
 Day 7 | 9.9 MB | 3.3 MB | 922 KB | 170 KB | 61.9 MB | 710 KB | 61.5 KB | None | 101 KB | None | -
 Day 8 | 64.4 KB | 163 KB | 238 KB | 1.2 MB | 104 KB | 798 KB | 116 KB | None | 13.0 KB | None | -
 Day 9 | 10.6 MB | 163 KB | 22.1 KB | 383 MB | 46.4 MB | 218 KB | 273 KB | None | 326 KB | None | -
@@ -61,4 +61,4 @@ Day 22 | 483 MB | 5.3 GB | 6.2 MB | 329 MB | - | 110 MB | 868 KB | 2.0 B | 434 K
 Day 23 | 13.5 KB | 3.9 MB | 2.0 MB | 9.1 MB | 801 MB | 8.0 MB | 16.1 MB | None | 9.4 MB | **🔴 133 MB** | -
 Day 24 | 19.4 MB | 35.9 MB | **🔴 1.0 GB** | 188 MB | 183 MB | 58.4 MB | 105 KB | 1.0 B | 128 KB | 680 KB | -
 Day 25 | None | 290 MB | 430 KB | 1.4 MB | 101 MB | 166 KB | 21.4 MB | None | - | None | -
-*Total* | *8.0 GB* | *35.8 GB* | *1.4 GB* | *2.9 GB* | *22.6 GB* | *1.6 GB* | *224 MB* | *51.1 MB* | *253 MB* | *133 MB* | *65.7 KB*
+*Total* | *8.0 GB* | *35.8 GB* | *1.4 GB* | *2.9 GB* | *22.6 GB* | *1.6 GB* | *224 MB* | *51.1 MB* | *253 MB* | *133 MB* | *None*
