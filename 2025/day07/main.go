@@ -18,36 +18,36 @@ func main() {
 
 func solve() (int, int) {
 	width := 0
+	startCol := 0
 	for i, ch := range input {
 		if ch == '\n' {
 			width = i
 			break
 		}
+		if ch == 'S' {
+			startCol = i
+		}
 	}
+	lines := len(input) / width
 	beams, next := make([]int, 150), make([]int, 150)
 	beams, next = beams[:width], next[:width]
+	beams[startCol] = 1
 	splits := 0
-	x := 0
-	for _, ch := range input {
-		switch ch {
-		case '\n':
-			x = 0
-			clear(beams)
-			next, beams = beams, next
-		case '^':
-			next[x-1] += beams[x]
-			next[x+1] += beams[x]
-			if beams[x] > 0 {
-				splits++
+	for row := 2; row < lines-1; row += 2 {
+		for x := 0; x < width; x++ {
+			switch input[row*(width+1)+x] {
+			case '^':
+				if beams[x] > 0 {
+					next[x-1] += beams[x]
+					next[x+1] += beams[x]
+					splits++
+				}
+			case '.':
+				next[x] += beams[x]
 			}
-			x++
-		case '.':
-			next[x] += beams[x]
-			x++
-		case 'S':
-			next[x] = 1
-			x++
 		}
+		clear(beams)
+		next, beams = beams, next
 	}
 	count := 0
 	for _, beam := range beams {
