@@ -24,7 +24,8 @@ func solve() (int, int) {
 			break
 		}
 	}
-	beams, next := make([]int, width), make([]int, width)
+	beams, next := make([]int, 150), make([]int, 150)
+	beams, next = beams[:width], next[:width]
 	splits := 0
 	x := 0
 	for _, ch := range input {
