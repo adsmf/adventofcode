@@ -48,14 +48,14 @@ func solve() (int, int) {
 }
 
 func makeConnections(allPoints []point, maxDist int) (int, int) {
-	sortedDists := make([]distInfo, 0, 500000)
+	sortedDists := make([]distInfo, 0, 15_000)
 	for idx1 := 0; idx1 < len(allPoints)-1; idx1++ {
 		pos1 := allPoints[idx1]
 		for idx2 := idx1 + 1; idx2 < len(allPoints); idx2++ {
 			pos2 := allPoints[idx2]
 			dist := pos1.sub(pos2).distance()
 			if dist <= distType(maxDist) {
-				sortedDists = append(sortedDists, distInfo{idx1, idx2, dist})
+				sortedDists = append(sortedDists, distInfo{indexType(idx1), indexType(idx2), dist})
 			}
 		}
 	}
@@ -99,13 +99,13 @@ func makeConnections(allPoints []point, maxDist int) (int, int) {
 }
 
 type distInfo struct {
-	idx1, idx2 int
+	idx1, idx2 indexType
 	distance   distType
 }
 
 type pointSets []pointSet
 
-func (p pointSets) indexOf(check int) int {
+func (p pointSets) indexOf(check indexType) int {
 	for idx, group := range p {
 		if group.has(check) {
 			return idx
@@ -116,7 +116,7 @@ func (p pointSets) indexOf(check int) int {
 
 type pointSet [16]uint64
 
-func (p pointSet) with(index int) pointSet {
+func (p pointSet) with(index indexType) pointSet {
 	high := index >> 6
 	low := index & 0x3f
 	p[high] |= 1 << low
@@ -128,7 +128,7 @@ func (p pointSet) merge(o pointSet) pointSet {
 	}
 	return p
 }
-func (p pointSet) has(index int) bool {
+func (p pointSet) has(index indexType) bool {
 	high := index >> 6
 	low := index & 0x3f
 	return (p[high]>>low)&1 == 1
@@ -150,5 +150,6 @@ func (p point) distance() distType {
 }
 
 type distType uint64
+type indexType uint16
 
 var benchmark = false
