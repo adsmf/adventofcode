@@ -57,15 +57,15 @@ func solve() (int, int) {
 		}
 	}
 	slices.SortFunc(sortedDists, func(a, b distInfo) int {
-		return int(a.distance*1000 - b.distance*1000)
+		return int(a.distance - b.distance)
 	})
 	part1 := 0
 	part2 := 0
 	groups := make(pointSets, 0, 350)
 	for i := 0; i < len(sortedDists); i++ {
 		pair := sortedDists[i]
-		g1 := groups.group(pair.idx1)
-		g2 := groups.group(pair.idx2)
+		g1 := groups.indexOf(pair.idx1)
+		g2 := groups.indexOf(pair.idx2)
 		if g1 == -1 && g2 == -1 {
 			newGroup := pointSet{}
 			newGroup = newGroup.with(pair.idx1)
@@ -97,7 +97,7 @@ func solve() (int, int) {
 
 type pointSets []pointSet
 
-func (p pointSets) group(check int) int {
+func (p pointSets) indexOf(check int) int {
 	for idx, group := range p {
 		if group.has(check) {
 			return idx
