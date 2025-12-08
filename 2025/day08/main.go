@@ -10,11 +10,6 @@ import (
 	"github.com/adsmf/adventofcode/utils"
 )
 
-// //go:embed example1.txt
-// var input string
-
-// const closestN = 10
-
 //go:embed input.txt
 var input string
 
