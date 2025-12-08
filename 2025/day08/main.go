@@ -38,24 +38,32 @@ func solve() (int, int) {
 		}
 		return
 	})
-	type distInfo struct {
-		idx1, idx2 int
-		distance   distType
+	arbitraryDistance := int(allPoints[0].sub(allPoints[1]).distance())
+	for maxDist := arbitraryDistance; ; maxDist <<= 1 {
+		p1, p2 := makeConnections(allPoints, maxDist)
+		if p1 != -1 && p2 != -1 {
+			return p1, p2
+		}
 	}
+}
+
+func makeConnections(allPoints []point, maxDist int) (int, int) {
 	sortedDists := make([]distInfo, 0, 500000)
 	for idx1 := 0; idx1 < len(allPoints)-1; idx1++ {
 		pos1 := allPoints[idx1]
 		for idx2 := idx1 + 1; idx2 < len(allPoints); idx2++ {
 			pos2 := allPoints[idx2]
 			dist := pos1.sub(pos2).distance()
-			sortedDists = append(sortedDists, distInfo{idx1, idx2, dist})
+			if dist <= distType(maxDist) {
+				sortedDists = append(sortedDists, distInfo{idx1, idx2, dist})
+			}
 		}
 	}
 	slices.SortFunc(sortedDists, func(a, b distInfo) int {
 		return int(a.distance - b.distance)
 	})
-	part1 := 0
-	part2 := 0
+	part1 := -1
+	part2 := -1
 	groups := make(pointSets, 0, 350)
 	for i := 0; i < len(sortedDists); i++ {
 		pair := sortedDists[i]
@@ -88,6 +96,11 @@ func solve() (int, int) {
 		}
 	}
 	return part1, part2
+}
+
+type distInfo struct {
+	idx1, idx2 int
+	distance   distType
 }
 
 type pointSets []pointSet
