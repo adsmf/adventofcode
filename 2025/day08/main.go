@@ -105,7 +105,7 @@ type pointSet [16]uint64
 
 func (p pointSet) with(index int) pointSet {
 	high := index >> 6
-	low := index % 64
+	low := index & 0x3f
 	p[high] |= 1 << low
 	return p
 }
@@ -117,7 +117,7 @@ func (p pointSet) merge(o pointSet) pointSet {
 }
 func (p pointSet) has(index int) bool {
 	high := index >> 6
-	low := index % 64
+	low := index & 0x3f
 	return (p[high]>>low)&1 == 1
 }
 
@@ -136,6 +136,6 @@ func (p point) distance() distType {
 	return distType(math.Sqrt(float64(p.x*p.x) + float64(p.y*p.y) + float64(p.z*p.z)))
 }
 
-type distType int64
+type distType uint64
 
 var benchmark = false
