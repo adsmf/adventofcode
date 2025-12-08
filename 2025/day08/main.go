@@ -23,42 +23,33 @@ func main() {
 }
 
 func solve() (int, int) {
-	allPoints := []point{}
-	utils.EachLine[string](input, func(index int, line string) (done bool) {
-		vals := utils.GetInts(line)
-		pos := point{vals[0], vals[1], vals[2]}
-		allPoints = append(allPoints, pos)
+	allPoints := make([]point, 0, 1000)
+	curPoint := point{}
+	utils.EachInteger(input, func(index, value int) (done bool) {
+		switch index % 3 {
+		case 0:
+			curPoint.x = value
+		case 1:
+			curPoint.y = value
+		case 2:
+			curPoint.z = value
+			allPoints = append(allPoints, curPoint)
+		}
 		return
 	})
 	type distInfo struct {
 		p1, p2   point
 		distance float64
 	}
-	distances := map[int]map[int]float64{}
 	sortedDists := []distInfo{}
-	for idx1, pos1 := range allPoints {
-		for idx2, pos2 := range allPoints {
-			if idx1 == idx2 {
-				continue
-			}
-			h1, h2 := pos1.hash(), pos2.hash()
-			upper, lower := pos1, pos2
-			if h1 > h2 {
-				h1, h2 = h2, h1
-				upper, lower = lower, upper
-			}
-			if distances[h1] == nil {
-				distances[h1] = map[int]float64{}
-			}
-			if _, found := distances[h1][h2]; found {
-				continue
-			}
-			dist := upper.sub(lower).distance()
-			distances[h1][h2] = dist
-			sortedDists = append(sortedDists, distInfo{upper, lower, dist})
+	for idx1 := 0; idx1 < len(allPoints)-1; idx1++ {
+		pos1 := allPoints[idx1]
+		for idx2 := idx1 + 1; idx2 < len(allPoints); idx2++ {
+			pos2 := allPoints[idx2]
+			dist := pos1.sub(pos2).distance()
+			sortedDists = append(sortedDists, distInfo{pos1, pos2, dist})
 		}
 	}
-
 	slices.SortFunc(sortedDists, func(a, b distInfo) int {
 		return int(a.distance*1000 - b.distance*1000)
 	})
@@ -120,13 +111,7 @@ func (p pointSet) has(check point) bool {
 	return found
 }
 
-type point struct {
-	x, y, z int
-}
-
-func (p point) hash() int {
-	return p.x * p.y * p.z
-}
+type point struct{ x, y, z int }
 
 func (p point) sub(q point) point { return point{p.x - q.x, p.y - q.y, p.z - q.z} }
 func (p point) distance() float64 {
