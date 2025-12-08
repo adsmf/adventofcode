@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
+	"math/bits"
 	"slices"
 
 	"github.com/adsmf/adventofcode/utils"
@@ -44,7 +45,7 @@ func solve() (int, int) {
 	})
 	type distInfo struct {
 		idx1, idx2 int
-		distance   float64
+		distance   distType
 	}
 	sortedDists := make([]distInfo, 0, 500000)
 	for idx1 := 0; idx1 < len(allPoints)-1; idx1++ {
@@ -67,21 +68,17 @@ func solve() (int, int) {
 		g2 := groups.group(pair.idx2)
 		if g1 == -1 && g2 == -1 {
 			newGroup := pointSet{}
-			newGroup[pair.idx1] = true
-			newGroup[pair.idx2] = true
+			newGroup = newGroup.with(pair.idx1)
+			newGroup = newGroup.with(pair.idx2)
 			groups = append(groups, newGroup)
 		} else if g1 == g2 {
 			// Skip
 		} else if g2 == -1 {
-			groups[g1][pair.idx2] = true
+			groups[g1] = groups[g1].with(pair.idx2)
 		} else if g1 == -1 {
-			groups[g2][pair.idx1] = true
+			groups[g2] = groups[g2].with(pair.idx1)
 		} else {
-			for pos, val := range groups[g2] {
-				if val {
-					groups[g1][pos] = true
-				}
-			}
+			groups[g1] = groups[g1].merge(groups[g2])
 			copy(groups[g2:], groups[g2+1:])
 			groups = groups[:len(groups)-1]
 			if len(groups) == 1 {
@@ -109,18 +106,30 @@ func (p pointSets) group(check int) int {
 	return -1
 }
 
-type pointSet [1000]bool
+type pointSet [16]uint64
 
-func (p pointSet) has(check int) bool {
-	return p[check]
+func (p pointSet) with(index int) pointSet {
+	high := index >> 6
+	low := index % 64
+	p[high] |= 1 << low
+	return p
+}
+func (p pointSet) merge(o pointSet) pointSet {
+	for h := range p {
+		p[h] |= o[h]
+	}
+	return p
+}
+func (p pointSet) has(index int) bool {
+	high := index >> 6
+	low := index % 64
+	return (p[high]>>low)&1 == 1
 }
 
 func (p pointSet) count() int {
 	c := 0
 	for _, v := range p {
-		if v {
-			c++
-		}
+		c += bits.OnesCount64(v)
 	}
 	return c
 }
@@ -128,8 +137,10 @@ func (p pointSet) count() int {
 type point struct{ x, y, z int }
 
 func (p point) sub(q point) point { return point{p.x - q.x, p.y - q.y, p.z - q.z} }
-func (p point) distance() float64 {
-	return math.Sqrt(float64(p.x*p.x) + float64(p.y*p.y) + float64(p.z*p.z))
+func (p point) distance() distType {
+	return distType(math.Sqrt(float64(p.x*p.x) + float64(p.y*p.y) + float64(p.z*p.z)))
 }
+
+type distType int64
 
 var benchmark = false
