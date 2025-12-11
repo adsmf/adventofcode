@@ -3,12 +3,13 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"slices"
 
 	"github.com/adsmf/adventofcode/utils"
 )
 
 //go:embed input.txt
-var input []byte
+var input string
 
 func main() {
 	p1, p2 := solve()
@@ -19,51 +20,76 @@ func main() {
 }
 
 func solve() (int, int) {
-	cache := map[search]int{}
-	mappings := map[string][]string{}
-	utils.EachLine(input, func(index int, line []byte) (done bool) {
+	mappings := map[idType][]idType{}
+	nextID := idType(0)
+	ids := make(map[string]idType, 1000)
+	getID := func(node string) idType {
+		if id, found := ids[node]; found {
+			return id
+		}
+		id := nextID
+		nextID++
+		ids[node] = id
+		return id
+	}
+	outNodes := make([]idType, 0, 30)
+	utils.EachLine(input, func(index int, line string) (done bool) {
 		in := line[0:3]
-		outFwd := make([]string, 0, (len(line)/4)-1)
+		outNodes = outNodes[0:0]
 		for i := 5; i < len(line); i += 4 {
 			out := line[i : i+3]
-			outFwd = append(outFwd, string(out))
+			outNodes = append(outNodes, getID(out))
 		}
-		mappings[string(in)] = outFwd
+		mappings[getID(in)] = slices.Clone(outNodes)
 		return
 	})
-	p1 := countWays(cache, mappings, "you", false, false)
-	p2 := countWays(cache, mappings, "svr", true, true)
+	connections := make([][]idType, 750)
+	connections = connections[:nextID]
+	for from, to := range mappings {
+		connections[from] = to
+	}
+	keyIDs := keyIDinfo{
+		out: ids["out"],
+		dac: ids["dac"],
+		fft: ids["fft"],
+	}
+	p1 := countWays(make(map[search]int, 150), connections, keyIDs, ids["you"], false, false)
+	p2 := countWays(make(map[search]int, 1500), connections, keyIDs, ids["svr"], true, true)
 	return p1, p2
 }
 
-func countWays(cache map[search]int, mappings map[string][]string, node string, needDAC, needFFT bool) int {
+func countWays(cache map[search]int, mappings [][]idType, ids keyIDinfo, node idType, needDAC, needFFT bool) int {
 	if cached, found := cache[search{node, needDAC, needFFT}]; found {
 		return cached
 	}
-	if node == "out" {
+	if node == ids.out {
 		if needDAC || needFFT {
 			return 0
 		}
 		return 1
 	}
-	if node == "dac" {
-		needDAC = false
-	}
-	if node == "fft" {
-		needFFT = false
-	}
+	needDAC = needDAC && node != ids.dac
+	needFFT = needFFT && node != ids.fft
 	sub := 0
 	for _, next := range mappings[node] {
-		sub += countWays(cache, mappings, next, needDAC, needFFT)
+		sub += countWays(cache, mappings, ids, next, needDAC, needFFT)
 	}
 	cache[search{node, needDAC, needFFT}] = sub
 	return sub
 }
 
+type keyIDinfo struct {
+	out idType
+	dac idType
+	fft idType
+}
+
 type search struct {
-	node    string
+	node    idType
 	needDAC bool
 	needFFT bool
 }
+
+type idType uint16
 
 var benchmark = false
