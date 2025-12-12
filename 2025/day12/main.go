@@ -18,47 +18,38 @@ func main() {
 }
 
 func part1() int {
-	shapeSizes := []int{}
 	packable := 0
-	utils.EachSectionMB(input, "\n\n", func(secIdx int, section string) (done bool) {
-		if section[1] == ':' {
-			numSpaces := 0
-			for x := range 3 {
-				for y := range 3 {
-					if section[3+y*4+x] == '#' {
-						numSpaces++
-					}
-				}
-			}
-			shapeSizes = append(shapeSizes, numSpaces)
+	regions := input[regionsStart():]
+
+	utils.EachLine(regions, func(lineIdx int, line string) (done bool) {
+		vals := utils.GetInts(line)
+		width, height := vals[0], vals[1]
+		vals = vals[2:]
+		areaAvail := width * height
+		maxSpace := 0
+		for _, count := range vals {
+			maxSpace += 9 * count
+		}
+		if maxSpace > areaAvail {
 			return
 		}
-		utils.EachLine(section, func(lineIdx int, line string) (done bool) {
-			vals := utils.GetInts(line)
-			width, height := vals[0], vals[1]
-			vals = vals[2:]
-			areaAvail := width * height
-			maxSpace := 0
-			areqReq := 0
-			for shapeIdx, count := range vals {
-				areqReq += shapeSizes[shapeIdx] * count
-				maxSpace += 9 * count
-			}
-			if areqReq > areaAvail {
-				return
-			}
-			if (maxSpace <= areaAvail) != (areqReq <= areaAvail) {
-				fmt.Println(areaAvail, maxSpace, maxSpace <= areaAvail, areqReq, areqReq <= areaAvail)
-				panic("Maybe we can't just count slots")
-			}
-			packable++
-			return
-		})
+		packable++
 		return
 	})
 	return packable
 }
 
-type point struct{ x, y int }
+func regionsStart() int {
+	lastNewline := 0
+	for idx, ch := range input {
+		switch ch {
+		case '\n':
+			lastNewline = idx
+		case 'x':
+			return lastNewline + 1
+		}
+	}
+	return -1
+}
 
 var benchmark = false
