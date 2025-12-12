@@ -20,16 +20,21 @@ func main() {
 func part1() int {
 	packable := 0
 	regions := input[regionsStart():]
-
 	utils.EachLine(regions, func(lineIdx int, line string) (done bool) {
-		vals := utils.GetInts(line)
-		width, height := vals[0], vals[1]
-		vals = vals[2:]
-		areaAvail := width * height
+		areaAvail := 0
+		width := 0
 		maxSpace := 0
-		for _, count := range vals {
-			maxSpace += 9 * count
-		}
+		utils.EachInteger(line, func(intIdx, value int) (done bool) {
+			switch intIdx {
+			case 0:
+				width = value
+			case 1:
+				areaAvail = width * value
+			default:
+				maxSpace += 9 * value
+			}
+			return
+		})
 		if maxSpace > areaAvail {
 			return
 		}
